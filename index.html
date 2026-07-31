@@ -189,6 +189,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
     display:flex;
     align-items:center;
     gap:8px;
+    line-height:1.5;
   }
   .role-badge button{
     background:none;border:none;color:#fff;opacity:0.7;font-size:11px;padding:0;
@@ -1818,7 +1819,7 @@ function renderTopbar(){
         <div style="font-size:8.5px;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.03em;font-weight:700;margin-top:1px">Field Crew Management System</div>
       </div>
     </div>
-    <div class="role-badge">${escapeHtml(state.role)} <button data-action="change-role">${ic('swap')}</button></div>
+    <div class="role-badge">${(() => { const parts = state.role.split(' / '); return parts.length===2 ? `<span>${escapeHtml(parts[0])} /<br>${escapeHtml(parts[1])}</span>` : `<span>${escapeHtml(state.role)}</span>`; })()} <button data-action="change-role">${ic('swap')}</button></div>
   </div>`;
 }
 function renderBottomNav(){
