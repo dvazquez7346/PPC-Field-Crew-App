@@ -1374,7 +1374,7 @@ async function submitEmployeeForm(form){
 }
 function deleteEmployee(id){
   const emp = getEmployee(id);
-  askConfirm('Move to Recycle Bin?', `${emp.name} will be moved to the Recycle Bin. You can restore them anytime within 90 days from Crew → Recycle Bin.`, async () => {
+  askConfirm('Move to Recycle Bin?', `${emp.name} will be moved to the Recycle Bin. You can restore them anytime within 90 days from Admin → Recycle Bin.`, async () => {
     try{
       await bulkSoftDeleteEmployees([id]);
     }catch(err){ state.confirm = null; render(); return; }
@@ -2878,7 +2878,6 @@ function renderEmployees(){
     <div class="screen-header">
       <h1 class="screen-title">Crew</h1>
       <div class="row gap8">
-        ${canEdit() ? `<button class="btn btn-secondary btn-sm" data-recycle-bin>${ic('trash')} Recycle Bin${binCount>0?` (${binCount})`:''}</button>` : ''}
         ${canEdit() ? `<button class="btn ${state.empSelectMode?'btn-primary':'btn-secondary'} btn-sm" data-toggle-select-mode>${ic('clipboard')} ${state.empSelectMode?'Cancel':'Select'}</button>` : ''}
         ${canEdit() ? `<button class="btn btn-primary" data-new-employee>${ic('plus')} New Crew Member</button>` : ''}
       </div>
@@ -3063,7 +3062,7 @@ function bindEmployees(){
   const bulkDelBtn = document.querySelector('[data-bulk-delete]');
   if(bulkDelBtn) bulkDelBtn.addEventListener('click', () => {
     const ids = Array.from(state.selectedEmployeeIds);
-    askConfirm('Move to Recycle Bin?', `${ids.length} crew member${ids.length>1?'s':''} will be moved to the Recycle Bin. You can restore them anytime within 90 days from Crew → Recycle Bin.`, async () => {
+    askConfirm('Move to Recycle Bin?', `${ids.length} crew member${ids.length>1?'s':''} will be moved to the Recycle Bin. You can restore them anytime within 90 days from Admin → Recycle Bin.`, async () => {
       try{
         await bulkSoftDeleteEmployees(ids);
       }catch(err){ state.confirm = null; render(); return; }
