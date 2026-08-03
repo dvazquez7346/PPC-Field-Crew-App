@@ -870,6 +870,7 @@ const state = {
   jobsites: [],
   assignments: [],
   reports: [],
+  badges: [],
   modal: null,            // {type:'employee'|'jobsite'|'assignment', mode:'new'|'edit', data:{...}, prefillSiteId, prefillEmployeeId}
   confirm: null,          // {title, body, onConfirm}
   toast: null,
@@ -1073,9 +1074,9 @@ async function loadAll(){
     let itemId, description;
     if(metaRes.status === 404){
       // File doesn't exist yet — create it empty. (Creating it proves we have write access.)
-      const empty = { employees: [], jobsites: [], assignments: [], reports: [] };
+      const empty = { employees: [], jobsites: [], assignments: [], reports: [], badges: [] };
       const created = await writeDataFile(token, siteId, empty);
-      state.employees = []; state.jobsites = []; state.assignments = []; state.reports = [];
+      state.employees = []; state.jobsites = []; state.assignments = []; state.reports = []; state.badges = [];
       state.lastKnownModified = created.lastModifiedDateTime;
       itemId = created.id; description = created.description;
       state.canWriteData = true;
@@ -1088,6 +1089,7 @@ async function loadAll(){
       state.jobsites = data.jobsites || [];
       state.assignments = data.assignments || [];
       state.reports = data.reports || [];
+      state.badges = data.badges || [];
       itemId = meta.id; description = meta.description;
       state.canWriteData = await checkWriteAccess(token, siteId, itemId, description);
     } else if(metaRes.status === 403){
@@ -1101,9 +1103,26 @@ async function loadAll(){
     showToast('Could not load data: ' + (e && e.message ? e.message : 'unknown error'));
   }
   state.tier = computeRealTier();
+  routeInitialLanding();
   state.loading = false;
   render();
   if(state.canWriteData) await purgeExpiredRecycled();
+}
+// Hardcoded admins land on Job Sites (the operational view). Everyone else lands on their own
+// profile — that's what most people actually want to check first. Unmatched accounts get a
+// heads-up and fall through to Job Sites since there's no profile to show them.
+function routeInitialLanding(){
+  if(isHardcodedAdmin()){
+    state.view = 'jobsites';
+    return;
+  }
+  const emp = getLinkedEmployee();
+  if(emp){
+    state.view = 'myProfile';
+  }else{
+    state.view = 'jobsites';
+    showToast('No Profile Found — showing Job Sites');
+  }
 }
 
 // Probes whether the signed-in user can actually write to the data file, by making a
@@ -1159,12 +1178,13 @@ async function persistAll(){
     jobsites: state.jobsites,
     assignments: state.assignments,
     reports: state.reports,
+    badges: state.badges,
   });
 }
 
 async function saveRecord(kind, record){
   record.lastModified = Date.now();
-  const key = kind === 'employee' ? 'employees' : kind === 'jobsite' ? 'jobsites' : kind === 'report' ? 'reports' : 'assignments';
+  const key = kind === 'employee' ? 'employees' : kind === 'jobsite' ? 'jobsites' : kind === 'report' ? 'reports' : kind === 'badge' ? 'badges' : 'assignments';
   const arr = state[key];
   const prevArr = arr.slice();
   const idx = arr.findIndex(r => r.id === record.id);
@@ -1189,7 +1209,7 @@ async function saveRecord(kind, record){
   }
 }
 async function deleteRecord(kind, id){
-  const key = kind === 'employee' ? 'employees' : kind === 'jobsite' ? 'jobsites' : kind === 'report' ? 'reports' : 'assignments';
+  const key = kind === 'employee' ? 'employees' : kind === 'jobsite' ? 'jobsites' : kind === 'report' ? 'reports' : kind === 'badge' ? 'badges' : 'assignments';
   const arr = state[key];
   const prevArr = arr.slice();
   state[key] = arr.filter(r => r.id !== id);
@@ -1530,7 +1550,7 @@ function openJobSiteForm(mode, id){
   const data = mode === 'edit' ? {...getJobSite(id)} : {
     id: genId(), name:'', projectNumber:'', address:'', city:'', state:'CA', zip:'',
     status:'', startDate:'', endDate:'', foremenByTrade:{}, notes:'',
-    pinDropUrl:'', parkingInstructions:'', plannedTrades:[], pmId:'', jobHourTypes:[]
+    pinDropUrl:'', parkingInstructions:'', plannedTrades:[], pmId:'', jobHourTypes:[], requiresBadge:false, badgeName:''
   };
   state.modal = {type:'jobsite', mode, data};
   render();
@@ -1550,6 +1570,8 @@ async function submitJobSiteForm(form){
   d.notes = form.notes;
   d.plannedTrades = TRADE_OPTS.filter(t => form[`trade_${t}`] === 'on');
   d.jobHourTypes = ['Regular','Overtime','Doubletime'].filter(h => form[`hours_${h}`] === 'on');
+  d.requiresBadge = form.requiresBadge === 'on';
+  d.badgeName = d.requiresBadge ? (form.badgeName||'').trim() : '';
   d.pinDropUrl = (form.pinDropUrl||'').trim();
   d.parkingInstructions = (form.parkingInstructions||'').trim();
   d.pmId = form.pmId || '';
@@ -1754,6 +1776,71 @@ async function markReportReviewed(reportId){
   const linkedEmp = getLinkedEmployee();
   await saveRecord('report', { ...report, status:'Reviewed', reviewedAt: Date.now(), reviewedBy: linkedEmp ? linkedEmp.id : '' });
 }
+// Badge status combines a manual status (Pending/Active/Revoked) with an automatic check
+// against the expiration date — an Active badge shows as Expiring Soon or Expired on its own,
+// no one has to remember to update it.
+const BADGE_ALERT_WINDOW_DAYS = 30;
+function badgeDisplayStatus(badge){
+  if(!badge) return {label:'Unknown', color:'var(--muted)', bg:'var(--surface-2)'};
+  if(badge.status === 'Pending') return {label:'Pending', color:'var(--blueprint)', bg:'rgba(47,93,138,0.12)'};
+  if(badge.status === 'Revoked') return {label:'Revoked', color:'var(--danger)', bg:'var(--danger-bg)'};
+  const t = todayISO();
+  if(badge.expirationDate){
+    if(badge.expirationDate < t) return {label:'Expired', color:'var(--danger)', bg:'var(--danger-bg)'};
+    const alertDate = new Date(t+'T00:00:00'); alertDate.setDate(alertDate.getDate()+BADGE_ALERT_WINDOW_DAYS);
+    if(badge.expirationDate <= alertDate.toISOString().slice(0,10)) return {label:'Expiring Soon', color:'var(--warn)', bg:'var(--warn-bg)'};
+  }
+  return {label:'Active', color:'var(--success)', bg:'var(--success-bg)'};
+}
+function isBadgeAlertworthy(badge){
+  const s = badgeDisplayStatus(badge).label;
+  return s === 'Expired' || s === 'Expiring Soon';
+}
+function badgesForEmployee(empId){ return state.badges.filter(b => b.employeeId === empId); }
+function badgesForSite(siteId){ return state.badges.filter(b => b.jobSiteId === siteId); }
+function badgeForEmployeeAndSite(empId, siteId){ return state.badges.find(b => b.employeeId===empId && b.jobSiteId===siteId) || null; }
+function openBadgeForm(mode, badgeId, prefill={}){
+  const data = mode === 'edit' ? {...state.badges.find(b => b.id === badgeId)} : {
+    id: genId(), employeeId: prefill.employeeId||'', jobSiteId: prefill.jobSiteId||'',
+    badgeNumber:'', status:'Pending', issueDate:'', expirationDate:'', notes:''
+  };
+  state.modal = {type:'badge', mode, data, lockEmployee: !!prefill.employeeId, lockSite: !!prefill.jobSiteId};
+  render();
+}
+async function submitBadgeForm(form){
+  const d = state.modal.data;
+  d.employeeId = form.employeeId || d.employeeId;
+  d.jobSiteId = form.jobSiteId || d.jobSiteId;
+  d.badgeNumber = (form.badgeNumber||'').trim();
+  d.status = form.status;
+  d.issueDate = form.issueDate||'';
+  d.expirationDate = form.expirationDate||'';
+  d.notes = (form.notes||'').trim();
+  if(!d.employeeId){ showToast('Select a crew member'); return; }
+  if(!d.jobSiteId){ showToast('Select a job site'); return; }
+  try{
+    await saveRecord('badge', d);
+  }catch(err){ return; }
+  const idx = state.badges.findIndex(b => b.id === d.id);
+  if(idx>=0) state.badges[idx] = d; else state.badges.push(d);
+  state.modal = null;
+  showToast('Badge saved');
+  render();
+}
+function deleteBadge(id){
+  const badge = state.badges.find(b => b.id === id);
+  if(!badge) return;
+  askConfirm('Delete Badge Record?', 'This will permanently remove this badge record. This cannot be undone.', async () => {
+    try{
+      await deleteRecord('badge', id);
+      state.badges = state.badges.filter(b => b.id !== id);
+      showToast('Badge record deleted');
+    }catch(err){ /* deleteRecord already surfaced an error toast */ }
+    state.confirm = null;
+    state.modal = null;
+    render();
+  }, 'Delete');
+}
 function checkForemanClearPrompt(siteId, employeeId){
   const site = getJobSite(siteId);
   const emp = getEmployee(employeeId);
@@ -1852,6 +1939,7 @@ function activeSection(){
   if(state.view === 'assignments') return 'assignments';
   if(state.view === 'reports') return 'reports';
   if(state.view === 'settings') return 'settings';
+  if(state.view === 'myProfile') return 'myProfile';
   return 'home';
 }
 function renderSidebar(){
@@ -1955,7 +2043,9 @@ function enterDemoMode(){
   state.jobsites = JSON.parse(JSON.stringify(DEMO_JOBSITES));
   state.assignments = JSON.parse(JSON.stringify(DEMO_ASSIGNMENTS));
   state.reports = [];
+  state.badges = [];
   state.tier = computeRealTier();
+  routeInitialLanding();
   state.loading = false;
   render();
 }
@@ -1967,6 +2057,7 @@ function renderView(){
     case 'home': return renderHome();
     case 'employees': return renderEmployees();
     case 'employeeDetail': return renderEmployeeDetail();
+    case 'myProfile': return renderMyProfile();
     case 'recycleBin': return renderRecycleBin();
     case 'jobsites': return renderJobSites();
     case 'jobsiteDetail': return renderJobSiteDetail();
@@ -1981,6 +2072,7 @@ function bindViewEvents(){
     case 'home': return bindHome();
     case 'employees': return bindEmployees();
     case 'employeeDetail': return bindEmployeeDetail();
+    case 'myProfile': return bindMyProfile();
     case 'recycleBin': return bindRecycleBin();
     case 'jobsites': return bindJobSites();
     case 'jobsiteDetail': return bindJobSiteDetail();
@@ -2583,6 +2675,13 @@ function runDataQualityChecks(){
   const lapsedReturns = state.employees.filter(e => !e.deleted && isReturnDateLapsed(e))
     .map(e => ({label:e.name, sub:`Expected back ${fmtDate(e.expectedReturnDate)}`}));
 
+  const expiringBadges = state.badges.filter(isBadgeAlertworthy).map(b => {
+    const emp = getEmployee(b.employeeId);
+    const site = getJobSite(b.jobSiteId);
+    const bs = badgeDisplayStatus(b);
+    return {label:`${emp?.name||'Unknown'} — ${site?.name||'Unknown Site'}`, sub:`${bs.label}${b.expirationDate?' · '+fmtDate(b.expirationDate):''}`};
+  });
+
   return [
     {title:'Employees with more than one active assignment', items:multiAssignEmps},
     {title:'Trades with crew but no foreman assigned', items:sitesNoForeman},
@@ -2592,6 +2691,7 @@ function runDataQualityChecks(){
     {title:'Active assignments on completed or closed job sites', items:assignsOnClosedSites},
     {title:'Completed assignments without an End Date', items:openOnCompleted},
     {title:'Temporary-inactive employees past their expected return date', items:lapsedReturns},
+    {title:'Badges expired or expiring within 30 days', items:expiringBadges},
   ];
 }
 function resetAllData(){
@@ -3190,6 +3290,61 @@ function bindRecycleBin(){
 }
 
 /* ============================= EMPLOYEE DETAIL ============================= */
+function renderMyProfile(){
+  const emp = getLinkedEmployee();
+  if(!emp) return emptyState('userx','No Profile Found','We couldn\'t match your signed-in account to a crew record. Contact your Superintendent or Admin.');
+  const t = todayISO();
+  const myAssignments = state.assignments.filter(a => a.employeeId===emp.id && (!a.endDate || a.endDate>=t));
+  const myBadges = badgesForEmployee(emp.id);
+  const alertBadges = myBadges.filter(isBadgeAlertworthy);
+  const pendingReportsCount = canReviewReports() ? state.reports.filter(r=>r.status==='Pending').length : 0;
+  return `
+    <div class="screen-header"><h1 class="screen-title">Welcome, ${escapeHtml((emp.name||'').split(' ')[0]||emp.name)}</h1></div>
+    ${(alertBadges.length>0 || pendingReportsCount>0) ? `
+      <div class="section-label row gap6" style="margin-top:0">${ic('alert')} Needs Your Attention</div>
+      <div class="list-gap" style="margin-bottom:16px">
+        ${alertBadges.map(b => {
+          const site = getJobSite(b.jobSiteId);
+          const bs = badgeDisplayStatus(b);
+          return `<div class="item-card" style="align-items:center;cursor:pointer;border:1.5px solid ${bs.color}" data-edit-badge="${b.id}">
+            ${ic('shield')}
+            <div class="item-main"><div class="item-name">Badge ${bs.label.toLowerCase()}: ${escapeHtml(site?.name||'Unknown Site')}</div><div class="item-sub">${b.expirationDate?'Expires '+fmtDate(b.expirationDate):''}</div></div>
+          </div>`;
+        }).join('')}
+        ${pendingReportsCount>0 ? `<div class="item-card" style="align-items:center;cursor:pointer" data-goto-review-reports>${ic('clipboard')}<div class="item-main"><div class="item-name">${pendingReportsCount} report${pendingReportsCount>1?'s':''} pending review</div></div></div>` : ''}
+      </div>
+    ` : ''}
+    <div class="card" style="padding:16px;margin-bottom:16px">
+      <div class="row gap8" style="align-items:center;margin-bottom:12px">
+        <div class="avatar" style="background:${colorForString(emp.name)}">${initials(emp.name)}</div>
+        <div><div style="font-weight:700;font-size:16px">${truckBadge(emp)}${escapeHtml(emp.name)}</div><div style="font-size:12.5px;color:var(--muted)">${escapeHtml(emp.classification||'')}${emp.trade?' · '+escapeHtml(emp.trade):''}</div></div>
+      </div>
+      <div style="font-size:13px;color:var(--ink);line-height:1.8">
+        <div>${ic('phone')} ${escapeHtml(emp.phone)||'—'}</div>
+        <div>${ic('mail')} ${escapeHtml(emp.email)||'—'}</div>
+      </div>
+    </div>
+    <div class="section-label row gap6">${ic('clipboard')} Current Assignment${myAssignments.length>1?'s':''}</div>
+    ${myAssignments.length===0 ? historyEmptyState('clipboard','No current assignment') :
+      myAssignments.map(a => assignmentDetailCard(a, false)).join('')}
+    <div class="section-label row gap6">${ic('shield')} My Badges</div>
+    ${myBadges.length===0 ? historyEmptyState('shield','No badges on file') :
+      `<div class="list-gap">${myBadges.map(b => {
+        const site = getJobSite(b.jobSiteId);
+        const bs = badgeDisplayStatus(b);
+        return `<div class="item-card" style="align-items:center">
+          <div class="avatar" style="background:var(--navy)">${ic('shield')}</div>
+          <div class="item-main"><div class="item-name">${escapeHtml(site?.name||'Unknown Site')}</div><div class="item-sub">${b.expirationDate?'Exp '+fmtDate(b.expirationDate):'No expiration set'}</div></div>
+          <span class="plate" style="background:${bs.bg};color:${bs.color};border-color:${bs.color}">${bs.label}</span>
+        </div>`;
+      }).join('')}</div>`}
+  `;
+}
+function bindMyProfile(){
+  document.querySelectorAll('[data-edit-badge]').forEach(el => el.addEventListener('click', () => openBadgeForm('edit', el.dataset.editBadge)));
+  const gotoReview = document.querySelector('[data-goto-review-reports]');
+  if(gotoReview) gotoReview.addEventListener('click', () => { state.view = 'reports'; state.reportsSelectedType = 'reviewReports'; render(); });
+}
 function renderEmployeeDetail(){
   const e = getEmployee(state.selectedId);
   if(!e) return emptyState('users','Crew member not found','It may have been deleted.');
@@ -3252,6 +3407,28 @@ function renderEmployeeDetail(){
     </div>
     ${e.notes ? `<div class="notes-box" style="margin-bottom:4px">${escapeHtml(e.notes)}</div>` : ''}
 
+    <div class="section-label" style="display:flex;align-items:center;justify-content:space-between">
+      <span class="row gap6">${ic('shield')} Badges</span>
+      ${canEdit() ? `<button class="btn btn-sm btn-secondary" data-add-badge-for-emp>${ic('plus')} Add Badge</button>` : ''}
+    </div>
+    ${(() => {
+      const myBadges = badgesForEmployee(e.id);
+      if(myBadges.length===0) return historyEmptyState('shield','No badges on file');
+      return `<div class="list-gap">${myBadges.map(b => {
+        const site = getJobSite(b.jobSiteId);
+        const bs = badgeDisplayStatus(b);
+        return `
+        <div class="item-card" style="align-items:center;cursor:pointer" data-edit-badge="${b.id}">
+          <div class="avatar" style="background:var(--navy)">${ic('shield')}</div>
+          <div class="item-main">
+            <div class="item-name">${escapeHtml(site?.name||'Unknown Site')}</div>
+            <div class="item-sub">${b.badgeNumber?'#'+escapeHtml(b.badgeNumber)+' · ':''}${b.expirationDate?'Exp '+fmtDate(b.expirationDate):'No expiration set'}</div>
+          </div>
+          <span class="plate" style="background:${bs.bg};color:${bs.color};border-color:${bs.color}">${bs.label}</span>
+        </div>`;
+      }).join('')}</div>`;
+    })()}
+
     <div class="section-label row gap6">${ic('clipboard')} Current Assignment${current.length>1?'s':''}</div>
     ${current.length===0 ? historyEmptyState('clipboard','No current assignment') :
       current.map(a => assignmentDetailCard(a, false)).join('')}
@@ -3305,6 +3482,9 @@ function bindEmployeeDetail(){
   if(eb) eb.addEventListener('click', () => openEmployeeForm('edit', state.selectedId));
   const db = document.querySelector('[data-del-emp]');
   if(db) db.addEventListener('click', () => deleteEmployee(state.selectedId));
+  const addBadgeBtn = document.querySelector('[data-add-badge-for-emp]');
+  if(addBadgeBtn) addBadgeBtn.addEventListener('click', () => openBadgeForm('new', null, {employeeId: state.selectedId}));
+  document.querySelectorAll('[data-edit-badge]').forEach(el => el.addEventListener('click', () => openBadgeForm('edit', el.dataset.editBadge)));
   const markActiveBtn = document.querySelector('[data-lapsed-mark-active]');
   if(markActiveBtn) markActiveBtn.addEventListener('click', async () => {
     const e = getEmployee(state.selectedId);
@@ -3499,6 +3679,30 @@ function renderJobSiteDetail(){
       <div class="info-item">${ic('calendar')}<div><div class="il">End</div><div class="iv">${s.endDate?fmtDate(s.endDate):'Ongoing'}</div></div></div>
     </div>
 
+    ${s.requiresBadge ? `
+    <div class="section-divider"></div>
+    <div class="section-label row gap6">${ic('shield')} Badge Compliance${s.badgeName?` — ${escapeHtml(s.badgeName)}`:''}</div>
+    ${crew.length===0 ? emptyState('shield','No crew assigned yet','Badge compliance will show here once crew is assigned.') : `
+    <div class="list-gap">
+      ${crew.slice().sort((a,b)=>(getEmployee(a.employeeId)?.name||'').localeCompare(getEmployee(b.employeeId)?.name||'')).map(a => {
+        const emp = getEmployee(a.employeeId);
+        if(!emp) return '';
+        const badge = badgeForEmployeeAndSite(emp.id, s.id);
+        const bs = badgeDisplayStatus(badge);
+        return `
+        <div class="item-card" style="align-items:center;cursor:pointer" data-badge-row="${emp.id}|${s.id}|${badge?badge.id:''}">
+          <div class="avatar" style="background:${colorForString(emp.name)}">${initials(emp.name)}</div>
+          <div class="item-main">
+            <div class="item-name">${escapeHtml(emp.name)}</div>
+            <div class="item-sub">${escapeHtml(emp.trade||'')}${badge && badge.badgeNumber ? ' · #'+escapeHtml(badge.badgeNumber) : ''}${badge && badge.expirationDate ? ' · Exp '+fmtDate(badge.expirationDate) : ''}</div>
+          </div>
+          <span class="plate" style="background:${bs.bg};color:${bs.color};border-color:${bs.color}">${badge ? bs.label : 'No Badge'}</span>
+        </div>`;
+      }).join('')}
+    </div>
+    `}
+    ` : ''}
+
     <div class="section-divider"></div>
 
     <div class="section-label" style="display:flex;align-items:center;justify-content:space-between">
@@ -3574,6 +3778,11 @@ function renderJobSiteDetail(){
 function bindJobSiteDetail(){
   bindBack();
   document.querySelectorAll('[data-foreman-card]').forEach(el => el.addEventListener('click', () => go('employeeDetail', {id: el.dataset.foremanCard})));
+  document.querySelectorAll('[data-badge-row]').forEach(el => el.addEventListener('click', () => {
+    const [employeeId, jobSiteId, badgeId] = el.dataset.badgeRow.split('|');
+    if(badgeId) openBadgeForm('edit', badgeId);
+    else openBadgeForm('new', null, {employeeId, jobSiteId});
+  }));
   document.querySelectorAll('[data-crew-emp]').forEach(el => el.addEventListener('click', (ev) => {
     if(ev.target.closest('[data-stop]')) return;
     go('employeeDetail', {id: el.dataset.crewEmp});
@@ -4166,6 +4375,7 @@ function renderModal(){
   if(m.type === 'foremanOtherSite') return renderForemanOtherSiteModal(m);
   if(m.type === 'foremanClearPrompt') return renderForemanClearPromptModal(m);
   if(m.type === 'inactiveTypePrompt') return renderInactiveTypePromptModal(m);
+  if(m.type === 'badge') return renderBadgeModal(m);
   if(m.type === 'extendReturnDate') return renderExtendReturnDateModal(m);
   if(m.type === 'foremanScope') return renderForemanScopeModal(m);
   if(m.type === 'assignForeman') return renderAssignForemanModal(m);
@@ -4365,6 +4575,35 @@ function renderExtendReturnDateModal(m){
     </div>
   </div>`;
 }
+function renderBadgeModal(m){
+  const d = m.data;
+  const emp = getEmployee(d.employeeId);
+  const site = getJobSite(d.jobSiteId);
+  const badgeSites = state.jobsites.filter(s => s.requiresBadge).sort((a,b)=>a.name.localeCompare(b.name));
+  return `
+  <div class="modal-backdrop" data-backdrop>
+    <div class="modal">
+      <div class="modal-header"><h2 class="modal-title">${m.mode==='edit'?'Edit':'Add'} Badge</h2><button class="close-btn" data-close-modal>${ic('close')}</button></div>
+      <form id="badge-form">
+        ${(m.lockEmployee || m.mode==='edit') ? `<div class="field"><label>Crew Member</label><input value="${escapeHtml(emp?.name||'—')}" disabled style="opacity:0.7"></div>` :
+          `<div class="field"><label>Crew Member <span class="req-star">*</span></label><select name="employeeId" required><option value="">— Select —</option>${activeEmployeesList().map(e=>`<option value="${e.id}" ${d.employeeId===e.id?'selected':''}>${escapeHtml(e.name)}</option>`).join('')}</select></div>`}
+        ${(m.lockSite || m.mode==='edit') ? `<div class="field"><label>Job Site</label><input value="${escapeHtml(site?.name||'—')}" disabled style="opacity:0.7"></div>` :
+          `<div class="field"><label>Job Site <span class="req-star">*</span></label><select name="jobSiteId" required><option value="">— Select —</option>${badgeSites.map(s=>`<option value="${s.id}" ${d.jobSiteId===s.id?'selected':''}>${escapeHtml(s.name)}${s.badgeName?' — '+escapeHtml(s.badgeName):''}</option>`).join('')}${badgeSites.length===0?'':''}</select></div>`}
+        <div class="field"><label>Badge Number <span style="text-transform:none;font-weight:500;color:var(--muted)">(optional)</span></label><input name="badgeNumber" value="${escapeHtml(d.badgeNumber||'')}"></div>
+        <div class="field"><label>Status</label><select name="status">${['Pending','Active','Revoked'].map(s=>`<option ${d.status===s?'selected':''}>${s}</option>`).join('')}</select></div>
+        <div class="field-row">
+          <div class="field"><label>Issue Date</label><input type="date" name="issueDate" value="${escapeHtml(d.issueDate||'')}"></div>
+          <div class="field"><label>Expiration Date</label><input type="date" name="expirationDate" value="${escapeHtml(d.expirationDate||'')}"></div>
+        </div>
+        <div class="field"><label>Notes <span style="text-transform:none;font-weight:500;color:var(--muted)">(optional)</span></label><textarea name="notes">${escapeHtml(d.notes||'')}</textarea></div>
+        <div class="modal-actions">
+          ${m.mode==='edit' ? `<button type="button" class="btn btn-danger" data-delete-badge="${d.id}">${ic('trash')} Delete</button>` : '<span></span>'}
+          <button type="submit" class="btn btn-primary">Save Badge</button>
+        </div>
+      </form>
+    </div>
+  </div>`;
+}
 function renderEmployeeModal(m){
   const d = m.data;
   return `
@@ -4447,6 +4686,16 @@ function renderJobSiteModal(m){
               </label>
             `).join('')}
           </div>
+        </div>
+        <div class="field">
+          <label style="display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:9px 12px;cursor:pointer;text-transform:none;font-weight:500;color:var(--ink);font-size:13.5px">
+            <input type="checkbox" name="requiresBadge" id="site-requires-badge" ${d.requiresBadge?'checked':''} style="width:16px;height:16px">
+            Requires Security Badge / Access Credential
+          </label>
+        </div>
+        <div class="field" id="badge-name-wrap" style="${d.requiresBadge?'':'display:none'}">
+          <label>Badge Name <span style="text-transform:none;font-weight:500;color:var(--muted)">(optional)</span></label>
+          <input name="badgeName" value="${escapeHtml(d.badgeName||'')}" placeholder="e.g. Fort Irwin CAC Access">
         </div>
         <div class="field"><label>Address</label><input name="address" value="${escapeHtml(d.address||'')}"></div>
         <div class="field">
@@ -4712,6 +4961,19 @@ function bindModalEvents(){
     const f = Object.fromEntries(new FormData(jf).entries());
     submitJobSiteForm(f);
   });
+  const requiresBadgeCheckbox = document.getElementById('site-requires-badge');
+  if(requiresBadgeCheckbox) requiresBadgeCheckbox.addEventListener('change', () => {
+    const badgeNameWrap = document.getElementById('badge-name-wrap');
+    if(badgeNameWrap) badgeNameWrap.style.display = requiresBadgeCheckbox.checked ? '' : 'none';
+  });
+  const bf = document.getElementById('badge-form');
+  if(bf) bf.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(bf).entries());
+    submitBadgeForm(f);
+  });
+  const delBadgeBtn = document.querySelector('[data-delete-badge]');
+  if(delBadgeBtn) delBadgeBtn.addEventListener('click', () => deleteBadge(delBadgeBtn.dataset.deleteBadge));
   const af = document.getElementById('assignment-form');
   if(af) af.addEventListener('submit', (e) => {
     e.preventDefault();
