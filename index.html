@@ -2987,7 +2987,11 @@ function bindHome(){
   }));
 }
 function renderAdminPermissionLevels(){
-  const emps = activeEmployeesList().slice().sort((a,b)=>a.name.localeCompare(b.name));
+  const TIER_SORT_ORDER = { FullEdit: 0, Foreman: 1, FieldCrew: 2 };
+  const emps = activeEmployeesList().slice().sort((a,b) => {
+    const tierDiff = (TIER_SORT_ORDER[tierForEmployee(a)] ?? 99) - (TIER_SORT_ORDER[tierForEmployee(b)] ?? 99);
+    return tierDiff !== 0 ? tierDiff : a.name.localeCompare(b.name);
+  });
   return `
     <div class="section-label" style="margin-top:0">Hardcoded Admins</div>
     <div class="notes-box" style="margin-bottom:16px;font-size:12.5px">
@@ -4351,7 +4355,7 @@ function renderSettings(){
     <div class="card">
       <div class="section-label" style="margin-top:0">About</div>
       <div style="font-size:13px;color:var(--muted);line-height:1.6">
-        Field Crew Directory<br>Version 1.0<br>Crew, job sites, and assignments — kept in sync for office staff, foremen, and field crew.
+        Field Crew Directory<br>Version 1.5<br>Crew, job sites, and assignments — kept in sync for office staff, foremen, and field crew.
       </div>
     </div>
   `;
@@ -4695,7 +4699,7 @@ function renderJobSiteModal(m){
         </div>
         <div class="field" id="badge-name-wrap" style="${d.requiresBadge?'':'display:none'}">
           <label>Badge Name <span style="text-transform:none;font-weight:500;color:var(--muted)">(optional)</span></label>
-          <input name="badgeName" value="${escapeHtml(d.badgeName||'')}" placeholder="e.g. Fort Irwin CAC Access">
+          <input name="badgeName" value="${escapeHtml(d.badgeName||'')}" placeholder="e.g. NGAS MyID#">
         </div>
         <div class="field"><label>Address</label><input name="address" value="${escapeHtml(d.address||'')}"></div>
         <div class="field">
