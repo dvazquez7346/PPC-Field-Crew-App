@@ -2891,7 +2891,7 @@ function renderAdminPermissionLevels(){
   return `
     <div class="section-label" style="margin-top:0">Hardcoded Admins</div>
     <div class="notes-box" style="margin-bottom:16px;font-size:12.5px">
-      These accounts always have Full Edit access, no matter what — this is the permanent safety net that can never be lost or locked out. Changing this list requires editing the app's code directly.
+      These accounts always have Full Edit access, no matter what — this is the permanent safety net that can never be lost or locked out.
       <div style="margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:12px;display:flex;flex-direction:column;gap:2px">
         ${HARDCODED_ADMIN_EMAILS.map(e => `<div>${escapeHtml(e)}</div>`).join('')}
       </div>
