@@ -753,7 +753,7 @@ function toTitleCase(s){
   return String(s??'').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 }
 
-const CLASSIFICATION_OPTS = ['General Foreman','Foreman','Journeyman','Apprentice','Laborer','Operator','Superintendent','PM','Other'];
+const CLASSIFICATION_OPTS = ['General Foreman','Foreman','Journeyman','Apprentice','Laborer','Operator','Superintendent','PM','Office Staff','Other'];
 // Role on Site can include situational titles that aren't a person's real classification —
 // e.g. someone helping out as "Acting Foreman" while the actual Foreman takes point as "Lead".
 const ROLE_ON_SITE_OPTS = [...CLASSIFICATION_OPTS, 'Lead', 'Acting Foreman'];
@@ -890,6 +890,7 @@ const CLASSIFICATION_TIER_MAP = {
   'General Foreman': 'Foreman',
   'Foreman': 'Foreman',
   'PM': 'Foreman',
+  'Office Staff': 'Foreman',
   'Journeyman': 'FieldCrew',
   'Apprentice': 'FieldCrew',
   'Laborer': 'FieldCrew',
@@ -1424,7 +1425,7 @@ async function submitEmployeeForm(form){
   d.classification = form.classification;
   d.apprenticeYear = form.classification === 'Apprentice' ? (form.apprenticeYear||'') : '';
   d.skill = (form.classification === 'Laborer' || form.classification === 'Operator') ? (form.skill||'').trim() : '';
-  d.trade = form.trade;
+  d.trade = form.classification === 'Office Staff' ? '' : form.trade;
   d.phone = formatPhone(form.phone);
   d.email = form.email.trim();
   d.status = form.status;
@@ -1436,10 +1437,10 @@ async function submitEmployeeForm(form){
   d.expectedReturnDate = (form.status === 'Inactive' && form.inactiveType === 'Temporary') ? (form.expectedReturnDate || '') : '';
   if(!d.name){ showToast('Crew member name is required'); return; }
   if(!d.classification){ showToast('Classification is required'); return; }
-  if(!d.trade){ showToast('Trade is required'); return; }
+  if(d.classification !== 'Office Staff' && !d.trade){ showToast('Trade is required'); return; }
   const priorEmp = getEmployee(d.id);
   const priorClassification = priorEmp ? priorEmp.classification : null;
-  const ELEVATED_CLASSIFICATIONS = { 'Superintendent':'full edit access to the entire app — adding, editing, and deleting anything', 'General Foreman':'Foreman-level access — full visibility of all job sites and the ability to file incident/time-off reports', 'Foreman':'Foreman-level access — full visibility of all job sites and the ability to file incident/time-off reports', 'PM':'Foreman-level access — full visibility of all job sites and the ability to file incident/time-off reports' };
+  const ELEVATED_CLASSIFICATIONS = { 'Superintendent':'full edit access to the entire app — adding, editing, and deleting anything', 'General Foreman':'Foreman-level access — full visibility of all job sites and the ability to file incident/time-off reports', 'Foreman':'Foreman-level access — full visibility of all job sites and the ability to file incident/time-off reports', 'PM':'Foreman-level access — full visibility of all job sites and the ability to file incident/time-off reports', 'Office Staff':'Foreman-level access — full visibility of all job sites and the ability to file incident/time-off reports' };
   if(ELEVATED_CLASSIFICATIONS[d.classification] && d.classification !== priorClassification){
     askConfirm('Grants Elevated Access?', `Setting ${d.name || 'this crew member'}'s classification to ${d.classification} gives them ${ELEVATED_CLASSIFICATIONS[d.classification]}. Continue?`, async () => {
       state.confirm = null;
@@ -1550,7 +1551,7 @@ function openJobSiteForm(mode, id){
   const data = mode === 'edit' ? {...getJobSite(id)} : {
     id: genId(), name:'', projectNumber:'', address:'', city:'', state:'CA', zip:'',
     status:'', startDate:'', endDate:'', foremenByTrade:{}, notes:'',
-    pinDropUrl:'', parkingInstructions:'', plannedTrades:[], pmId:'', jobHourTypes:[], requiresBadge:false, badgeName:''
+    pinDropUrl:'', parkingInstructions:'', plannedTrades:[], pmId:'', pm2Id:'', jobHourTypes:[], requiresBadge:false, badgeName:''
   };
   state.modal = {type:'jobsite', mode, data};
   render();
@@ -1575,6 +1576,7 @@ async function submitJobSiteForm(form){
   d.pinDropUrl = (form.pinDropUrl||'').trim();
   d.parkingInstructions = (form.parkingInstructions||'').trim();
   d.pmId = form.pmId || '';
+  d.pm2Id = form.pm2Id || '';
   if(!d.name){ showToast('Site name is required'); return; }
   if(!d.status){ showToast('Status is required'); return; }
   try{
@@ -2092,6 +2094,7 @@ function buildJobSiteReportHtml(site){
   const trades = tradesOnSite(site.id);
   const crew = assignmentsForSite(site.id);
   const pm = site.pmId ? getEmployee(site.pmId) : null;
+  const pm2 = site.pm2Id ? getEmployee(site.pm2Id) : null;
   const showHours = canViewExpendedHours() && state.jsReportHoursStart && state.jsReportHoursEnd;
   const hours = showHours ? estimatedHoursSummaryForSite(site, state.jsReportHoursStart, state.jsReportHoursEnd) : null;
   return `
@@ -2106,6 +2109,7 @@ function buildJobSiteReportHtml(site){
     <div style="font-size:13px;color:var(--ink);line-height:1.8">
       <div>${ic('pin')} ${escapeHtml(site.address||'')}${site.city?', '+escapeHtml(site.city):''}${site.state?', '+escapeHtml(site.state):''} ${escapeHtml(site.zip||'')}</div>
       ${pm ? `<div>PM: <strong>${escapeHtml(pm.name)}</strong>${pm.phone?' · '+escapeHtml(pm.phone):''}${pm.email?' · '+escapeHtml(pm.email):''}</div>` : ''}
+      ${pm2 ? `<div>PM: <strong>${escapeHtml(pm2.name)}</strong>${pm2.phone?' · '+escapeHtml(pm2.phone):''}${pm2.email?' · '+escapeHtml(pm2.email):''}</div>` : ''}
       <div>Start: ${fmtDate(site.startDate)} &nbsp;·&nbsp; End: ${site.endDate?fmtDate(site.endDate):'Ongoing'}</div>
     </div>
     ${site.parkingInstructions ? `<div style="margin-top:10px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted)">Special Instructions</div><div style="font-size:13px;margin-top:2px">${escapeHtml(site.parkingInstructions)}</div></div>` : ''}
@@ -2144,11 +2148,13 @@ function buildJobSiteReportText(site){
   const trades = tradesOnSite(site.id);
   const crew = assignmentsForSite(site.id);
   const pm = site.pmId ? getEmployee(site.pmId) : null;
+  const pm2 = site.pm2Id ? getEmployee(site.pm2Id) : null;
   const lines = [];
   lines.push(`${site.name} (${site.status})`);
   if(site.projectNumber) lines.push(`Project #: ${site.projectNumber}`);
   lines.push(`${site.address||''}${site.city?', '+site.city:''}${site.state?', '+site.state:''} ${site.zip||''}`.trim());
   if(pm) lines.push(`PM: ${pm.name}${pm.phone?' - '+pm.phone:''}${pm.email?' - '+pm.email:''}`);
+  if(pm2) lines.push(`PM: ${pm2.name}${pm2.phone?' - '+pm2.phone:''}${pm2.email?' - '+pm2.email:''}`);
   lines.push(`Start: ${fmtDate(site.startDate)}   End: ${site.endDate?fmtDate(site.endDate):'Ongoing'}`);
   if(site.parkingInstructions) lines.push(`Special Instructions: ${site.parkingInstructions}`);
   if(site.notes) lines.push(`Notes: ${site.notes}`);
@@ -3649,6 +3655,7 @@ function renderJobSiteDetail(){
   const foremenByTrade = getForemenByTrade(s);
   const canManage = canManageAssignmentsForSite(s.id);
   const pm = s.pmId ? getEmployee(s.pmId) : null;
+  const pm2 = s.pm2Id ? getEmployee(s.pm2Id) : null;
 
   return `
     <div class="screen-header" style="margin-bottom:10px">
@@ -3671,6 +3678,13 @@ function renderJobSiteDetail(){
           <span class="detail-sub row gap6" style="justify-content:flex-start;margin-top:0">${ic('users')} PM: <strong style="color:#fff">${escapeHtml(pm.name)}</strong></span>
           ${pm.phone ? `<a href="tel:${rawDigits(pm.phone)}" class="icon-btn" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.25)" title="Call ${escapeHtml(pm.name)}">${ic('phone')}</a><a href="sms:${rawDigits(pm.phone)}" class="icon-btn" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.25)" title="Text ${escapeHtml(pm.name)}">${ic('message')}</a>` : ''}
           ${pm.email ? `<a href="mailto:${escapeHtml(pm.email)}" class="icon-btn" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.25)" title="Email ${escapeHtml(pm.name)}">${ic('mail')}</a>` : ''}
+        </div>
+      ` : ''}
+      ${pm2 ? `
+        <div class="row gap8" style="margin-top:8px;position:relative;z-index:1;flex-wrap:wrap">
+          <span class="detail-sub row gap6" style="justify-content:flex-start;margin-top:0">${ic('users')} PM: <strong style="color:#fff">${escapeHtml(pm2.name)}</strong></span>
+          ${pm2.phone ? `<a href="tel:${rawDigits(pm2.phone)}" class="icon-btn" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.25)" title="Call ${escapeHtml(pm2.name)}">${ic('phone')}</a><a href="sms:${rawDigits(pm2.phone)}" class="icon-btn" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.25)" title="Text ${escapeHtml(pm2.name)}">${ic('message')}</a>` : ''}
+          ${pm2.email ? `<a href="mailto:${escapeHtml(pm2.email)}" class="icon-btn" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.25)" title="Email ${escapeHtml(pm2.name)}">${ic('mail')}</a>` : ''}
         </div>
       ` : ''}
       ${s.pinDropUrl ? `<div style="margin-top:6px;position:relative;z-index:1"><span class="plate" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.25)">${ic('pin')} Precise Pin Set</span></div>` : ''}
@@ -4635,7 +4649,7 @@ function renderEmployeeModal(m){
           <input name="skill" value="${escapeHtml(d.skill||'')}" placeholder="e.g. Forklift certified, Traffic control">
         </div>
         <div class="field-row">
-          <div class="field"><label>Trade <span class="req-star">*</span></label><select name="trade" required><option value="" ${!d.trade?'selected':''}>— Select Trade —</option>${TRADE_OPTS.includes(d.trade) || !d.trade ? '' : `<option value="${escapeHtml(d.trade)}" selected>${escapeHtml(d.trade)} (current)</option>`}${TRADE_OPTS.map(t=>`<option ${d.trade===t?'selected':''}>${t}</option>`).join('')}</select></div>
+          <div class="field" id="trade-wrap" style="${d.classification==='Office Staff' ? 'display:none' : ''}"><label>Trade <span class="req-star">*</span></label><select name="trade" id="emp-trade" ${d.classification==='Office Staff'?'':'required'}><option value="" ${!d.trade?'selected':''}>— Select Trade —</option>${TRADE_OPTS.includes(d.trade) || !d.trade ? '' : `<option value="${escapeHtml(d.trade)}" selected>${escapeHtml(d.trade)} (current)</option>`}${TRADE_OPTS.map(t=>`<option ${d.trade===t?'selected':''}>${t}</option>`).join('')}</select></div>
           <div class="field"><label>Status</label><select name="status" id="emp-status"><option ${d.status==='Active'?'selected':''}>Active</option><option ${d.status==='Inactive'?'selected':''}>Inactive</option></select></div>
         </div>
         <div class="field" id="inactive-type-wrap" style="${d.status==='Inactive' ? '' : 'display:none'}">
@@ -4726,6 +4740,13 @@ function renderJobSiteModal(m){
             ${pmCandidates.map(e => `<option value="${e.id}" ${d.pmId===e.id?'selected':''}>${escapeHtml(e.name)}</option>`).join('')}
           </select>
           ${pmCandidates.length===0 ? `<div style="font-size:11px;color:var(--muted);margin-top:6px">No employees are classified as PM yet — add one from Crew first.</div>` : ''}
+        </div>
+        <div class="field">
+          <label>Second Project Manager <span style="text-transform:none;font-weight:500;color:var(--muted)">(optional — for jobs split across trades, e.g. Dry Side / Wet Side)</span></label>
+          <select name="pm2Id">
+            <option value="">— None —</option>
+            ${pmCandidates.map(e => `<option value="${e.id}" ${d.pm2Id===e.id?'selected':''}>${escapeHtml(e.name)}</option>`).join('')}
+          </select>
         </div>
         <div class="field">
           <label>Trades on This Job <span style="text-transform:none;font-weight:500;color:var(--muted)">(optional)</span></label>
@@ -4938,6 +4959,11 @@ function bindModalEvents(){
     if(yearWrap) yearWrap.style.display = classSelect.value === 'Apprentice' ? '' : 'none';
     const skillWrap = document.getElementById('skill-wrap');
     if(skillWrap) skillWrap.style.display = (classSelect.value === 'Laborer' || classSelect.value === 'Operator') ? '' : 'none';
+    const tradeWrap = document.getElementById('trade-wrap');
+    const tradeSelect = document.getElementById('emp-trade');
+    const isOfficeStaff = classSelect.value === 'Office Staff';
+    if(tradeWrap) tradeWrap.style.display = isOfficeStaff ? 'none' : '';
+    if(tradeSelect) tradeSelect.required = !isOfficeStaff;
   });
   const statusSelect = document.getElementById('emp-status');
   if(statusSelect) statusSelect.addEventListener('change', () => {
