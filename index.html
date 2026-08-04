@@ -781,6 +781,7 @@ function isReturnDateLapsed(emp){
 // badge as Active/Inactive, instead of showing two separate badges side by side.
 function combinedStatusBadge(emp, extraStyle){
   if(!emp) return '';
+  if(emp.classification === 'Office Staff') return '';
   const style = extraStyle ? ` style="${extraStyle}"` : '';
   if(emp.status !== 'Inactive') return `<span class="plate ${statusPlateClass(emp.status)}"${style}>${emp.status}</span>`;
   if(emp.inactiveType === 'Temporary'){
@@ -1428,7 +1429,7 @@ async function submitEmployeeForm(form){
   d.trade = form.classification === 'Office Staff' ? '' : form.trade;
   d.phone = formatPhone(form.phone);
   d.email = form.email.trim();
-  d.status = form.status;
+  d.status = form.classification === 'Office Staff' ? 'Active' : form.status;
   d.hireDate = form.hireDate;
   d.notes = form.notes;
   d.photoUrl = form.photoUrl;
@@ -4650,9 +4651,9 @@ function renderEmployeeModal(m){
         </div>
         <div class="field-row">
           <div class="field" id="trade-wrap" style="${d.classification==='Office Staff' ? 'display:none' : ''}"><label>Trade <span class="req-star">*</span></label><select name="trade" id="emp-trade" ${d.classification==='Office Staff'?'':'required'}><option value="" ${!d.trade?'selected':''}>— Select Trade —</option>${TRADE_OPTS.includes(d.trade) || !d.trade ? '' : `<option value="${escapeHtml(d.trade)}" selected>${escapeHtml(d.trade)} (current)</option>`}${TRADE_OPTS.map(t=>`<option ${d.trade===t?'selected':''}>${t}</option>`).join('')}</select></div>
-          <div class="field"><label>Status</label><select name="status" id="emp-status"><option ${d.status==='Active'?'selected':''}>Active</option><option ${d.status==='Inactive'?'selected':''}>Inactive</option></select></div>
+          <div class="field" id="status-wrap" style="${d.classification==='Office Staff' ? 'display:none' : ''}"><label>Status</label><select name="status" id="emp-status"><option ${d.status==='Active'?'selected':''}>Active</option><option ${d.status==='Inactive'?'selected':''}>Inactive</option></select></div>
         </div>
-        <div class="field" id="inactive-type-wrap" style="${d.status==='Inactive' ? '' : 'display:none'}">
+        <div class="field" id="inactive-type-wrap" style="${(d.status==='Inactive' && d.classification!=='Office Staff') ? '' : 'display:none'}">
           <label>Inactive Type</label>
           <div style="display:flex;gap:8px;margin-bottom:8px">
             <label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:9px 10px;font-size:13px;font-weight:600;cursor:pointer;text-transform:none">
@@ -4964,6 +4965,10 @@ function bindModalEvents(){
     const isOfficeStaff = classSelect.value === 'Office Staff';
     if(tradeWrap) tradeWrap.style.display = isOfficeStaff ? 'none' : '';
     if(tradeSelect) tradeSelect.required = !isOfficeStaff;
+    const statusWrap = document.getElementById('status-wrap');
+    if(statusWrap) statusWrap.style.display = isOfficeStaff ? 'none' : '';
+    const inactiveWrap2 = document.getElementById('inactive-type-wrap');
+    if(inactiveWrap2 && isOfficeStaff) inactiveWrap2.style.display = 'none';
   });
   const statusSelect = document.getElementById('emp-status');
   if(statusSelect) statusSelect.addEventListener('change', () => {
