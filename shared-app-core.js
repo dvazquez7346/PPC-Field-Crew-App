@@ -257,19 +257,17 @@ const AppCore = (function(){
    <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2/lib/msal-browser.min.js"></script>
    <script src="shared-app-core.js"></script>
 
-   Then in your page's own script:
+   Then in your page's own script, roughly:
 
    AppCore.initMsal();
-   await AppCore.handleRedirectPromise();   // finishes mobile redirect sign-in, if any
+   await AppCore.handleRedirectPromise();  -- finishes mobile redirect sign-in, if any
    if (AppCore.getActiveAccount()) {
-     const { data, lastModified, canWrite } =
-       await AppCore.readJsonFile('job-4521-markup.json', { sheets: [] });
-     // ...render your drawing tool using `data`...
+     const result = await AppCore.readJsonFile('job-4521-markup.json', { sheets: [] });
+     -- render your drawing tool using result.data
    } else {
-     AppCore.signIn(
-       (account) => { /* re-run the load above */ },
-       (errMsg)  => { /* show errMsg to the user */ }
-     );
+     AppCore.signIn(onSuccessCallback, onErrorCallback);
+     -- onSuccessCallback(account) should re-run the load above
+     -- onErrorCallback(errMsg) should show errMsg to the user
    }
 
    To save:
