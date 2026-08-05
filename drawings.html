@@ -183,7 +183,11 @@ input,textarea{font-family:inherit;}
 <script src="shared-app-core.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
-pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+if(typeof pdfjsLib !== 'undefined'){
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+} else {
+  console.error('pdf.js failed to load from CDN — PDF viewing will be unavailable, but sign-in and the rest of the app will still work.');
+}
 
 /* ============================================================
    STATE
