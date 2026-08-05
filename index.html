@@ -1118,8 +1118,8 @@ async function loadAll(){
 // profile — that's what most people actually want to check first. Unmatched accounts get a
 // heads-up and fall through to Job Sites since there's no profile to show them.
 function routeInitialLanding(){
-  if(isHardcodedAdmin()){
-    state.view = 'jobsites';
+  if(effectiveTier() === 'FullEdit'){
+    state.view = 'dashboard';
     return;
   }
   const emp = getLinkedEmployee();
@@ -1486,7 +1486,6 @@ async function createInlineAssignment(emp, form){
   };
   try{
     await saveRecord('assignment', newAssignment);
-    state.assignments.push(newAssignment);
   }catch(e){ return; }
   if(form.assignDesignateForeman === 'on' && emp.trade){
     const site = getJobSite(form.assignJobSiteId);
@@ -1665,7 +1664,6 @@ async function syncPmAssignments(site, priorPmId, priorPm2Id){
     };
     try{
       await saveRecord('assignment', newAssignment);
-      state.assignments.push(newAssignment);
     }catch(e){ /* saveRecord already surfaced an error toast */ }
   }
 }
@@ -2044,6 +2042,7 @@ function activeSection(){
   if(state.view === 'reports') return 'reports';
   if(state.view === 'settings') return 'settings';
   if(state.view === 'myProfile') return 'myProfile';
+  if(state.view === 'dashboard') return 'dashboard';
   return 'home';
 }
 function renderSidebar(){
@@ -2163,6 +2162,7 @@ function renderView(){
     case 'employees': return renderEmployees();
     case 'employeeDetail': return renderEmployeeDetail();
     case 'myProfile': return renderMyProfile();
+    case 'dashboard': return renderDashboard();
     case 'myCrew': return renderMyCrew();
     case 'recycleBin': return renderRecycleBin();
     case 'jobsites': return renderJobSites();
@@ -2179,6 +2179,7 @@ function bindViewEvents(){
     case 'employees': return bindEmployees();
     case 'employeeDetail': return bindEmployeeDetail();
     case 'myProfile': return bindMyProfile();
+    case 'dashboard': return bindDashboard();
     case 'myCrew': return bindMyCrew();
     case 'recycleBin': return bindRecycleBin();
     case 'jobsites': return bindJobSites();
@@ -3720,7 +3721,6 @@ function renderJobSites(){
   });
 
   return `
-    ${effectiveTier()==='FullEdit' ? renderFullEditDashboard() : ''}
     <div class="screen-header">
       <h1 class="screen-title">Job Sites</h1>
       ${canEdit() ? `<button class="btn btn-primary" data-new-site>${ic('plus')} New Job Site</button>` : ''}
@@ -3736,7 +3736,7 @@ function renderJobSites(){
       renderJobSitesBody(list)}
   `;
 }
-function renderFullEditDashboard(){
+function renderDashboard(){
   const emp = getLinkedEmployee();
   const hour = new Date().getHours();
   const greetingWord = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -3760,20 +3760,27 @@ function renderFullEditDashboard(){
     needsAttention.push(`<div class="item-card" style="align-items:center;cursor:pointer" data-goto-review-reports>${ic('clipboard')}<div class="item-main"><div class="item-name">${pendingReportsCount} report${pendingReportsCount>1?'s':''} pending review</div></div></div>`);
   }
   return `
-    <div class="screen-header no-print"><h1 class="screen-title">${greetingWord}${firstName?', '+escapeHtml(firstName):''}</h1></div>
-    <p style="font-size:12.5px;color:var(--muted);margin:-8px 0 14px" class="no-print">Here's what's going on across the company today.</p>
-    <div class="admin-stat-grid no-print" style="margin-bottom:16px">
+    <div class="screen-header"><h1 class="screen-title">${greetingWord}${firstName?', '+escapeHtml(firstName):''}</h1></div>
+    <p style="font-size:12.5px;color:var(--muted);margin:-8px 0 14px">Here's what's going on across the company today.</p>
+    <div class="admin-stat-grid" style="margin-bottom:16px">
       <div class="admin-stat-box"><div class="asn">${activeCount}</div><div class="asl">Active Sites</div></div>
       <div class="admin-stat-box"><div class="asn">${upcomingCount}</div><div class="asl">Upcoming</div></div>
       <div class="admin-stat-box"><div class="asn" style="color:${alertBadges.length>0?'var(--danger)':'inherit'}">${alertBadges.length}</div><div class="asl">Badges Expiring</div></div>
       <div class="admin-stat-box"><div class="asn" style="color:${pendingReportsCount>0?'var(--warn)':'inherit'}">${pendingReportsCount}</div><div class="asl">Reports Pending</div></div>
     </div>
     ${needsAttention.length>0 ? `
-      <div class="section-label no-print" style="margin-top:0">${ic('alert')} Needs Attention</div>
-      <div class="list-gap no-print" style="margin-bottom:18px">${needsAttention.join('')}</div>
-    ` : ''}
-    <div class="section-divider no-print"></div>
+      <div class="section-label" style="margin-top:0">${ic('alert')} Needs Attention</div>
+      <div class="list-gap" style="margin-bottom:18px">${needsAttention.join('')}</div>
+    ` : emptyState('alert','Nothing needs attention right now','')}
+    <button class="btn btn-primary btn-block" data-goto-jobsites>${ic('pin')} Go to Job Sites</button>
   `;
+}
+function bindDashboard(){
+  const gotoReview = document.querySelector('[data-goto-review-reports]');
+  if(gotoReview) gotoReview.addEventListener('click', () => { state.view = 'reports'; state.reportsSelectedType = 'reviewReports'; render(); });
+  document.querySelectorAll('[data-edit-badge]').forEach(el => el.addEventListener('click', () => openBadgeForm('edit', el.dataset.editBadge)));
+  const gotoSites = document.querySelector('[data-goto-jobsites]');
+  if(gotoSites) gotoSites.addEventListener('click', () => go('jobsites'));
 }
 function renderJobSitesBody(list){
   if(state.jobsitesView === 'table') return renderJobSitesTable(list.slice().sort(byJobNumberAsc));
@@ -3850,9 +3857,6 @@ function jobSiteCard(s){
   </div>`;
 }
 function bindJobSites(){
-  const gotoReview = document.querySelector('[data-goto-review-reports]');
-  if(gotoReview) gotoReview.addEventListener('click', () => { state.view = 'reports'; state.reportsSelectedType = 'reviewReports'; render(); });
-  document.querySelectorAll('[data-edit-badge]').forEach(el => el.addEventListener('click', () => openBadgeForm('edit', el.dataset.editBadge)));
   const s = document.getElementById('site-search');
   if(s) s.addEventListener('input', () => { state.search = s.value; renderKeepFocus('site-search'); });
   const f = document.getElementById('site-filter');
