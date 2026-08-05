@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PPC Inc. — Drawing Markup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#1B2A41">
+<style>
+:root{
+  --bg:#EEF0F2; --surface:#FFFFFF; --surface-2:#F5F7F8;
+  --navy:#1B2A41; --navy-2:#243A56; --orange:#E8622C; --orange-dark:#C94E1D;
+  --blueprint:#2F5D8A; --ink:#16202C; --muted:#6B7686; --line:#DDE1E6;
+  --success:#2E8B57; --success-bg:#E6F3EC; --warn:#B8860B; --warn-bg:#FBF2DF;
+  --danger:#C0392B; --danger-bg:#FBEAE7; --radius:14px;
+  --shadow:0 1px 2px rgba(20,30,50,0.06), 0 4px 14px rgba(20,30,50,0.06);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;height:100%;overflow:hidden;}
+h1,h2,h3,.disp{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:0.01em;}
+button{font-family:inherit;cursor:pointer;}
+input,textarea{font-family:inherit;}
+
+.app{display:flex;flex-direction:column;height:100vh;}
+
+/* ---- Top bar ---- */
+.topbar{background:var(--navy);color:#fff;display:flex;align-items:center;gap:14px;padding:10px 16px;flex-shrink:0;box-shadow:var(--shadow);z-index:20;}
+.topbar .brand{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;letter-spacing:0.02em;white-space:nowrap;}
+.topbar .brand .sub{color:#9FB0C8;font-weight:500;font-size:12px;display:block;letter-spacing:0.06em;text-transform:uppercase;}
+.job-select{display:flex;align-items:center;gap:8px;margin-left:8px;}
+.job-select input{background:#243A56;border:1px solid #35496A;color:#fff;border-radius:8px;padding:7px 10px;font-size:13px;width:150px;}
+.job-select input::placeholder{color:#7E93B0;}
+.job-select button{background:var(--orange);border:none;color:#fff;font-weight:600;font-size:13px;padding:7px 14px;border-radius:8px;}
+.job-select button:hover{background:var(--orange-dark);}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px;}
+.nav-link{color:#CBD8EA;text-decoration:none;font-weight:600;font-size:13px;border:1px solid #35496A;padding:6px 12px;border-radius:8px;}
+.nav-link:hover{background:#243A56;}
+.account-chip{color:#CBD8EA;}
+
+/* ---- Sheet tabs ---- */
+.sheet-tabs{display:flex;align-items:center;gap:4px;background:var(--navy-2);padding:0 12px;overflow-x:auto;flex-shrink:0;}
+.sheet-tab{padding:9px 16px;font-size:12.5px;font-weight:600;color:#B9C7DC;border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer;}
+.sheet-tab.active{color:#fff;border-bottom-color:var(--orange);}
+.sheet-tab-add{padding:9px 12px;font-size:16px;color:#9FB0C8;cursor:pointer;}
+.sheet-tab-add:hover{color:#fff;}
+
+/* ---- Main layout ---- */
+.main{flex:1;display:flex;overflow:hidden;}
+.canvas-area{flex:1;position:relative;background:#C9CED6;overflow:auto;display:flex;align-items:flex-start;justify-content:center;}
+.canvas-stack{position:relative;margin:24px;box-shadow:var(--shadow);background:#fff;}
+.canvas-stack canvas{display:block;}
+#pdfCanvas{position:relative;}
+#markupCanvas{position:absolute;top:0;left:0;touch-action:none;}
+
+.empty-state{margin:auto;text-align:center;color:var(--muted);max-width:340px;}
+.empty-state .disp{font-size:22px;color:var(--navy);margin-bottom:6px;}
+.empty-state button{margin-top:14px;background:var(--orange);border:none;color:#fff;font-weight:600;font-size:13.5px;padding:10px 18px;border-radius:9px;}
+.empty-state button:hover{background:var(--orange-dark);}
+
+/* ---- Toolbar (left rail) ---- */
+.toolrail{width:64px;background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:6px;flex-shrink:0;}
+.tool-btn{width:44px;height:44px;border-radius:10px;border:1px solid transparent;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:18px;}
+.tool-btn:hover{background:var(--surface-2);}
+.tool-btn.active{background:var(--navy);color:#fff;}
+.tool-sep{width:32px;height:1px;background:var(--line);margin:6px 0;}
+.tool-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:-2px;}
+.color-dot{width:20px;height:20px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer;}
+.color-dot.active{box-shadow:0 0 0 2px var(--navy);}
+
+/* ---- Right panel: notes list ---- */
+.panel{width:300px;background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;}
+.panel-head{padding:14px 16px 10px;border-bottom:1px solid var(--line);}
+.panel-head .disp{font-size:15px;color:var(--navy);}
+.panel-head .count{font-size:11px;color:var(--muted);}
+.panel-list{flex:1;overflow-y:auto;padding:8px;}
+.note-card{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12.5px;cursor:pointer;}
+.note-card:hover{border-color:var(--blueprint);}
+.note-card .nc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.note-card .nc-type{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--blueprint);text-transform:uppercase;}
+.note-card .nc-time{font-size:10px;color:var(--muted);}
+.note-card .nc-text{color:var(--ink);line-height:1.4;}
+.note-card .nc-empty{color:var(--muted);font-style:italic;}
+.panel-empty{padding:24px 16px;color:var(--muted);font-size:12.5px;text-align:center;}
+
+/* ---- Bottom bar: save state ---- */
+.bottombar{display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--surface);border-top:1px solid var(--line);font-size:12px;color:var(--muted);flex-shrink:0;}
+.save-btn{margin-left:auto;background:var(--navy);color:#fff;border:none;font-weight:600;font-size:13px;padding:8px 16px;border-radius:8px;}
+.save-btn:hover{background:var(--navy-2);}
+.save-btn:disabled{opacity:.5;cursor:default;}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--success);}
+.status-dot.dirty{background:var(--warn);}
+
+/* ---- Note entry popover ---- */
+.note-popover{position:fixed;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:12px;width:240px;z-index:100;}
+.note-popover textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;resize:vertical;min-height:60px;}
+.note-popover .row{display:flex;gap:6px;margin-top:8px;justify-content:flex-end;}
+.note-popover button{font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:7px;border:none;}
+.note-popover .save{background:var(--orange);color:#fff;}
+.note-popover .cancel{background:var(--surface-2);color:var(--muted);}
+
+/* ---- Sign-in overlay ---- */
+.gate{position:fixed;inset:0;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:1000;}
+.gate .disp{font-size:22px;}
+.gate button{background:var(--orange);border:none;color:#fff;font-weight:600;font-size:14px;padding:11px 22px;border-radius:9px;}
+.gate button:hover{background:var(--orange-dark);}
+.gate .err{color:#FFB4A6;font-size:13px;max-width:320px;text-align:center;}
+.hidden{display:none !important;}
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate">
+  <div class="disp">PPC Inc. — Drawing Markup</div>
+  <button id="signInBtn">Sign in with Microsoft</button>
+  <div id="gateErr" class="err hidden"></div>
+</div>
+
+<div class="app hidden" id="app">
+  <div class="topbar">
+    <div class="brand">Drawing Markup<span class="sub">PPC Field Tools</span></div>
+    <div class="job-select">
+      <input id="jobIdInput" placeholder="Job number (e.g. 4521)">
+      <button id="loadJobBtn">Open</button>
+    </div>
+    <div class="topbar-right">
+      <a class="nav-link" href="index.html">← Crew Directory</a>
+      <span class="account-chip" id="accountChip"></span>
+    </div>
+  </div>
+
+  <div class="sheet-tabs" id="sheetTabs"></div>
+
+  <div class="main">
+    <div class="toolrail" id="toolrail">
+      <button class="tool-btn active" data-tool="pan" title="Pan / Select">✋</button>
+      <div class="tool-label">Pan</div>
+      <button class="tool-btn" data-tool="draw" title="Freehand draw">✏️</button>
+      <div class="tool-label">Draw</div>
+      <button class="tool-btn" data-tool="callout" title="Text callout with leader line">🏷️</button>
+      <div class="tool-label">Label</div>
+      <button class="tool-btn" data-tool="erase" title="Erase a markup">🧹</button>
+      <div class="tool-label">Erase</div>
+      <div class="tool-sep"></div>
+      <div class="color-dot active" data-color="#E8622C" style="background:#E8622C"></div>
+      <div class="color-dot" data-color="#2F5D8A" style="background:#2F5D8A"></div>
+      <div class="color-dot" data-color="#2E8B57" style="background:#2E8B57"></div>
+      <div class="color-dot" data-color="#C0392B" style="background:#C0392B"></div>
+    </div>
+
+    <div class="canvas-area" id="canvasArea">
+      <div class="empty-state" id="emptyState">
+        <div class="disp">No drawing loaded</div>
+        <p>Open a job above, then upload a floor plan PDF for this sheet.</p>
+        <input type="file" id="pdfUpload" accept="application/pdf" class="hidden">
+        <button id="uploadBtn">Upload floor plan PDF</button>
+      </div>
+      <div class="canvas-stack hidden" id="canvasStack">
+        <canvas id="pdfCanvas"></canvas>
+        <canvas id="markupCanvas"></canvas>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div class="disp">Notes on this sheet</div>
+        <div class="count" id="noteCount">0 markups</div>
+      </div>
+      <div class="panel-list" id="noteList">
+        <div class="panel-empty">No markups yet. Draw or add a label to see notes here.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottombar">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText">All changes saved</span>
+    <button class="save-btn" id="saveBtn" disabled>Save</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2/lib/msal-browser.min.js"></script>
+<script src="shared-app-core.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+/* ============================================================
+   STATE
+   ============================================================
+   One JSON file per job: "job-<id>-markup.json"
+   { jobId, sheets: [ { id, name, pdfPath, markups: [...] } ] }
+   Markup: { id, type:'freehand'|'callout', color, points:[{x,y}...] (freehand,
+            normalized 0-1 against page size), anchor:{x,y}, labelPos:{x,y}
+            (callout), text, note, createdAt }
+*/
+const state = {
+  jobId: null,
+  fileName: null,
+  data: { jobId: null, sheets: [] },
+  lastModified: null,
+  activeSheetIndex: 0,
+  pdfDoc: null,
+  pageViewport: null,
+  tool: 'pan',
+  color: '#E8622C',
+  dirty: false,
+  drawing: false,
+  currentStroke: null,
+  calloutAnchor: null,
+};
+
+const $ = (sel) => document.querySelector(sel);
+const pdfCanvas = () => $('#pdfCanvas');
+const markupCanvas = () => $('#markupCanvas');
+
+/* ============================================================
+   AUTH
+   ============================================================ */
+AppCore.initMsal();
+
+async function boot(){
+  await AppCore.handleRedirectPromise();
+  const account = AppCore.getActiveAccount();
+  if(account){
+    $('#gate').classList.add('hidden');
+    $('#app').classList.remove('hidden');
+    $('#accountChip').textContent = account.username || account.name || '';
+  } else {
+    $('#gate').classList.remove('hidden');
+    $('#app').classList.add('hidden');
+  }
+}
+$('#signInBtn').addEventListener('click', () => {
+  AppCore.signIn(
+    () => boot(),
+    (msg) => { $('#gateErr').textContent = msg; $('#gateErr').classList.remove('hidden'); }
+  );
+});
+boot();
+
+/* ============================================================
+   JOB LOADING
+   ============================================================ */
+$('#loadJobBtn').addEventListener('click', openJob);
+$('#jobIdInput').addEventListener('keydown', (e) => { if(e.key === 'Enter') openJob(); });
+
+async function openJob(){
+  const jobId = $('#jobIdInput').value.trim();
+  if(!jobId) return;
+  setStatus('loading', 'Loading job ' + jobId + '…');
+  const fileName = `job-${jobId}-markup.json`;
+  try{
+    const { data, lastModified } = await AppCore.readJsonFile(fileName, { jobId, sheets: [] });
+    state.jobId = jobId;
+    state.fileName = fileName;
+    state.data = data;
+    state.lastModified = lastModified;
+    state.activeSheetIndex = 0;
+    state.dirty = false;
+    if(state.data.sheets.length === 0){
+      state.data.sheets.push({ id: genId(), name: 'Sheet 1', pdfPath: null, markups: [] });
+    }
+    renderSheetTabs();
+    await renderActiveSheet();
+    setStatus('saved', 'Job ' + jobId + ' — all changes saved');
+  }catch(e){
+    console.error(e);
+    setStatus('dirty', 'Could not load job: ' + (e.message || 'unknown error'));
+  }
+}
+
+function genId(){ return Math.random().toString(36).slice(2, 10); }
+
+/* ============================================================
+   SHEET TABS
+   ============================================================ */
+function renderSheetTabs(){
+  const wrap = $('#sheetTabs');
+  wrap.innerHTML = '';
+  state.data.sheets.forEach((sheet, i) => {
+    const tab = document.createElement('div');
+    tab.className = 'sheet-tab' + (i === state.activeSheetIndex ? ' active' : '');
+    tab.textContent = sheet.name;
+    tab.addEventListener('click', async () => {
+      state.activeSheetIndex = i;
+      renderSheetTabs();
+      await renderActiveSheet();
+    });
+    wrap.appendChild(tab);
+  });
+  const addBtn = document.createElement('div');
+  addBtn.className = 'sheet-tab-add';
+  addBtn.textContent = '+';
+  addBtn.title = 'Add sheet';
+  addBtn.addEventListener('click', () => {
+    const name = prompt('Sheet name (e.g. "Level 2 Floor Plan")', 'Sheet ' + (state.data.sheets.length + 1));
+    if(!name) return;
+    state.data.sheets.push({ id: genId(), name, pdfPath: null, markups: [] });
+    state.activeSheetIndex = state.data.sheets.length - 1;
+    markDirty();
+    renderSheetTabs();
+    renderActiveSheet();
+  });
+  wrap.appendChild(addBtn);
+}
+
+function activeSheet(){ return state.data.sheets[state.activeSheetIndex]; }
+
+/* ============================================================
+   PDF UPLOAD + RENDER
+   ============================================================ */
+$('#uploadBtn').addEventListener('click', () => {
+  if(!state.jobId){ alert('Open a job number first.'); return; }
+  $('#pdfUpload').click();
+});
+$('#pdfUpload').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  setStatus('loading', 'Uploading PDF…');
+  try{
+    const buf = await file.arrayBuffer();
+    const folder = `Drawings/${state.jobId}`;
+    const filename = `${activeSheet().id}-${file.name}`;
+    await AppCore.uploadFile(folder, filename, buf, 'application/pdf');
+    activeSheet().pdfPath = `${folder}/${filename}`;
+    markDirty();
+    await renderActiveSheet();
+    setStatus('dirty', 'PDF uploaded — remember to Save');
+  }catch(err){
+    console.error(err);
+    alert('Upload failed: ' + (err.message || 'unknown error'));
+    setStatus('saved', 'All changes saved');
+  }
+});
+
+async function renderActiveSheet(){
+  const sheet = activeSheet();
+  if(!sheet || !sheet.pdfPath){
+    $('#emptyState').classList.remove('hidden');
+    $('#canvasStack').classList.add('hidden');
+    renderNoteList();
+    return;
+  }
+  $('#emptyState').classList.add('hidden');
+  $('#canvasStack').classList.remove('hidden');
+
+  try{
+    const token = await AppCore.getGraphToken();
+    const resolvedSiteId = await resolveSiteIdLocal(token);
+    const contentRes = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${resolvedSiteId}/drive/root:/${encodeURIComponent(sheet.pdfPath)}:/content`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const buf = await contentRes.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 1.5 });
+    state.pageViewport = viewport;
+
+    const canvas = pdfCanvas();
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+    await page.render({ canvasContext: ctx, viewport }).promise;
+
+    const mCanvas = markupCanvas();
+    mCanvas.width = viewport.width;
+    mCanvas.height = viewport.height;
+    mCanvas.style.width = viewport.width + 'px';
+    mCanvas.style.height = viewport.height + 'px';
+    canvas.style.width = viewport.width + 'px';
+    canvas.style.height = viewport.height + 'px';
+
+    drawAllMarkups();
+    renderNoteList();
+  }catch(e){
+    console.error('PDF render failed', e);
+    $('#emptyState').classList.remove('hidden');
+    $('#canvasStack').classList.add('hidden');
+  }
+}
+
+// Small local cache mirroring the shared module's site resolution so this page can fetch
+// arbitrary drive paths (PDFs) the same way AppCore does internally for JSON files.
+let _cachedSiteIdLocal = null;
+async function resolveSiteIdLocal(token){
+  if(_cachedSiteIdLocal) return _cachedSiteIdLocal;
+  const res = await fetch('https://graph.microsoft.com/v1.0/sites/1ppc0.sharepoint.com:/sites/m365appbuilder-field-crew-directory-8280', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const json = await res.json();
+  _cachedSiteIdLocal = json.id;
+  return _cachedSiteIdLocal;
+}
+
+/* ============================================================
+   TOOLS
+   ============================================================ */
+document.querySelectorAll('.tool-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.tool = btn.dataset.tool;
+  });
+});
+document.querySelectorAll('.color-dot').forEach(dot => {
+  dot.addEventListener('click', () => {
+    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+    dot.classList.add('active');
+    state.color = dot.dataset.color;
+  });
+});
+
+/* ---- Pointer handling on the markup canvas ---- */
+const mCanvas = markupCanvas();
+mCanvas.addEventListener('pointerdown', onPointerDown);
+mCanvas.addEventListener('pointermove', onPointerMove);
+mCanvas.addEventListener('pointerup', onPointerUp);
+
+function canvasPoint(e){
+  const rect = mCanvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) * (mCanvas.width / rect.width),
+    y: (e.clientY - rect.top) * (mCanvas.height / rect.height),
+  };
+}
+
+function onPointerDown(e){
+  if(!state.pageViewport) return;
+  const p = canvasPoint(e);
+
+  if(state.tool === 'draw'){
+    state.drawing = true;
+    state.currentStroke = { id: genId(), type: 'freehand', color: state.color, points: [p], note: '' };
+  } else if(state.tool === 'callout'){
+    state.calloutAnchor = p;
+    openNotePopover(e.clientX, e.clientY, '', (text) => {
+      if(!text) { state.calloutAnchor = null; return; }
+      const markup = {
+        id: genId(), type: 'callout', color: state.color,
+        anchor: p, labelPos: { x: p.x + 60, y: p.y - 40 },
+        text, note: '', createdAt: Date.now(),
+      };
+      activeSheet().markups.push(markup);
+      markDirty();
+      drawAllMarkups();
+      renderNoteList();
+    });
+  } else if(state.tool === 'erase'){
+    eraseNear(p);
+  }
+}
+
+function onPointerMove(e){
+  if(state.tool === 'draw' && state.drawing){
+    const p = canvasPoint(e);
+    const last = state.currentStroke.points[state.currentStroke.points.length - 1];
+    // Distance threshold keeps point count sane and feeds the smoothing pass.
+    if(Math.hypot(p.x - last.x, p.y - last.y) > 3){
+      state.currentStroke.points.push(p);
+      drawAllMarkups();
+      drawStroke(state.currentStroke);
+    }
+  }
+}
+
+function onPointerUp(e){
+  if(state.tool === 'draw' && state.drawing){
+    state.drawing = false;
+    if(state.currentStroke.points.length > 1){
+      state.currentStroke.createdAt = Date.now();
+      activeSheet().markups.push(state.currentStroke);
+      markDirty();
+      renderNoteList();
+    }
+    state.currentStroke = null;
+    drawAllMarkups();
+  }
+}
+
+function eraseNear(p){
+  const sheet = activeSheet();
+  const idx = sheet.markups.findIndex(m => {
+    if(m.type === 'callout') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 20 || Math.hypot(p.x - m.labelPos.x, p.y - m.labelPos.y) < 30;
+    return m.points.some(pt => Math.hypot(p.x - pt.x, p.y - pt.y) < 14);
+  });
+  if(idx > -1){
+    sheet.markups.splice(idx, 1);
+    markDirty();
+    drawAllMarkups();
+    renderNoteList();
+  }
+}
+
+/* ============================================================
+   RENDERING MARKUPS
+   ============================================================
+   Freehand strokes are smoothed with a simple moving-average pass, then drawn
+   as a quadratic-curve path — this is what turns a shaky finger-drawn line
+   into something that reads clean, without losing the speed of freehand.
+*/
+function smoothPoints(points){
+  if(points.length < 3) return points;
+  const out = [points[0]];
+  for(let i = 1; i < points.length - 1; i++){
+    out.push({
+      x: (points[i - 1].x + points[i].x + points[i + 1].x) / 3,
+      y: (points[i - 1].y + points[i].y + points[i + 1].y) / 3,
+    });
+  }
+  out.push(points[points.length - 1]);
+  return out;
+}
+
+function drawAllMarkups(){
+  const ctx = mCanvas.getContext('2d');
+  ctx.clearRect(0, 0, mCanvas.width, mCanvas.height);
+  const sheet = activeSheet();
+  if(!sheet) return;
+  sheet.markups.forEach(m => {
+    if(m.type === 'freehand') drawStroke(m);
+    else if(m.type === 'callout') drawCallout(m);
+  });
+}
+
+function drawStroke(stroke){
+  const ctx = mCanvas.getContext('2d');
+  const pts = smoothPoints(stroke.points);
+  if(pts.length < 2) return;
+  ctx.strokeStyle = stroke.color;
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for(let i = 1; i < pts.length - 1; i++){
+    const midX = (pts[i].x + pts[i + 1].x) / 2;
+    const midY = (pts[i].y + pts[i + 1].y) / 2;
+    ctx.quadraticCurveTo(pts[i].x, pts[i].y, midX, midY);
+  }
+  ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+  ctx.stroke();
+}
+
+function drawCallout(markup){
+  const ctx = mCanvas.getContext('2d');
+  ctx.strokeStyle = markup.color;
+  ctx.fillStyle = markup.color;
+  ctx.lineWidth = 1.5;
+
+  // Leader line
+  ctx.beginPath();
+  ctx.moveTo(markup.anchor.x, markup.anchor.y);
+  ctx.lineTo(markup.labelPos.x, markup.labelPos.y);
+  ctx.stroke();
+
+  // Anchor dot
+  ctx.beginPath();
+  ctx.arc(markup.anchor.x, markup.anchor.y, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Label pill — fixed readable size regardless of zoom, per the "consistent legible
+  // text stamp" approach rather than handwriting.
+  ctx.font = '600 13px Inter, sans-serif';
+  const padX = 8, padY = 5;
+  const textW = ctx.measureText(markup.text).width;
+  const boxW = textW + padX * 2, boxH = 22;
+  const bx = markup.labelPos.x, by = markup.labelPos.y - boxH / 2;
+
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = markup.color;
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, bx, by, boxW, boxH, 6);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = markup.color;
+  ctx.fillText(markup.text, bx + padX, by + boxH / 2 + 4);
+}
+
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/* ============================================================
+   NOTE POPOVER (attach a note to any markup at creation time)
+   ============================================================ */
+function openNotePopover(clientX, clientY, initial, onDone){
+  const pop = document.createElement('div');
+  pop.className = 'note-popover';
+  pop.style.left = Math.min(clientX, window.innerWidth - 260) + 'px';
+  pop.style.top = Math.min(clientY, window.innerHeight - 160) + 'px';
+  pop.innerHTML = `
+    <textarea placeholder="Label text (e.g. 6&quot; CU, relocated per RFI 12)">${initial}</textarea>
+    <div class="row">
+      <button class="cancel">Cancel</button>
+      <button class="save">Add</button>
+    </div>`;
+  document.body.appendChild(pop);
+  const textarea = pop.querySelector('textarea');
+  textarea.focus();
+  pop.querySelector('.cancel').addEventListener('click', () => { pop.remove(); onDone(null); });
+  pop.querySelector('.save').addEventListener('click', () => {
+    const val = textarea.value.trim();
+    pop.remove();
+    onDone(val);
+  });
+}
+
+/* ============================================================
+   NOTES PANEL
+   ============================================================ */
+function renderNoteList(){
+  const list = $('#noteList');
+  const sheet = activeSheet();
+  if(!sheet || sheet.markups.length === 0){
+    list.innerHTML = '<div class="panel-empty">No markups yet. Draw or add a label to see notes here.</div>';
+    $('#noteCount').textContent = '0 markups';
+    return;
+  }
+  $('#noteCount').textContent = sheet.markups.length + ' markup' + (sheet.markups.length === 1 ? '' : 's');
+  list.innerHTML = '';
+  sheet.markups.slice().reverse().forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'note-card';
+    const time = m.createdAt ? new Date(m.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+    const label = m.type === 'callout' ? m.text : 'Freehand markup';
+    const noteText = m.note ? m.note : '<span class="nc-empty">No note added</span>';
+    card.innerHTML = `
+      <div class="nc-top"><span class="nc-type">${m.type}</span><span class="nc-time">${time}</span></div>
+      <div class="nc-text"><strong>${escapeHtml(label)}</strong><br>${noteText}</div>`;
+    card.addEventListener('click', () => {
+      const text = prompt('Note for this markup:', m.note || '');
+      if(text !== null){ m.note = text; markDirty(); renderNoteList(); }
+    });
+    list.appendChild(card);
+  });
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+/* ============================================================
+   SAVE / DIRTY STATE
+   ============================================================ */
+function markDirty(){
+  state.dirty = true;
+  setStatus('dirty', 'Unsaved changes');
+}
+function setStatus(kind, text){
+  $('#statusText').textContent = text;
+  $('#statusDot').classList.toggle('dirty', kind !== 'saved');
+  $('#saveBtn').disabled = kind === 'saved' || !state.jobId;
+}
+$('#saveBtn').addEventListener('click', saveJob);
+
+async function saveJob(){
+  if(!state.jobId) return;
+  setStatus('loading', 'Saving…');
+  try{
+    const result = await AppCore.writeJsonFile(state.fileName, state.data, state.lastModified);
+    state.lastModified = result.lastModified;
+    state.dirty = false;
+    setStatus('saved', 'All changes saved');
+  }catch(e){
+    if(e.isConflict){
+      alert('This job\'s markup was updated by someone else since you opened it. Reload the job to see the latest before saving again.');
+    } else {
+      alert('Save failed: ' + (e.message || 'unknown error'));
+    }
+    setStatus('dirty', 'Save failed — changes not saved');
+  }
+}
+
+// Warn before leaving with unsaved work.
+window.addEventListener('beforeunload', (e) => {
+  if(state.dirty){ e.preventDefault(); e.returnValue = ''; }
+});
+</script>
+</body>
+</html>
