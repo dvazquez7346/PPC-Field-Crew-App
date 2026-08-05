@@ -3740,7 +3740,7 @@ function renderDashboard(){
   const emp = getLinkedEmployee();
   const hour = new Date().getHours();
   const greetingWord = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  const firstName = emp ? (emp.name||'').split(' ')[0] : '';
+  const firstName = emp ? (emp.name||'').split(' ')[0] : ((state.account && state.account.name || '').split(' ')[0] || '');
   const activeCount = state.jobsites.filter(s => s.status==='Active').length;
   const upcomingCount = state.jobsites.filter(s => s.status==='Upcoming').length;
   const alertBadges = state.badges.filter(isBadgeAlertworthy);
