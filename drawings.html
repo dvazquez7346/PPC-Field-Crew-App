@@ -228,6 +228,12 @@ input,textarea{font-family:inherit;}
       <div class="tool-label">Run</div>
       <button class="tool-btn" data-tool="shape" title="Shapes">⬡</button>
       <div class="tool-label">Shape</div>
+      <button class="tool-btn" data-tool="dimension" title="Dimension line with arrowheads and text">↔️</button>
+      <div class="tool-label">Dim</div>
+      <button class="tool-btn" data-tool="hatchline" title="Hatched line (cross-out a run)">╳</button>
+      <div class="tool-label">Hatch</div>
+      <button class="tool-btn" data-tool="hatcharea" title="Freeform hatched area (demo'd zone)">▦</button>
+      <div class="tool-label">Area</div>
       <button class="tool-btn" data-tool="label" title="Label with leader (dot tip)">🏷️</button>
       <div class="tool-label">Label</div>
       <button class="tool-btn" data-tool="select" title="Select / move / edit / delete a markup">👆</button>
@@ -348,10 +354,16 @@ const state = {
   activePointers: new Map(), pinchState: null,
 };
 
-const ANGLE_STEP = 15; // degrees — snap increment for line/run tools
+const ANGLE_STEP = 15; // degrees — snap increment for Line/Run tools
+const AXIS_SNAP_THRESHOLD = 6; // degrees — Dimension tool snaps only near horizontal/vertical, else free angle
 const JOINT_RADIUS = 10; // fixed fillet radius for multi-segment corners (diagrammatic, not exact)
-const DEFAULT_LABEL_COLOR = '#2F5D8A'; // blueprint
-const DEFAULT_NOTE_COLOR = '#C0392B';  // danger red — visually distinct from Label by default
+const ANNOTATION_COLOR = '#2F5D8A'; // blueprint — shared default for Label, Note, Dimension
+const DEFAULT_LABEL_COLOR = ANNOTATION_COLOR;
+const DEFAULT_NOTE_COLOR = ANNOTATION_COLOR;
+const DEFAULT_DIMENSION_COLOR = ANNOTATION_COLOR;
+const HATCH_COLOR = '#C0392B'; // danger red — reserved for "changed/demo'd" hatch markup
+const LEADER_STUB_LENGTH = 36; // fixed length of the horizontal segment nearest the text, before it bends toward the target
+const HATCH_TICK_SPACING = 10, HATCH_TICK_LENGTH = 9; // px, for hatch-line tick marks and area fill spacing
 const SYMBOLS = ['°','⌀','±','∠','′','″'];
 
 const $ = (sel) => document.querySelector(sel);
@@ -920,6 +932,22 @@ function angleSnap(from, to){
   return { x: from.x + Math.cos(rad) * dist, y: from.y + Math.sin(rad) * dist };
 }
 
+// Dimension tool: snaps only when close to horizontal or vertical (within
+// AXIS_SNAP_THRESHOLD degrees); otherwise stays free-angle, since a dimension
+// is measuring between two arbitrary existing points, not laying out a run.
+function axisSnap(from, to){
+  const dx = to.x - from.x, dy = to.y - from.y;
+  const dist = Math.hypot(dx, dy);
+  if(dist < 1) return to;
+  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+  const nearest = Math.round(angle / 90) * 90;
+  if(Math.abs(angle - nearest) <= AXIS_SNAP_THRESHOLD){
+    const rad = nearest * (Math.PI / 180);
+    return { x: from.x + Math.cos(rad) * dist, y: from.y + Math.sin(rad) * dist };
+  }
+  return to;
+}
+
 function onPointerDown(e){
   state.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if(!state.pageViewport || twoFingersActive()) return;
@@ -953,15 +981,22 @@ function onPointerDown(e){
   } else if(state.tool === 'line'){
     state.drawing = true;
     state.currentStroke = { id: genId(), type: 'line', color: state.color, thickness: state.thickness, p0: p, p1: p, note: '' };
-  } else if(state.tool === 'multiline'){
+  } else if(state.tool === 'multiline' || state.tool === 'hatcharea'){
     if(!state.multiPoints) state.multiPoints = [p];
-    else state.multiPoints.push(angleSnap(state.multiPoints[state.multiPoints.length - 1], p));
+    else state.multiPoints.push(state.tool === 'multiline' ? angleSnap(state.multiPoints[state.multiPoints.length - 1], p) : p);
     showRunDoneBtn();
     drawAllMarkups();
-    drawMultilinePreview(state.multiPoints);
+    if(state.tool === 'multiline') drawMultilinePreview(state.multiPoints);
+    else drawHatchAreaPreview(state.multiPoints);
   } else if(state.tool === 'shape'){
     state.drawing = true;
     state.currentStroke = { id: genId(), type: 'shape', shape: state.shapeType, color: state.color, thickness: state.thickness, p0: p, p1: p, note: '' };
+  } else if(state.tool === 'dimension'){
+    state.drawing = true;
+    state.currentStroke = { id: genId(), type: 'dimension', color: DEFAULT_DIMENSION_COLOR, thickness: state.thickness, p0: p, p1: p, text: '', textPos: p, note: '' };
+  } else if(state.tool === 'hatchline'){
+    state.drawing = true;
+    state.currentStroke = { id: genId(), type: 'hatchline', color: HATCH_COLOR, thickness: state.thickness, p0: p, p1: p, note: '' };
   } else if(state.tool === 'label' || state.tool === 'note'){
     placeLeaderMarkup(state.tool, p);
   } else if(state.tool === 'erase'){
@@ -1011,10 +1046,21 @@ function onPointerMove(e){
     state.currentStroke.p1 = squareLock(state.currentStroke.p0, p);
     drawAllMarkups();
     drawShape(state.currentStroke);
+  } else if(state.tool === 'dimension' && state.drawing){
+    state.currentStroke.p1 = axisSnap(state.currentStroke.p0, p);
+    drawAllMarkups();
+    drawDimensionPreview(state.currentStroke.p0, state.currentStroke.p1);
+  } else if(state.tool === 'hatchline' && state.drawing){
+    state.currentStroke.p1 = p;
+    drawAllMarkups();
+    drawHatchLinePreview(state.currentStroke.p0, state.currentStroke.p1);
   } else if(state.tool === 'multiline' && state.multiPoints){
     drawAllMarkups();
     const preview = state.multiPoints.concat([angleSnap(state.multiPoints[state.multiPoints.length - 1], p)]);
     drawMultilinePreview(preview);
+  } else if(state.tool === 'hatcharea' && state.multiPoints){
+    drawAllMarkups();
+    drawHatchAreaPreview(state.multiPoints.concat([p]));
   }
 }
 
@@ -1062,18 +1108,57 @@ function onPointerUp(e){
     }
     state.currentStroke = null;
     drawAllMarkups();
+  } else if(state.tool === 'hatchline' && state.drawing){
+    state.drawing = false;
+    if(Math.hypot(state.currentStroke.p1.x - state.currentStroke.p0.x, state.currentStroke.p1.y - state.currentStroke.p0.y) > 4){
+      state.currentStroke.createdAt = Date.now();
+      activeSheet().markups.push(state.currentStroke);
+      markDirty();
+      renderNoteList();
+    }
+    state.currentStroke = null;
+    drawAllMarkups();
+  } else if(state.tool === 'dimension' && state.drawing){
+    state.drawing = false;
+    const dim = state.currentStroke;
+    state.currentStroke = null;
+    if(Math.hypot(dim.p1.x - dim.p0.x, dim.p1.y - dim.p0.y) > 4){
+      showModal({
+        title: 'Dimension text', placeholder: 'e.g. 12\'-6" or 4" CU', withSymbols: true, confirmLabel: 'Add',
+        onConfirm: (text) => {
+          if(!text) return;
+          dim.text = text;
+          dim.textPos = { x: (dim.p0.x + dim.p1.x) / 2, y: (dim.p0.y + dim.p1.y) / 2 - 16 };
+          dim.createdAt = Date.now();
+          activeSheet().markups.push(dim);
+          markDirty();
+          renderNoteList();
+          drawAllMarkups();
+        }
+      });
+    } else {
+      drawAllMarkups();
+    }
   }
 }
 
-/* ---- Run tool "Done" button — the visible way to finish a multi-segment run ---- */
+/* ---- Run tool "Done" button — also used to finish a freeform hatch area,
+   since both are the same "tap points, then finish" interaction pattern. ---- */
 function showRunDoneBtn(){ $('#runDoneBtn').classList.remove('hidden'); }
 function hideRunDoneBtn(){ $('#runDoneBtn').classList.add('hidden'); }
 function finishMultiline(){
   if(state.multiPoints && state.multiPoints.length > 1){
-    const markup = { id: genId(), type: 'multiline', color: state.color, thickness: state.thickness, points: state.multiPoints, note: '', createdAt: Date.now() };
-    activeSheet().markups.push(markup);
-    markDirty();
-    renderNoteList();
+    if(state.tool === 'hatcharea' && state.multiPoints.length >= 3){
+      const markup = { id: genId(), type: 'hatcharea', color: HATCH_COLOR, points: state.multiPoints, note: '', createdAt: Date.now() };
+      activeSheet().markups.push(markup);
+      markDirty();
+      renderNoteList();
+    } else if(state.tool === 'multiline'){
+      const markup = { id: genId(), type: 'multiline', color: state.color, thickness: state.thickness, points: state.multiPoints, note: '', createdAt: Date.now() };
+      activeSheet().markups.push(markup);
+      markDirty();
+      renderNoteList();
+    }
   }
   state.multiPoints = null;
   hideRunDoneBtn();
@@ -1082,7 +1167,7 @@ function finishMultiline(){
 $('#runDoneBtn').addEventListener('click', finishMultiline);
 
 function onDblClick(){
-  if(state.tool === 'multiline' && state.multiPoints && state.multiPoints.length > 1) finishMultiline();
+  if((state.tool === 'multiline' || state.tool === 'hatcharea') && state.multiPoints && state.multiPoints.length > 1) finishMultiline();
 }
 
 /* ---- Label / Note placement (single tap places with sensible default leader shape,
@@ -1096,9 +1181,8 @@ function placeLeaderMarkup(kind, anchor){
     onConfirm: (text) => {
       if(!text) return;
       const textPos = { x: anchor.x + 70, y: anchor.y - 60 };
-      const bend = { x: textPos.x + (anchor.x > textPos.x ? 40 : -40), y: textPos.y };
       const markup = {
-        id: genId(), type: kind, color: defaultColor, text, anchor, bend, textPos,
+        id: genId(), type: kind, color: defaultColor, text, anchor, textPos,
         note: '', createdAt: Date.now(),
       };
       activeSheet().markups.push(markup);
@@ -1111,22 +1195,31 @@ function placeLeaderMarkup(kind, anchor){
   });
 }
 
+// Bluebeam-style callout geometry: the bend is never a handle the user drags —
+// it's always recomputed from the two real handles (anchor + textPos) so the
+// segment nearest the text stays a fixed-length horizontal stub, and the far
+// segment always points straight at wherever the anchor currently is.
+function computeLeaderBend(anchor, textPos){
+  const dir = anchor.x >= textPos.x ? 1 : -1;
+  return { x: textPos.x + dir * LEADER_STUB_LENGTH, y: textPos.y };
+}
+
 /* ============================================================
    SELECTION / HANDLE HIT-TESTING + DRAGGING
    ============================================================ */
 function handlePointsForMarkup(m){
-  if(m.type === 'label' || m.type === 'note') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'textPos', p: m.textPos }];
-  if(m.type === 'line') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
+  if(m.type === 'label' || m.type === 'note') return [{ key: 'anchor', p: m.anchor }, { key: 'textPos', p: m.textPos }];
+  if(m.type === 'dimension') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'textPos', p: m.textPos }];
+  if(m.type === 'line' || m.type === 'hatchline') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
   if(m.type === 'shape') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
-  if(m.type === 'multiline') return m.points.map((p, i) => ({ key: 'pt' + i, p }));
+  if(m.type === 'multiline' || m.type === 'hatcharea') return m.points.map((p, i) => ({ key: 'pt' + i, p }));
   return [];
 }
 function cloneMarkupPoints(m){ return JSON.parse(JSON.stringify(m)); }
 function referencePointForMarkup(m){
-  if(m.type === 'label' || m.type === 'note') return m.textPos;
-  if(m.type === 'line') return { x: Math.min(m.p0.x, m.p1.x), y: Math.min(m.p0.y, m.p1.y) };
-  if(m.type === 'shape') return { x: Math.min(m.p0.x, m.p1.x), y: Math.min(m.p0.y, m.p1.y) };
-  if(m.type === 'multiline' || m.type === 'freehand'){
+  if(m.type === 'label' || m.type === 'note' || m.type === 'dimension') return m.textPos;
+  if(m.type === 'line' || m.type === 'shape' || m.type === 'hatchline') return { x: Math.min(m.p0.x, m.p1.x), y: Math.min(m.p0.y, m.p1.y) };
+  if(m.type === 'multiline' || m.type === 'freehand' || m.type === 'hatcharea'){
     return m.points.reduce((acc, pt) => (pt.y < acc.y ? pt : acc), m.points[0]);
   }
   return { x: 0, y: 0 };
@@ -1149,8 +1242,8 @@ function hitTestMarkup(p){
   return found ? { markup: found, key: 'whole' } : null;
 }
 function markupContainsPoint(m, p){
-  if(m.type === 'freehand' || m.type === 'multiline') return m.points.some(pt => Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
-  if(m.type === 'line') return distToSegment(p, m.p0, m.p1) < 12;
+  if(m.type === 'freehand' || m.type === 'multiline' || m.type === 'hatcharea') return m.points.some(pt => Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
+  if(m.type === 'line' || m.type === 'hatchline' || m.type === 'dimension') return distToSegment(p, m.p0, m.p1) < 12 || (m.textPos && Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 24);
   if(m.type === 'shape'){
     const x0 = Math.min(m.p0.x, m.p1.x), x1 = Math.max(m.p0.x, m.p1.x);
     const y0 = Math.min(m.p0.y, m.p1.y), y1 = Math.max(m.p0.y, m.p1.y);
@@ -1184,14 +1277,17 @@ function applyDragHandle(drag, p){
   m[drag.key] = p;
 }
 function translateMarkup(m, origin, dx, dy){
-  if(m.type === 'freehand' || m.type === 'multiline'){
+  if(m.type === 'freehand' || m.type === 'multiline' || m.type === 'hatcharea'){
     m.points = origin.points.map(pt => ({ x: pt.x + dx, y: pt.y + dy }));
-  } else if(m.type === 'line' || m.type === 'shape'){
+  } else if(m.type === 'line' || m.type === 'shape' || m.type === 'hatchline'){
     m.p0 = { x: origin.p0.x + dx, y: origin.p0.y + dy };
     m.p1 = { x: origin.p1.x + dx, y: origin.p1.y + dy };
+  } else if(m.type === 'dimension'){
+    m.p0 = { x: origin.p0.x + dx, y: origin.p0.y + dy };
+    m.p1 = { x: origin.p1.x + dx, y: origin.p1.y + dy };
+    m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
   } else if(m.type === 'label' || m.type === 'note'){
     m.anchor = { x: origin.anchor.x + dx, y: origin.anchor.y + dy };
-    m.bend = { x: origin.bend.x + dx, y: origin.bend.y + dy };
     m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
   }
 }
@@ -1236,13 +1332,14 @@ function showMarkupActionButtons(markupId){
   const group = document.createElement('div');
   group.id = 'markupActionGroup';
   group.className = 'markup-action-group';
-  if(m.type === 'label' || m.type === 'note'){
+  if(m.type === 'label' || m.type === 'note' || m.type === 'dimension'){
     const editBtn = document.createElement('button');
     editBtn.textContent = 'Edit text';
     editBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       showModal({
-        title: m.type === 'note' ? 'Edit note' : 'Edit label', value: m.text, withSymbols: true, confirmLabel: 'Save',
+        title: m.type === 'note' ? 'Edit note' : (m.type === 'dimension' ? 'Edit dimension text' : 'Edit label'),
+        value: m.text, withSymbols: true, confirmLabel: 'Save',
         onConfirm: (text) => {
           if(!text) return;
           m.text = text;
@@ -1254,6 +1351,19 @@ function showMarkupActionButtons(markupId){
       });
     });
     group.appendChild(editBtn);
+  }
+  if(m.type === 'line' || m.type === 'multiline'){
+    const hatchBtn = document.createElement('button');
+    hatchBtn.textContent = m.hatched ? 'Un-hatch' : 'Hatch';
+    hatchBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      m.hatched = !m.hatched;
+      markDirty();
+      drawAllMarkups();
+      renderNoteList();
+      showMarkupActionButtons(markupId);
+    });
+    group.appendChild(hatchBtn);
   }
   const delBtn = document.createElement('button');
   delBtn.className = 'delete-btn';
@@ -1303,6 +1413,9 @@ function drawAllMarkups(){
     else if(m.type === 'multiline') drawMultiline(m);
     else if(m.type === 'shape') drawShape(m);
     else if(m.type === 'label' || m.type === 'note') drawLeader(m);
+    else if(m.type === 'dimension') drawDimension(m);
+    else if(m.type === 'hatchline') drawHatchLine(m);
+    else if(m.type === 'hatcharea') drawHatchArea(m);
   });
   if(state.selectedMarkupId){
     const m = sheet.markups.find(x => x.id === state.selectedMarkupId);
@@ -1350,6 +1463,7 @@ function drawLine(m){
   ctx.moveTo(m.p0.x, m.p0.y);
   ctx.lineTo(m.p1.x, m.p1.y);
   ctx.stroke();
+  if(m.hatched) drawHatchTicksAlongPath(ctx, [m.p0, m.p1]);
 }
 
 // Rounded-joint polyline: draws straight segments with a fixed-radius arc at
@@ -1362,6 +1476,7 @@ function drawMultiline(m){
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   drawRoundedPolyline(ctx, m.points, JOINT_RADIUS);
+  if(m.hatched) drawHatchTicksAlongPath(ctx, m.points);
 }
 function drawMultilinePreview(points){
   const ctx = mCanvas.getContext('2d');
@@ -1429,46 +1544,171 @@ function drawShape(m){
   ctx.stroke();
 }
 
-// Shared leader renderer for both Label (dot tip) and Note (arrow tip).
+// Shared arrowhead: draws a filled triangle at `tip`, pointing in the direction
+// of travel from `from` to `tip`. Used by both Note's leader and Dimension's
+// two end-arrows so they render identically.
+function drawArrowHead(ctx, from, tip, color, size = 9){
+  const ang = Math.atan2(tip.y - from.y, tip.x - from.x);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(tip.x, tip.y);
+  ctx.lineTo(tip.x - size * Math.cos(ang - 0.4), tip.y - size * Math.sin(ang - 0.4));
+  ctx.lineTo(tip.x - size * Math.cos(ang + 0.4), tip.y - size * Math.sin(ang + 0.4));
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawTextPill(ctx, text, pos, color){
+  ctx.font = '600 13px Inter, sans-serif';
+  const padX = 8;
+  const textW = ctx.measureText(text).width;
+  const boxW = textW + padX * 2, boxH = 22;
+  const bx = pos.x, by = pos.y - boxH / 2;
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, bx, by, boxW, boxH, 6);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.fillText(text, bx + padX, by + boxH / 2 + 4);
+  return { x: bx, y: by, w: boxW, h: boxH };
+}
+
+// Shared leader renderer for both Label (dot tip) and Note (arrow tip). The
+// bend is always computed fresh from anchor+textPos (Bluebeam-callout style) —
+// it is never read from stored data, so old saved markups migrate silently.
 function drawLeader(m){
   const ctx = mCanvas.getContext('2d');
+  const bend = computeLeaderBend(m.anchor, m.textPos);
   ctx.strokeStyle = m.color;
   ctx.fillStyle = m.color;
   ctx.lineWidth = 1.5;
 
   ctx.beginPath();
   ctx.moveTo(m.textPos.x, m.textPos.y);
-  ctx.lineTo(m.bend.x, m.bend.y);
+  ctx.lineTo(bend.x, bend.y);
   ctx.lineTo(m.anchor.x, m.anchor.y);
   ctx.stroke();
 
-  if(m.type === 'note'){
-    const ang = Math.atan2(m.anchor.y - m.bend.y, m.anchor.x - m.bend.x);
-    const size = 9;
-    ctx.beginPath();
-    ctx.moveTo(m.anchor.x, m.anchor.y);
-    ctx.lineTo(m.anchor.x - size * Math.cos(ang - 0.4), m.anchor.y - size * Math.sin(ang - 0.4));
-    ctx.lineTo(m.anchor.x - size * Math.cos(ang + 0.4), m.anchor.y - size * Math.sin(ang + 0.4));
-    ctx.closePath();
-    ctx.fill();
-  } else {
+  if(m.type === 'note') drawArrowHead(ctx, bend, m.anchor, m.color);
+  else {
     ctx.beginPath();
     ctx.arc(m.anchor.x, m.anchor.y, 4, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  ctx.font = '600 13px Inter, sans-serif';
-  const padX = 8, padY = 5;
-  const textW = ctx.measureText(m.text).width;
-  const boxW = textW + padX * 2, boxH = 22;
-  const bx = m.textPos.x, by = m.textPos.y - boxH / 2;
-  ctx.fillStyle = '#fff';
+  drawTextPill(ctx, m.text, m.textPos, m.color);
+}
+
+// Dimension: a straight line between two picked points, arrowheads at both
+// ends, and independently-draggable text (not attached by a leader).
+function drawDimension(m){
+  const ctx = mCanvas.getContext('2d');
   ctx.strokeStyle = m.color;
-  roundRect(ctx, bx, by, boxW, boxH, 6);
-  ctx.fill();
+  ctx.lineWidth = m.thickness || 2;
+  ctx.beginPath();
+  ctx.moveTo(m.p0.x, m.p0.y);
+  ctx.lineTo(m.p1.x, m.p1.y);
   ctx.stroke();
-  ctx.fillStyle = m.color;
-  ctx.fillText(m.text, bx + padX, by + boxH / 2 + 4);
+  drawArrowHead(ctx, m.p1, m.p0, m.color);
+  drawArrowHead(ctx, m.p0, m.p1, m.color);
+  if(m.text) drawTextPill(ctx, m.text, m.textPos, m.color);
+}
+function drawDimensionPreview(p0, p1){
+  const ctx = mCanvas.getContext('2d');
+  ctx.save();
+  ctx.globalAlpha = 0.6;
+  ctx.strokeStyle = DEFAULT_DIMENSION_COLOR;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(p0.x, p0.y);
+  ctx.lineTo(p1.x, p1.y);
+  ctx.stroke();
+  drawArrowHead(ctx, p1, p0, DEFAULT_DIMENSION_COLOR);
+  drawArrowHead(ctx, p0, p1, DEFAULT_DIMENSION_COLOR);
+  ctx.restore();
+}
+
+// Repeated short diagonal ticks along a path — the shared "struck through /
+// crossed out" convention used by the standalone Hatch Line tool AND as an
+// overlay toggle on an existing Line/Run markup.
+function drawHatchTicksAlongPath(ctx, points, color = HATCH_COLOR){
+  if(points.length < 2) return;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  let carry = 0;
+  for(let i = 0; i < points.length - 1; i++){
+    const a = points[i], b = points[i + 1];
+    const segLen = Math.hypot(b.x - a.x, b.y - a.y);
+    if(segLen < 0.01) continue;
+    const ux = (b.x - a.x) / segLen, uy = (b.y - a.y) / segLen;
+    const nx = -uy, ny = ux; // perpendicular
+    let d = HATCH_TICK_SPACING - carry;
+    while(d < segLen){
+      const cx = a.x + ux * d, cy = a.y + uy * d;
+      const half = HATCH_TICK_LENGTH / 2;
+      ctx.beginPath();
+      ctx.moveTo(cx - (ux + nx) * half, cy - (uy + ny) * half);
+      ctx.lineTo(cx + (ux + nx) * half, cy + (uy + ny) * half);
+      ctx.stroke();
+      d += HATCH_TICK_SPACING;
+    }
+    carry = (carry + segLen) % HATCH_TICK_SPACING;
+  }
+  ctx.restore();
+}
+function drawHatchLine(m){
+  const ctx = mCanvas.getContext('2d');
+  drawHatchTicksAlongPath(ctx, [m.p0, m.p1], m.color);
+}
+function drawHatchLinePreview(p0, p1){
+  const ctx = mCanvas.getContext('2d');
+  ctx.save();
+  ctx.globalAlpha = 0.6;
+  drawHatchTicksAlongPath(ctx, [p0, p1], HATCH_COLOR);
+  ctx.restore();
+}
+
+// Freeform hatched area: closed outline + diagonal hatch fill clipped to the
+// traced polygon — the standard "this was demolished" convention.
+function drawHatchArea(m){ renderHatchAreaPolygon(mCanvas.getContext('2d'), m.points, m.color, true); }
+function drawHatchAreaPreview(points){ renderHatchAreaPolygon(mCanvas.getContext('2d'), points, HATCH_COLOR, false); }
+function renderHatchAreaPolygon(ctx, points, color, closed){
+  if(points.length < 2) return;
+  ctx.save();
+  if(!closed) ctx.globalAlpha = 0.6;
+
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  points.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+  if(closed) ctx.closePath();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  if(closed && points.length > 2){
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    points.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.closePath();
+    ctx.clip();
+    const xs = points.map(p => p.x), ys = points.map(p => p.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    const span = (maxX - minX) + (maxY - minY) + 40;
+    for(let d = -span; d < span; d += HATCH_TICK_SPACING){
+      ctx.beginPath();
+      ctx.moveTo(minX + d, minY);
+      ctx.lineTo(minX + d + (maxY - minY), maxY);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  ctx.restore();
 }
 
 function roundRect(ctx, x, y, w, h, r){
@@ -1498,7 +1738,13 @@ function renderNoteList(){
     const card = document.createElement('div');
     card.className = 'note-card' + (m.id === state.selectedMarkupId ? ' selected' : '');
     const time = m.createdAt ? new Date(m.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
-    const label = (m.type === 'label' || m.type === 'note') ? m.text : (m.type === 'shape' ? m.shape : m.type);
+    const label = (m.type === 'label' || m.type === 'note' || m.type === 'dimension') ? m.text
+      : (m.type === 'shape') ? m.shape
+      : (m.type === 'hatchline') ? 'hatch line'
+      : (m.type === 'hatcharea') ? 'hatch area'
+      : (m.type === 'line' && m.hatched) ? 'line (hatched)'
+      : (m.type === 'multiline' && m.hatched) ? 'run (hatched)'
+      : m.type;
     const noteText = m.note ? escapeHtml(m.note) : '<span class="nc-empty">No note added</span>';
     card.innerHTML = `
       <div class="nc-top"><span class="nc-type">${escapeHtml(m.type)}</span><span class="nc-time">${time}</span></div>
