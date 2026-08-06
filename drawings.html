@@ -15,6 +15,7 @@
   --success:#2E8B57; --success-bg:#E6F3EC; --warn:#B8860B; --warn-bg:#FBF2DF;
   --danger:#C0392B; --danger-bg:#FBEAE7; --radius:14px;
   --shadow:0 1px 2px rgba(20,30,50,0.06), 0 4px 14px rgba(20,30,50,0.06);
+  --toolrail-w:64px; --panel-w:300px;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;height:100%;overflow:hidden;}
@@ -25,29 +26,43 @@ input,textarea{font-family:inherit;}
 .app{display:flex;flex-direction:column;height:100vh;}
 
 /* ---- Top bar ---- */
-.topbar{background:var(--navy);color:#fff;display:flex;align-items:center;gap:14px;padding:10px 16px;flex-shrink:0;box-shadow:var(--shadow);z-index:20;}
+.topbar{background:var(--navy);color:#fff;display:flex;align-items:center;gap:10px;padding:10px 16px;flex-shrink:0;box-shadow:var(--shadow);z-index:20;flex-wrap:wrap;}
 .topbar .brand{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;letter-spacing:0.02em;white-space:nowrap;}
 .topbar .brand .sub{color:#9FB0C8;font-weight:500;font-size:12px;display:block;letter-spacing:0.06em;text-transform:uppercase;}
-.job-select{display:flex;align-items:center;gap:8px;margin-left:8px;}
-.job-select input{background:#243A56;border:1px solid #35496A;color:#fff;border-radius:8px;padding:7px 10px;font-size:13px;width:150px;}
+.job-select{display:flex;align-items:center;gap:8px;margin-left:8px;position:relative;flex-wrap:wrap;}
+.job-select input{background:#243A56;border:1px solid #35496A;color:#fff;border-radius:8px;padding:7px 10px;font-size:13px;width:130px;}
 .job-select input::placeholder{color:#7E93B0;}
 .job-select button{background:var(--orange);border:none;color:#fff;font-weight:600;font-size:13px;padding:7px 14px;border-radius:8px;}
 .job-select button:hover{background:var(--orange-dark);}
+.job-browse-btn{background:transparent;border:1px solid #35496A;color:#CBD8EA;font-weight:600;font-size:13px;padding:7px 12px;border-radius:8px;}
+.job-browse-btn:hover{background:#243A56;}
+.job-name-chip{color:#fff;font-weight:600;font-size:13px;background:#243A56;border:1px solid #35496A;border-radius:8px;padding:6px 10px;cursor:pointer;}
+.job-dropdown{position:absolute;top:calc(100% + 8px);left:0;width:280px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);z-index:80;max-height:320px;overflow-y:auto;}
+.job-dropdown-head{padding:10px 14px 8px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;border-bottom:1px solid var(--line);}
+.job-row{padding:10px 14px;font-size:13px;color:var(--ink);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.job-row:hover{background:var(--surface-2);}
+.job-row .jr-id{font-weight:600;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blueprint);}
+.job-row .jr-name{font-weight:500;flex:1;margin-left:8px;}
+.job-row .jr-time{font-size:11px;color:var(--muted);white-space:nowrap;}
+.job-dropdown-empty,.job-dropdown-loading{padding:16px 14px;font-size:12.5px;color:var(--muted);text-align:center;}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px;}
 .nav-link{color:#CBD8EA;text-decoration:none;font-weight:600;font-size:13px;border:1px solid #35496A;padding:6px 12px;border-radius:8px;}
 .nav-link:hover{background:#243A56;}
-.account-chip{color:#CBD8EA;}
+.account-chip{color:#CBD8EA;font-size:12px;}
 
 /* ---- Sheet tabs ---- */
 .sheet-tabs{display:flex;align-items:center;gap:4px;background:var(--navy-2);padding:0 12px;overflow-x:auto;flex-shrink:0;}
-.sheet-tab{padding:9px 16px;font-size:12.5px;font-weight:600;color:#B9C7DC;border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer;}
+.sheet-tab{padding:9px 10px 9px 16px;font-size:12.5px;font-weight:600;color:#B9C7DC;border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:6px;}
 .sheet-tab.active{color:#fff;border-bottom-color:var(--orange);}
+.sheet-tab .rename-ic{opacity:0.6;font-size:11px;padding:2px;}
+.sheet-tab .rename-ic:hover{opacity:1;}
 .sheet-tab-add{padding:9px 12px;font-size:16px;color:#9FB0C8;cursor:pointer;}
 .sheet-tab-add:hover{color:#fff;}
 
 /* ---- Main layout ---- */
-.main{flex:1;display:flex;overflow:hidden;}
+.main{flex:1;display:flex;overflow:hidden;position:relative;}
 .canvas-area{flex:1;position:relative;background:#C9CED6;overflow:auto;display:flex;align-items:flex-start;justify-content:center;}
+.canvas-area.panning{cursor:grabbing;}
 .canvas-stack{position:relative;margin:24px;box-shadow:var(--shadow);background:#fff;}
 .canvas-stack canvas{display:block;}
 #pdfCanvas{position:relative;}
@@ -58,23 +73,31 @@ input,textarea{font-family:inherit;}
 .empty-state button{margin-top:14px;background:var(--orange);border:none;color:#fff;font-weight:600;font-size:13.5px;padding:10px 18px;border-radius:9px;}
 .empty-state button:hover{background:var(--orange-dark);}
 
-/* ---- Toolbar (left rail) ---- */
-.toolrail{width:64px;background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:6px;flex-shrink:0;}
+/* ---- Toolbar (left rail, desktop/tablet) ---- */
+.toolrail{width:var(--toolrail-w);background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;flex-shrink:0;overflow-y:auto;}
 .tool-btn{width:44px;height:44px;border-radius:10px;border:1px solid transparent;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:18px;}
 .tool-btn:hover{background:var(--surface-2);}
 .tool-btn.active{background:var(--navy);color:#fff;}
 .tool-sep{width:32px;height:1px;background:var(--line);margin:6px 0;}
-.tool-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;margin-top:-2px;}
+.tool-label{font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;margin-top:-2px;text-align:center;}
+.color-row,.thickness-row,.shape-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:0 6px;}
 .color-dot{width:20px;height:20px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer;}
 .color-dot.active{box-shadow:0 0 0 2px var(--navy);}
+.thickness-dot{width:32px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer;}
+.thickness-dot.active{border-color:var(--navy);background:var(--surface-2);}
+.thickness-dot span{display:block;background:var(--navy);border-radius:2px;}
+.shape-btn{width:30px;height:30px;border-radius:6px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--navy);font-size:14px;}
+.shape-btn.active{border-color:var(--navy);background:var(--surface-2);}
 
 /* ---- Right panel: notes list ---- */
-.panel{width:300px;background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;}
-.panel-head{padding:14px 16px 10px;border-bottom:1px solid var(--line);}
+.panel{width:var(--panel-w);background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;}
+.panel-head{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
 .panel-head .disp{font-size:15px;color:var(--navy);}
 .panel-head .count{font-size:11px;color:var(--muted);}
+.panel-close{display:none;background:none;border:none;color:var(--muted);font-size:18px;}
 .panel-list{flex:1;overflow-y:auto;padding:8px;}
 .note-card{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12.5px;cursor:pointer;}
+.note-card.selected{border-color:var(--orange);}
 .note-card:hover{border-color:var(--blueprint);}
 .note-card .nc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
 .note-card .nc-type{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;color:var(--blueprint);text-transform:uppercase;}
@@ -88,24 +111,72 @@ input,textarea{font-family:inherit;}
 .save-btn{margin-left:auto;background:var(--navy);color:#fff;border:none;font-weight:600;font-size:13px;padding:8px 16px;border-radius:8px;}
 .save-btn:hover{background:var(--navy-2);}
 .save-btn:disabled{opacity:.5;cursor:default;}
-.status-dot{width:8px;height:8px;border-radius:50%;background:var(--success);}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0;}
 .status-dot.dirty{background:var(--warn);}
+.mobile-panel-toggle{display:none;background:var(--navy);color:#fff;border:none;font-weight:600;font-size:12px;padding:7px 12px;border-radius:7px;}
 
-/* ---- Note entry popover ---- */
-.note-popover{position:fixed;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:12px;width:240px;z-index:100;}
-.note-popover textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;resize:vertical;min-height:60px;}
-.note-popover .row{display:flex;gap:6px;margin-top:8px;justify-content:flex-end;}
-.note-popover button{font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:7px;border:none;}
-.note-popover .save{background:var(--orange);color:#fff;}
-.note-popover .cancel{background:var(--surface-2);color:var(--muted);}
+/* ---- Selection handles + floating edit button on canvas ---- */
+.markup-edit-btn{position:absolute;background:var(--navy);color:#fff;font-size:11px;font-weight:600;padding:5px 10px;border-radius:7px;border:none;box-shadow:var(--shadow);z-index:30;white-space:nowrap;}
+.markup-edit-btn:hover{background:var(--navy-2);}
+
+/* ---- Modal (replaces native prompt/confirm everywhere) ---- */
+.modal-backdrop{position:fixed;inset:0;background:rgba(20,30,50,0.45);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;}
+.modal-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);width:100%;max-width:360px;padding:18px;}
+.modal-card .disp{font-size:16px;color:var(--navy);margin-bottom:4px;}
+.modal-card .modal-sub{font-size:12.5px;color:var(--muted);margin-bottom:12px;}
+.modal-card textarea,.modal-card input[type=text]{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:14px;resize:vertical;min-height:38px;}
+.modal-card textarea{min-height:70px;}
+.symbol-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.symbol-btn{width:32px;height:32px;border:1px solid var(--line);border-radius:7px;background:var(--surface-2);font-size:15px;color:var(--navy);}
+.symbol-btn:hover{border-color:var(--blueprint);}
+.modal-row{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;}
+.modal-row button{font-size:13px;font-weight:600;padding:8px 16px;border-radius:8px;border:none;}
+.modal-row .save{background:var(--orange);color:#fff;}
+.modal-row .save:hover{background:var(--orange-dark);}
+.modal-row .cancel{background:var(--surface-2);color:var(--muted);}
+.modal-row .destructive{background:var(--danger-bg);color:var(--danger);margin-right:auto;}
 
 /* ---- Sign-in overlay ---- */
-.gate{position:fixed;inset:0;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:1000;}
+.gate{position:fixed;inset:0;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:1000;padding:20px;text-align:center;}
 .gate .disp{font-size:22px;}
 .gate button{background:var(--orange);border:none;color:#fff;font-weight:600;font-size:14px;padding:11px 22px;border-radius:9px;}
 .gate button:hover{background:var(--orange-dark);}
 .gate .err{color:#FFB4A6;font-size:13px;max-width:320px;text-align:center;}
 .hidden{display:none !important;}
+
+/* ============================================================
+   RESPONSIVE: tablet / phone
+   ============================================================ */
+@media (max-width: 900px){
+  .toolrail{
+    position:fixed; bottom:0; left:0; right:0; width:auto; height:auto;
+    flex-direction:row; flex-wrap:wrap; border-right:none; border-top:1px solid var(--line);
+    padding:8px; gap:4px; z-index:40; justify-content:center; max-height:40vh;
+  }
+  .tool-label{display:none;}
+  .tool-sep{width:1px;height:32px;margin:0 4px;}
+  .main{padding-bottom:64px;} /* space for fixed bottom rail */
+  .panel{
+    position:fixed; right:0; bottom:64px; top:auto; height:45vh; width:100%;
+    max-width:420px; border-left:none; border-top:1px solid var(--line);
+    box-shadow:0 -4px 14px rgba(20,30,50,0.12); z-index:35; transform:translateX(0);
+  }
+  .panel.panel-hidden{display:none;}
+  .panel-close{display:block;}
+  .mobile-panel-toggle{display:inline-block;}
+  .job-select input{width:100px;}
+  .job-select{gap:6px;}
+  .topbar{padding:8px 10px;gap:6px;}
+  .topbar .brand .sub{display:none;}
+  .nav-link{padding:6px 9px;font-size:12px;}
+}
+@media (max-width: 520px){
+  .tool-btn{width:38px;height:38px;font-size:16px;}
+  .color-dot{width:18px;height:18px;}
+  .job-select input{width:84px;font-size:12px;}
+  .job-browse-btn{font-size:12px;padding:6px 9px;}
+  .account-chip{display:none;}
+}
 </style>
 </head>
 <body>
@@ -120,10 +191,14 @@ input,textarea{font-family:inherit;}
   <div class="topbar">
     <div class="brand">Drawing Markup<span class="sub">PPC Field Tools</span></div>
     <div class="job-select">
-      <input id="jobIdInput" placeholder="Job number (e.g. 4521)">
+      <input id="jobIdInput" placeholder="Job number">
       <button id="loadJobBtn">Open</button>
+      <button class="job-browse-btn" id="browseJobsBtn">Browse ▾</button>
+      <span class="job-name-chip hidden" id="jobNameChip"></span>
+      <div class="job-dropdown hidden" id="jobDropdown"></div>
     </div>
     <div class="topbar-right">
+      <button class="mobile-panel-toggle" id="mobilePanelToggle">Notes</button>
       <a class="nav-link" href="index.html">← Crew Directory</a>
       <span class="account-chip" id="accountChip"></span>
     </div>
@@ -133,27 +208,52 @@ input,textarea{font-family:inherit;}
 
   <div class="main">
     <div class="toolrail" id="toolrail">
-      <button class="tool-btn active" data-tool="pan" title="Pan / Select">✋</button>
+      <button class="tool-btn active" data-tool="pan" title="Pan">✋</button>
       <div class="tool-label">Pan</div>
       <button class="tool-btn" data-tool="draw" title="Freehand draw">✏️</button>
       <div class="tool-label">Draw</div>
-      <button class="tool-btn" data-tool="callout" title="Text callout with leader line">🏷️</button>
+      <button class="tool-btn" data-tool="line" title="Straight line, snapped to 15°">📏</button>
+      <div class="tool-label">Line</div>
+      <button class="tool-btn" data-tool="multiline" title="Multi-segment run, snapped, rounded joints">〜</button>
+      <div class="tool-label">Run</div>
+      <button class="tool-btn" data-tool="shape" title="Shapes">⬡</button>
+      <div class="tool-label">Shape</div>
+      <button class="tool-btn" data-tool="label" title="Label with leader (dot tip)">🏷️</button>
       <div class="tool-label">Label</div>
+      <button class="tool-btn" data-tool="note" title="Note with leader (arrow tip)">📌</button>
+      <div class="tool-label">Note</div>
       <button class="tool-btn" data-tool="erase" title="Erase a markup">🧹</button>
       <div class="tool-label">Erase</div>
       <div class="tool-sep"></div>
-      <div class="color-dot active" data-color="#E8622C" style="background:#E8622C"></div>
-      <div class="color-dot" data-color="#2F5D8A" style="background:#2F5D8A"></div>
-      <div class="color-dot" data-color="#2E8B57" style="background:#2E8B57"></div>
-      <div class="color-dot" data-color="#C0392B" style="background:#C0392B"></div>
+      <div class="color-row">
+        <div class="color-dot active" data-color="#E8622C" style="background:#E8622C"></div>
+        <div class="color-dot" data-color="#2F5D8A" style="background:#2F5D8A"></div>
+        <div class="color-dot" data-color="#2E8B57" style="background:#2E8B57"></div>
+        <div class="color-dot" data-color="#C0392B" style="background:#C0392B"></div>
+      </div>
+      <div class="tool-sep"></div>
+      <div class="thickness-row">
+        <div class="thickness-dot active" data-thickness="2"><span style="width:14px;height:2px;"></span></div>
+        <div class="thickness-dot" data-thickness="4"><span style="width:14px;height:4px;"></span></div>
+        <div class="thickness-dot" data-thickness="7"><span style="width:14px;height:7px;"></span></div>
+      </div>
+      <div class="tool-sep hidden" id="shapeRowSep"></div>
+      <div class="shape-row hidden" id="shapeRow">
+        <button class="shape-btn active" data-shape="circle" title="Circle">●</button>
+        <button class="shape-btn" data-shape="rect" title="Rectangle">▭</button>
+        <button class="shape-btn" data-shape="triangle" title="Triangle">▲</button>
+        <button class="shape-btn" data-shape="diamond" title="Diamond">◆</button>
+        <button class="shape-btn" data-shape="hexagon" title="Hexagon">⬡</button>
+        <button class="shape-btn" data-shape="oval" title="Oval">⬭</button>
+      </div>
     </div>
 
     <div class="canvas-area" id="canvasArea">
       <div class="empty-state" id="emptyState">
-        <div class="disp">No drawing loaded</div>
-        <p>Open a job above, then upload a floor plan PDF for this sheet.</p>
+        <div class="disp" id="emptyStateTitle">No job open</div>
+        <p id="emptyStateBody">Type a job number above and click Open, or click "Browse" to pick from existing jobs.</p>
         <input type="file" id="pdfUpload" accept="application/pdf" class="hidden">
-        <button id="uploadBtn">Upload floor plan PDF</button>
+        <button id="uploadBtn" class="hidden">Upload floor plan PDF</button>
       </div>
       <div class="canvas-stack hidden" id="canvasStack">
         <canvas id="pdfCanvas"></canvas>
@@ -161,26 +261,31 @@ input,textarea{font-family:inherit;}
       </div>
     </div>
 
-    <div class="panel">
+    <div class="panel panel-hidden" id="panel">
       <div class="panel-head">
-        <div class="disp">Notes on this sheet</div>
-        <div class="count" id="noteCount">0 markups</div>
+        <div>
+          <div class="disp">Notes on this sheet</div>
+          <div class="count" id="noteCount">0 markups</div>
+        </div>
+        <button class="panel-close" id="panelCloseBtn">✕</button>
       </div>
       <div class="panel-list" id="noteList">
-        <div class="panel-empty">No markups yet. Draw or add a label to see notes here.</div>
+        <div class="panel-empty">No markups yet.</div>
       </div>
     </div>
   </div>
 
   <div class="bottombar">
     <span class="status-dot" id="statusDot"></span>
-    <span id="statusText">All changes saved</span>
+    <span id="statusText">No job open</span>
     <button class="save-btn" id="saveBtn" disabled>Save</button>
   </div>
 </div>
 
+<div id="modalRoot"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2/lib/msal-browser.min.js"></script>
-<script src="shared-app-core.js?v=2"></script>
+<script src="shared-app-core.js?v=3"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 if(typeof pdfjsLib !== 'undefined'){
@@ -192,31 +297,102 @@ if(typeof pdfjsLib !== 'undefined'){
 /* ============================================================
    STATE
    ============================================================
-   One JSON file per job: "job-<id>-markup.json"
-   { jobId, sheets: [ { id, name, pdfPath, markups: [...] } ] }
-   Markup: { id, type:'freehand'|'callout', color, points:[{x,y}...] (freehand,
-            normalized 0-1 against page size), anchor:{x,y}, labelPos:{x,y}
-            (callout), text, note, createdAt }
+   Job file "job-<id>-markup.json":
+   { jobId, jobName, sheets: [ { id, name, pdfPath, markups: [...] } ] }
+
+   Lightweight "jobs-index.json": { jobs: [ {jobId, jobName, lastModified} ] }
+   Kept small on purpose so the Browse dropdown never has to open every job
+   file just to show a name — it stays fast no matter how many jobs exist.
+
+   Markup shapes:
+     freehand   { id, type:'freehand', color, thickness, points:[{x,y}], note }
+     line       { id, type:'line', color, thickness, p0, p1, note }
+     multiline  { id, type:'multiline', color, thickness, points:[{x,y}], note }
+     shape      { id, type:'shape', shape:'circle'|'rect'|'triangle'|'diamond'|'hexagon'|'oval',
+                  color, thickness, p0, p1, note }
+     label      { id, type:'label', color, text, anchor, bend, textPos, note }  -- dot tip
+     note       { id, type:'note',  color, text, anchor, bend, textPos, note }  -- arrow tip
 */
 const state = {
-  jobId: null,
-  fileName: null,
-  data: { jobId: null, sheets: [] },
+  jobId: null, jobName: '', fileName: null,
+  data: { jobId: null, jobName: '', sheets: [] },
   lastModified: null,
   activeSheetIndex: 0,
-  pdfDoc: null,
-  pageViewport: null,
-  tool: 'pan',
-  color: '#E8622C',
+  pdfDoc: null, pageViewport: null,
+  tool: 'pan', color: '#E8622C', thickness: 2, shapeType: 'circle',
   dirty: false,
-  drawing: false,
-  currentStroke: null,
-  calloutAnchor: null,
+  drawing: false, currentStroke: null,
+  multiPoints: null,
+  panState: null,
+  selectedMarkupId: null, dragHandle: null,
+  jobsIndexCache: null,
 };
 
+const ANGLE_STEP = 15; // degrees — snap increment for line/run tools
+const JOINT_RADIUS = 10; // fixed fillet radius for multi-segment corners (diagrammatic, not exact)
+const DEFAULT_LABEL_COLOR = '#2F5D8A'; // blueprint
+const DEFAULT_NOTE_COLOR = '#C0392B';  // danger red — visually distinct from Label by default
+const SYMBOLS = ['°','⌀','±','∠','′','″'];
+
 const $ = (sel) => document.querySelector(sel);
-const pdfCanvas = () => $('#pdfCanvas');
-const markupCanvas = () => $('#markupCanvas');
+const markupCanvasEl = () => $('#markupCanvas');
+const pdfCanvasEl = () => $('#pdfCanvas');
+
+/* ============================================================
+   MODAL SYSTEM — replaces every native prompt()/confirm() in the app
+   ============================================================ */
+function showModal({ title, sub, value = '', placeholder = '', withSymbols = false, confirmLabel = 'Save', destructiveLabel = null, onConfirm, onDestructive }){
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  card.innerHTML = `
+    <div class="disp">${escapeHtml(title)}</div>
+    ${sub ? `<div class="modal-sub">${escapeHtml(sub)}</div>` : ''}
+    <textarea id="modalInput" placeholder="${escapeHtml(placeholder)}">${escapeHtml(value)}</textarea>
+    ${withSymbols ? `<div class="symbol-row">${SYMBOLS.map(s => `<button type="button" class="symbol-btn" data-sym="${s}">${s}</button>`).join('')}</div>` : ''}
+    <div class="modal-row">
+      ${destructiveLabel ? `<button type="button" class="destructive">${escapeHtml(destructiveLabel)}</button>` : ''}
+      <button type="button" class="cancel">Cancel</button>
+      <button type="button" class="save">${escapeHtml(confirmLabel)}</button>
+    </div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+  const input = card.querySelector('#modalInput');
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
+
+  card.querySelectorAll('.symbol-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const start = input.selectionStart, end = input.selectionEnd;
+      input.value = input.value.slice(0, start) + btn.dataset.sym + input.value.slice(end);
+      input.focus();
+      input.setSelectionRange(start + btn.dataset.sym.length, start + btn.dataset.sym.length);
+    });
+  });
+  function close(){ root.innerHTML = ''; }
+  card.querySelector('.cancel').addEventListener('click', close);
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
+  card.querySelector('.save').addEventListener('click', () => {
+    const val = input.value.trim();
+    close();
+    if(onConfirm) onConfirm(val);
+  });
+  if(destructiveLabel){
+    card.querySelector('.destructive').addEventListener('click', () => {
+      close();
+      if(onDestructive) onDestructive();
+    });
+  }
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s == null ? '' : String(s);
+  return d.innerHTML;
+}
 
 /* ============================================================
    AUTH
@@ -244,30 +420,164 @@ $('#signInBtn').addEventListener('click', () => {
 boot();
 
 /* ============================================================
+   JOBS INDEX (lightweight — for the Browse dropdown)
+   ============================================================ */
+const INDEX_FILE = 'jobs-index.json';
+
+async function loadJobsIndex(){
+  try{
+    const { data, lastModified } = await AppCore.readJsonFile(INDEX_FILE, { jobs: [] });
+    state.jobsIndexCache = { data, lastModified };
+    return data;
+  }catch(e){
+    console.error('Could not load jobs index', e);
+    return null;
+  }
+}
+
+async function upsertJobsIndex(jobId, jobName){
+  try{
+    let cache = state.jobsIndexCache;
+    if(!cache){
+      const loaded = await loadJobsIndex();
+      cache = state.jobsIndexCache || { data: loaded || { jobs: [] }, lastModified: null };
+    }
+    const data = cache.data || { jobs: [] };
+    const idx = data.jobs.findIndex(j => j.jobId === jobId);
+    const entry = { jobId, jobName: jobName || '', lastModified: new Date().toISOString() };
+    if(idx > -1) data.jobs[idx] = entry; else data.jobs.push(entry);
+    const result = await AppCore.writeJsonFile(INDEX_FILE, data, cache.lastModified);
+    state.jobsIndexCache = { data, lastModified: result.lastModified };
+  }catch(e){
+    // Index is a convenience for browsing, not the source of truth — a failed
+    // update here shouldn't block the user's actual job save.
+    console.error('Could not update jobs index', e);
+  }
+}
+
+/* ============================================================
+   BROWSE JOBS DROPDOWN
+   ============================================================ */
+$('#browseJobsBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const dd = $('#jobDropdown');
+  if(dd.classList.contains('hidden')) openJobDropdown(); else closeJobDropdown();
+});
+document.addEventListener('click', (e) => {
+  const dd = $('#jobDropdown');
+  if(!dd.classList.contains('hidden') && !e.target.closest('.job-select')) closeJobDropdown();
+});
+function openJobDropdown(){
+  $('#jobDropdown').classList.remove('hidden');
+  renderJobDropdown(null);
+  refreshJobDropdown();
+}
+function closeJobDropdown(){ $('#jobDropdown').classList.add('hidden'); }
+
+async function refreshJobDropdown(){
+  const indexData = await loadJobsIndex();
+  let jobs = (indexData && indexData.jobs) ? indexData.jobs.slice() : null;
+  if(jobs === null){
+    // Self-heal: if the index is missing/unreadable, fall back to scanning filenames once.
+    try{
+      const files = await AppCore.listFilesMatching(/^job-(.+)-markup\.json$/);
+      jobs = files.map(f => {
+        const m = f.name.match(/^job-(.+)-markup\.json$/);
+        return { jobId: m[1], jobName: '', lastModified: f.lastModifiedDateTime };
+      });
+    }catch(e){
+      renderJobDropdown(null, 'Could not load job list.');
+      return;
+    }
+  }
+  jobs.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+  renderJobDropdown(jobs);
+}
+
+function renderJobDropdown(jobs, errorMsg){
+  const dd = $('#jobDropdown');
+  if(errorMsg){ dd.innerHTML = `<div class="job-dropdown-empty">${escapeHtml(errorMsg)}</div>`; return; }
+  if(jobs === null){ dd.innerHTML = `<div class="job-dropdown-loading">Loading jobs…</div>`; return; }
+  if(jobs.length === 0){ dd.innerHTML = `<div class="job-dropdown-empty">No jobs yet. Type a job number above to create the first one.</div>`; return; }
+  const rows = jobs.map(j => {
+    const time = j.lastModified ? new Date(j.lastModified).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
+    return `<div class="job-row" data-job-id="${escapeHtml(j.jobId)}">
+      <span class="jr-id">#${escapeHtml(j.jobId)}</span>
+      <span class="jr-name">${escapeHtml(j.jobName || '(no name)')}</span>
+      <span class="jr-time">${time}</span>
+    </div>`;
+  }).join('');
+  dd.innerHTML = `<div class="job-dropdown-head">${jobs.length} job${jobs.length === 1 ? '' : 's'} on file</div>${rows}`;
+  dd.querySelectorAll('.job-row').forEach(row => row.addEventListener('click', () => openJobById(row.dataset.jobId)));
+}
+
+/* ============================================================
    JOB LOADING
    ============================================================ */
-$('#loadJobBtn').addEventListener('click', openJob);
-$('#jobIdInput').addEventListener('keydown', (e) => { if(e.key === 'Enter') openJob(); });
+$('#loadJobBtn').addEventListener('click', () => openJobById($('#jobIdInput').value.trim()));
+$('#jobIdInput').addEventListener('keydown', (e) => { if(e.key === 'Enter') openJobById($('#jobIdInput').value.trim()); });
+$('#jobNameChip').addEventListener('click', () => {
+  if(!state.jobId) return;
+  showModal({
+    title: 'Job name', sub: 'Shown in the Browse list for job #' + state.jobId,
+    value: state.jobName, placeholder: 'e.g. "Main St Renovation"', confirmLabel: 'Save',
+    onConfirm: async (name) => {
+      state.jobName = name;
+      state.data.jobName = name;
+      markDirty();
+      updateJobNameChip();
+      await upsertJobsIndex(state.jobId, name);
+    }
+  });
+});
 
-async function openJob(){
-  const jobId = $('#jobIdInput').value.trim();
+function updateJobNameChip(){
+  const chip = $('#jobNameChip');
+  if(!state.jobId){ chip.classList.add('hidden'); return; }
+  chip.classList.remove('hidden');
+  chip.textContent = state.jobName ? state.jobName : 'Add job name +';
+}
+
+async function openJobById(jobId){
   if(!jobId) return;
+  closeJobDropdown();
+  $('#jobIdInput').value = jobId;
   setStatus('loading', 'Loading job ' + jobId + '…');
   const fileName = `job-${jobId}-markup.json`;
   try{
-    const { data, lastModified } = await AppCore.readJsonFile(fileName, { jobId, sheets: [] });
+    const { data, lastModified } = await AppCore.readJsonFile(fileName, { jobId, jobName: '', sheets: [] });
     state.jobId = jobId;
     state.fileName = fileName;
     state.data = data;
+    state.jobName = data.jobName || '';
     state.lastModified = lastModified;
     state.activeSheetIndex = 0;
+    state.selectedMarkupId = null;
     state.dirty = false;
-    if(state.data.sheets.length === 0){
-      state.data.sheets.push({ id: genId(), name: 'Sheet 1', pdfPath: null, markups: [] });
+    if(!state.data.sheets || state.data.sheets.length === 0){
+      state.data.sheets = [{ id: genId(), name: 'Sheet 1', pdfPath: null, markups: [] }];
     }
+    updateJobNameChip();
     renderSheetTabs();
     await renderActiveSheet();
     setStatus('saved', 'Job ' + jobId + ' — all changes saved');
+    refreshJobDropdown();
+    if(!state.jobName){
+      showModal({
+        title: 'Name this job', sub: 'Helps you find it later in the Browse list.',
+        placeholder: 'e.g. "Main St Renovation"', confirmLabel: 'Save',
+        onConfirm: async (name) => {
+          if(!name) return;
+          state.jobName = name;
+          state.data.jobName = name;
+          markDirty();
+          updateJobNameChip();
+          await upsertJobsIndex(state.jobId, name);
+        }
+      });
+    } else {
+      await upsertJobsIndex(state.jobId, state.jobName);
+    }
   }catch(e){
     console.error(e);
     setStatus('dirty', 'Could not load job: ' + (e.message || 'unknown error'));
@@ -277,7 +587,7 @@ async function openJob(){
 function genId(){ return Math.random().toString(36).slice(2, 10); }
 
 /* ============================================================
-   SHEET TABS
+   SHEET TABS (with rename)
    ============================================================ */
 function renderSheetTabs(){
   const wrap = $('#sheetTabs');
@@ -285,11 +595,24 @@ function renderSheetTabs(){
   state.data.sheets.forEach((sheet, i) => {
     const tab = document.createElement('div');
     tab.className = 'sheet-tab' + (i === state.activeSheetIndex ? ' active' : '');
-    tab.textContent = sheet.name;
-    tab.addEventListener('click', async () => {
+    tab.innerHTML = `<span class="tab-label">${escapeHtml(sheet.name)}</span><span class="rename-ic" title="Rename sheet">✎</span>`;
+    tab.querySelector('.tab-label').addEventListener('click', async () => {
       state.activeSheetIndex = i;
+      state.selectedMarkupId = null;
       renderSheetTabs();
       await renderActiveSheet();
+    });
+    tab.querySelector('.rename-ic').addEventListener('click', (e) => {
+      e.stopPropagation();
+      showModal({
+        title: 'Rename sheet', value: sheet.name, placeholder: 'e.g. "Level 2 Floor Plan"', confirmLabel: 'Save',
+        onConfirm: (name) => {
+          if(!name) return;
+          sheet.name = name;
+          markDirty();
+          renderSheetTabs();
+        }
+      });
     });
     wrap.appendChild(tab);
   });
@@ -298,13 +621,19 @@ function renderSheetTabs(){
   addBtn.textContent = '+';
   addBtn.title = 'Add sheet';
   addBtn.addEventListener('click', () => {
-    const name = prompt('Sheet name (e.g. "Level 2 Floor Plan")', 'Sheet ' + (state.data.sheets.length + 1));
-    if(!name) return;
-    state.data.sheets.push({ id: genId(), name, pdfPath: null, markups: [] });
-    state.activeSheetIndex = state.data.sheets.length - 1;
-    markDirty();
-    renderSheetTabs();
-    renderActiveSheet();
+    if(!state.jobId){ showModal({ title: 'Open a job first', sub: 'You need an open job before adding sheets.', confirmLabel: 'OK', onConfirm: () => {} }); return; }
+    showModal({
+      title: 'New sheet', value: 'Sheet ' + (state.data.sheets.length + 1), placeholder: 'e.g. "Level 2 Floor Plan"', confirmLabel: 'Add',
+      onConfirm: (name) => {
+        if(!name) return;
+        state.data.sheets.push({ id: genId(), name, pdfPath: null, markups: [] });
+        state.activeSheetIndex = state.data.sheets.length - 1;
+        state.selectedMarkupId = null;
+        markDirty();
+        renderSheetTabs();
+        renderActiveSheet();
+      }
+    });
   });
   wrap.appendChild(addBtn);
 }
@@ -315,7 +644,7 @@ function activeSheet(){ return state.data.sheets[state.activeSheetIndex]; }
    PDF UPLOAD + RENDER
    ============================================================ */
 $('#uploadBtn').addEventListener('click', () => {
-  if(!state.jobId){ alert('Open a job number first.'); return; }
+  if(!state.jobId) return;
   $('#pdfUpload').click();
 });
 $('#pdfUpload').addEventListener('change', async (e) => {
@@ -333,16 +662,36 @@ $('#pdfUpload').addEventListener('change', async (e) => {
     setStatus('dirty', 'PDF uploaded — remember to Save');
   }catch(err){
     console.error(err);
-    alert('Upload failed: ' + (err.message || 'unknown error'));
+    showModal({ title: 'Upload failed', sub: err.message || 'Unknown error', confirmLabel: 'OK', onConfirm: () => {} });
     setStatus('saved', 'All changes saved');
   }
 });
+
+let _cachedSiteIdLocal = null;
+async function resolveSiteIdLocal(token){
+  if(_cachedSiteIdLocal) return _cachedSiteIdLocal;
+  const res = await fetch('https://graph.microsoft.com/v1.0/sites/1ppc0.sharepoint.com:/sites/m365appbuilder-field-crew-directory-8280', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const json = await res.json();
+  _cachedSiteIdLocal = json.id;
+  return _cachedSiteIdLocal;
+}
 
 async function renderActiveSheet(){
   const sheet = activeSheet();
   if(!sheet || !sheet.pdfPath){
     $('#emptyState').classList.remove('hidden');
     $('#canvasStack').classList.add('hidden');
+    if(state.jobId){
+      $('#emptyStateTitle').textContent = 'No drawing on this sheet yet';
+      $('#emptyStateBody').textContent = 'Upload a floor plan PDF for this sheet.';
+      $('#uploadBtn').classList.remove('hidden');
+    } else {
+      $('#emptyStateTitle').textContent = 'No job open';
+      $('#emptyStateBody').textContent = 'Type a job number above and click Open, or click "Browse" to pick from existing jobs.';
+      $('#uploadBtn').classList.add('hidden');
+    }
     renderNoteList();
     return;
   }
@@ -362,13 +711,13 @@ async function renderActiveSheet(){
     const viewport = page.getViewport({ scale: 1.5 });
     state.pageViewport = viewport;
 
-    const canvas = pdfCanvas();
+    const canvas = pdfCanvasEl();
     canvas.width = viewport.width;
     canvas.height = viewport.height;
     const ctx = canvas.getContext('2d');
     await page.render({ canvasContext: ctx, viewport }).promise;
 
-    const mCanvas = markupCanvas();
+    const mCanvas = markupCanvasEl();
     mCanvas.width = viewport.width;
     mCanvas.height = viewport.height;
     mCanvas.style.width = viewport.width + 'px';
@@ -385,27 +734,21 @@ async function renderActiveSheet(){
   }
 }
 
-// Small local cache mirroring the shared module's site resolution so this page can fetch
-// arbitrary drive paths (PDFs) the same way AppCore does internally for JSON files.
-let _cachedSiteIdLocal = null;
-async function resolveSiteIdLocal(token){
-  if(_cachedSiteIdLocal) return _cachedSiteIdLocal;
-  const res = await fetch('https://graph.microsoft.com/v1.0/sites/1ppc0.sharepoint.com:/sites/m365appbuilder-field-crew-directory-8280', {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  const json = await res.json();
-  _cachedSiteIdLocal = json.id;
-  return _cachedSiteIdLocal;
-}
-
 /* ============================================================
-   TOOLS
+   TOOLS — selection (color / thickness / shape type / tool)
    ============================================================ */
 document.querySelectorAll('.tool-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     state.tool = btn.dataset.tool;
+    state.multiPoints = null;
+    state.selectedMarkupId = null;
+    $('#shapeRow').classList.toggle('hidden', state.tool !== 'shape');
+    $('#shapeRowSep').classList.toggle('hidden', state.tool !== 'shape');
+    $('#canvasArea').classList.remove('panning');
+    clearFloatingEditBtn();
+    drawAllMarkups();
   });
 });
 document.querySelectorAll('.color-dot').forEach(dot => {
@@ -415,12 +758,35 @@ document.querySelectorAll('.color-dot').forEach(dot => {
     state.color = dot.dataset.color;
   });
 });
+document.querySelectorAll('.thickness-dot').forEach(dot => {
+  dot.addEventListener('click', () => {
+    document.querySelectorAll('.thickness-dot').forEach(d => d.classList.remove('active'));
+    dot.classList.add('active');
+    state.thickness = parseInt(dot.dataset.thickness, 10);
+  });
+});
+document.querySelectorAll('.shape-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.shapeType = btn.dataset.shape;
+  });
+});
 
-/* ---- Pointer handling on the markup canvas ---- */
-const mCanvas = markupCanvas();
+/* ============================================================
+   MOBILE PANEL TOGGLE
+   ============================================================ */
+$('#mobilePanelToggle').addEventListener('click', () => $('#panel').classList.toggle('panel-hidden'));
+$('#panelCloseBtn').addEventListener('click', () => $('#panel').classList.add('panel-hidden'));
+
+/* ============================================================
+   POINTER HANDLING
+   ============================================================ */
+const mCanvas = markupCanvasEl();
 mCanvas.addEventListener('pointerdown', onPointerDown);
 mCanvas.addEventListener('pointermove', onPointerMove);
 mCanvas.addEventListener('pointerup', onPointerUp);
+mCanvas.addEventListener('dblclick', onDblClick);
 
 function canvasPoint(e){
   const rect = mCanvas.getBoundingClientRect();
@@ -430,46 +796,110 @@ function canvasPoint(e){
   };
 }
 
+function angleSnap(from, to){
+  const dx = to.x - from.x, dy = to.y - from.y;
+  const dist = Math.hypot(dx, dy);
+  if(dist < 1) return to;
+  let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+  angle = Math.round(angle / ANGLE_STEP) * ANGLE_STEP;
+  const rad = angle * (Math.PI / 180);
+  return { x: from.x + Math.cos(rad) * dist, y: from.y + Math.sin(rad) * dist };
+}
+
 function onPointerDown(e){
   if(!state.pageViewport) return;
   const p = canvasPoint(e);
 
+  if(state.tool === 'pan'){
+    // Try selecting/dragging an existing markup first; otherwise pan the view.
+    const hit = hitTestHandle(p) || hitTestMarkup(p);
+    if(hit){
+      state.selectedMarkupId = hit.markup.id;
+      state.dragHandle = { markupId: hit.markup.id, key: hit.key, startPoint: p, origins: cloneMarkupPoints(hit.markup) };
+      renderNoteList();
+      drawAllMarkups();
+      return;
+    }
+    state.selectedMarkupId = null;
+    clearFloatingEditBtn();
+    drawAllMarkups();
+    state.panState = { startX: e.clientX, startY: e.clientY, scrollLeft: $('#canvasArea').scrollLeft, scrollTop: $('#canvasArea').scrollTop };
+    $('#canvasArea').classList.add('panning');
+    return;
+  }
+
   if(state.tool === 'draw'){
     state.drawing = true;
-    state.currentStroke = { id: genId(), type: 'freehand', color: state.color, points: [p], note: '' };
-  } else if(state.tool === 'callout'){
-    state.calloutAnchor = p;
-    openNotePopover(e.clientX, e.clientY, '', (text) => {
-      if(!text) { state.calloutAnchor = null; return; }
-      const markup = {
-        id: genId(), type: 'callout', color: state.color,
-        anchor: p, labelPos: { x: p.x + 60, y: p.y - 40 },
-        text, note: '', createdAt: Date.now(),
-      };
-      activeSheet().markups.push(markup);
-      markDirty();
-      drawAllMarkups();
-      renderNoteList();
-    });
+    state.currentStroke = { id: genId(), type: 'freehand', color: state.color, thickness: state.thickness, points: [p], note: '' };
+  } else if(state.tool === 'line'){
+    state.drawing = true;
+    state.currentStroke = { id: genId(), type: 'line', color: state.color, thickness: state.thickness, p0: p, p1: p, note: '' };
+  } else if(state.tool === 'multiline'){
+    if(!state.multiPoints) state.multiPoints = [p];
+    else state.multiPoints.push(angleSnap(state.multiPoints[state.multiPoints.length - 1], p));
+    drawAllMarkups();
+    drawMultilinePreview(state.multiPoints);
+  } else if(state.tool === 'shape'){
+    state.drawing = true;
+    state.currentStroke = { id: genId(), type: 'shape', shape: state.shapeType, color: state.color, thickness: state.thickness, p0: p, p1: p, note: '' };
+  } else if(state.tool === 'label' || state.tool === 'note'){
+    placeLeaderMarkup(state.tool, p);
   } else if(state.tool === 'erase'){
     eraseNear(p);
   }
 }
 
 function onPointerMove(e){
+  const p = canvasPoint(e);
+
+  if(state.tool === 'pan' && state.dragHandle){
+    applyDragHandle(state.dragHandle, p);
+    drawAllMarkups();
+    return;
+  }
+  if(state.tool === 'pan' && state.panState){
+    const dx = e.clientX - state.panState.startX, dy = e.clientY - state.panState.startY;
+    $('#canvasArea').scrollLeft = state.panState.scrollLeft - dx;
+    $('#canvasArea').scrollTop = state.panState.scrollTop - dy;
+    return;
+  }
+
   if(state.tool === 'draw' && state.drawing){
-    const p = canvasPoint(e);
     const last = state.currentStroke.points[state.currentStroke.points.length - 1];
-    // Distance threshold keeps point count sane and feeds the smoothing pass.
     if(Math.hypot(p.x - last.x, p.y - last.y) > 3){
       state.currentStroke.points.push(p);
       drawAllMarkups();
       drawStroke(state.currentStroke);
     }
+  } else if(state.tool === 'line' && state.drawing){
+    state.currentStroke.p1 = angleSnap(state.currentStroke.p0, p);
+    drawAllMarkups();
+    drawLine(state.currentStroke);
+  } else if(state.tool === 'shape' && state.drawing){
+    state.currentStroke.p1 = p;
+    drawAllMarkups();
+    drawShape(state.currentStroke);
+  } else if(state.tool === 'multiline' && state.multiPoints){
+    drawAllMarkups();
+    const preview = state.multiPoints.concat([angleSnap(state.multiPoints[state.multiPoints.length - 1], p)]);
+    drawMultilinePreview(preview);
   }
 }
 
 function onPointerUp(e){
+  if(state.tool === 'pan' && state.dragHandle){
+    state.dragHandle = null;
+    markDirty();
+    renderNoteList();
+    showFloatingEditBtnForSelected();
+    return;
+  }
+  if(state.tool === 'pan' && state.panState){
+    state.panState = null;
+    $('#canvasArea').classList.remove('panning');
+    return;
+  }
+
   if(state.tool === 'draw' && state.drawing){
     state.drawing = false;
     if(state.currentStroke.points.length > 1){
@@ -480,41 +910,216 @@ function onPointerUp(e){
     }
     state.currentStroke = null;
     drawAllMarkups();
+  } else if(state.tool === 'line' && state.drawing){
+    state.drawing = false;
+    if(Math.hypot(state.currentStroke.p1.x - state.currentStroke.p0.x, state.currentStroke.p1.y - state.currentStroke.p0.y) > 4){
+      state.currentStroke.createdAt = Date.now();
+      activeSheet().markups.push(state.currentStroke);
+      markDirty();
+      renderNoteList();
+    }
+    state.currentStroke = null;
+    drawAllMarkups();
+  } else if(state.tool === 'shape' && state.drawing){
+    state.drawing = false;
+    if(Math.hypot(state.currentStroke.p1.x - state.currentStroke.p0.x, state.currentStroke.p1.y - state.currentStroke.p0.y) > 4){
+      state.currentStroke.createdAt = Date.now();
+      activeSheet().markups.push(state.currentStroke);
+      markDirty();
+      renderNoteList();
+    }
+    state.currentStroke = null;
+    drawAllMarkups();
+  }
+}
+
+function onDblClick(){
+  if(state.tool === 'multiline' && state.multiPoints && state.multiPoints.length > 1){
+    const markup = { id: genId(), type: 'multiline', color: state.color, thickness: state.thickness, points: state.multiPoints, note: '', createdAt: Date.now() };
+    activeSheet().markups.push(markup);
+    state.multiPoints = null;
+    markDirty();
+    renderNoteList();
+    drawAllMarkups();
+  }
+}
+
+/* ---- Label / Note placement (single tap places with sensible default leader shape,
+   then it's fully adjustable via drag handles in Pan/select mode) ---- */
+function placeLeaderMarkup(kind, anchor){
+  const defaultColor = kind === 'note' ? DEFAULT_NOTE_COLOR : DEFAULT_LABEL_COLOR;
+  showModal({
+    title: kind === 'note' ? 'Add note' : 'Add label',
+    placeholder: kind === 'note' ? 'e.g. "Relocated per RFI 12"' : 'e.g. 6" CU',
+    withSymbols: true, confirmLabel: 'Add',
+    onConfirm: (text) => {
+      if(!text) return;
+      const textPos = { x: anchor.x + 70, y: anchor.y - 60 };
+      const bend = { x: textPos.x + (anchor.x > textPos.x ? 40 : -40), y: textPos.y };
+      const markup = {
+        id: genId(), type: kind, color: defaultColor, text, anchor, bend, textPos,
+        note: '', createdAt: Date.now(),
+      };
+      activeSheet().markups.push(markup);
+      state.selectedMarkupId = markup.id;
+      markDirty();
+      drawAllMarkups();
+      renderNoteList();
+      showFloatingEditBtnForSelected();
+    }
+  });
+}
+
+/* ============================================================
+   SELECTION / HANDLE HIT-TESTING + DRAGGING
+   ============================================================ */
+function handlePointsForMarkup(m){
+  if(m.type === 'label' || m.type === 'note') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'textPos', p: m.textPos }];
+  if(m.type === 'line') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
+  if(m.type === 'shape') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
+  if(m.type === 'multiline') return m.points.map((p, i) => ({ key: 'pt' + i, p }));
+  return [];
+}
+function cloneMarkupPoints(m){ return JSON.parse(JSON.stringify(m)); }
+
+function hitTestHandle(p){
+  const sheet = activeSheet();
+  if(!sheet || !state.selectedMarkupId) return null;
+  const m = sheet.markups.find(x => x.id === state.selectedMarkupId);
+  if(!m) return null;
+  for(const h of handlePointsForMarkup(m)){
+    if(Math.hypot(p.x - h.p.x, p.y - h.p.y) < 16) return { markup: m, key: h.key };
+  }
+  return null;
+}
+function hitTestMarkup(p){
+  const sheet = activeSheet();
+  if(!sheet) return null;
+  const found = sheet.markups.slice().reverse().find(m => markupContainsPoint(m, p));
+  return found ? { markup: found, key: 'whole' } : null;
+}
+function markupContainsPoint(m, p){
+  if(m.type === 'freehand' || m.type === 'multiline') return m.points.some(pt => Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
+  if(m.type === 'line') return distToSegment(p, m.p0, m.p1) < 12;
+  if(m.type === 'shape'){
+    const x0 = Math.min(m.p0.x, m.p1.x), x1 = Math.max(m.p0.x, m.p1.x);
+    const y0 = Math.min(m.p0.y, m.p1.y), y1 = Math.max(m.p0.y, m.p1.y);
+    return p.x >= x0 - 6 && p.x <= x1 + 6 && p.y >= y0 - 6 && p.y <= y1 + 6;
+  }
+  if(m.type === 'label' || m.type === 'note') return Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 40 || Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
+  return false;
+}
+function distToSegment(p, a, b){
+  const l2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
+  if(l2 === 0) return Math.hypot(p.x - a.x, p.y - a.y);
+  let t = ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(p.x - (a.x + t * (b.x - a.x)), p.y - (a.y + t * (b.y - a.y)));
+}
+
+function applyDragHandle(drag, p){
+  const sheet = activeSheet();
+  const m = sheet.markups.find(x => x.id === drag.markupId);
+  if(!m) return;
+  if(drag.key === 'whole'){
+    const dx = p.x - drag.startPoint.x, dy = p.y - drag.startPoint.y;
+    translateMarkup(m, drag.origins, dx, dy);
+    return;
+  }
+  if(drag.key.startsWith('pt')){
+    const idx = parseInt(drag.key.slice(2), 10);
+    m.points[idx] = p;
+    return;
+  }
+  m[drag.key] = p;
+}
+function translateMarkup(m, origin, dx, dy){
+  if(m.type === 'freehand' || m.type === 'multiline'){
+    m.points = origin.points.map(pt => ({ x: pt.x + dx, y: pt.y + dy }));
+  } else if(m.type === 'line' || m.type === 'shape'){
+    m.p0 = { x: origin.p0.x + dx, y: origin.p0.y + dy };
+    m.p1 = { x: origin.p1.x + dx, y: origin.p1.y + dy };
+  } else if(m.type === 'label' || m.type === 'note'){
+    m.anchor = { x: origin.anchor.x + dx, y: origin.anchor.y + dy };
+    m.bend = { x: origin.bend.x + dx, y: origin.bend.y + dy };
+    m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
   }
 }
 
 function eraseNear(p){
   const sheet = activeSheet();
-  const idx = sheet.markups.findIndex(m => {
-    if(m.type === 'callout') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 20 || Math.hypot(p.x - m.labelPos.x, p.y - m.labelPos.y) < 30;
-    return m.points.some(pt => Math.hypot(p.x - pt.x, p.y - pt.y) < 14);
-  });
+  const idx = sheet.markups.findIndex(m => markupContainsPoint(m, p));
   if(idx > -1){
+    if(sheet.markups[idx].id === state.selectedMarkupId) state.selectedMarkupId = null;
     sheet.markups.splice(idx, 1);
     markDirty();
     drawAllMarkups();
     renderNoteList();
+    clearFloatingEditBtn();
   }
 }
 
+/* ---- Floating "Edit text" button shown near a selected label/note ---- */
+function clearFloatingEditBtn(){
+  const el = document.getElementById('floatingEditBtn');
+  if(el) el.remove();
+}
+function showFloatingEditBtnForSelected(){
+  clearFloatingEditBtn();
+  const sheet = activeSheet();
+  if(!sheet || !state.selectedMarkupId) return;
+  const m = sheet.markups.find(x => x.id === state.selectedMarkupId);
+  if(!m || (m.type !== 'label' && m.type !== 'note')) return;
+  const rect = mCanvas.getBoundingClientRect();
+  const scaleX = rect.width / mCanvas.width, scaleY = rect.height / mCanvas.height;
+  const btn = document.createElement('button');
+  btn.id = 'floatingEditBtn';
+  btn.className = 'markup-edit-btn';
+  btn.textContent = 'Edit text';
+  btn.style.left = (rect.left + m.textPos.x * scaleX) + 'px';
+  btn.style.top = (rect.top + m.textPos.y * scaleY - 30) + 'px';
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    showModal({
+      title: m.type === 'note' ? 'Edit note' : 'Edit label', value: m.text, withSymbols: true, confirmLabel: 'Save',
+      destructiveLabel: 'Delete', onDestructive: () => {
+        const idx = sheet.markups.findIndex(x => x.id === m.id);
+        if(idx > -1) sheet.markups.splice(idx, 1);
+        state.selectedMarkupId = null;
+        markDirty(); drawAllMarkups(); renderNoteList(); clearFloatingEditBtn();
+      },
+      onConfirm: (text) => {
+        if(!text) return;
+        m.text = text;
+        markDirty();
+        drawAllMarkups();
+        renderNoteList();
+      }
+    });
+  });
+  document.body.appendChild(btn);
+}
+
 /* ============================================================
-   RENDERING MARKUPS
-   ============================================================
-   Freehand strokes are smoothed with a simple moving-average pass, then drawn
-   as a quadratic-curve path — this is what turns a shaky finger-drawn line
-   into something that reads clean, without losing the speed of freehand.
-*/
+   RENDERING
+   ============================================================ */
 function smoothPoints(points){
   if(points.length < 3) return points;
-  const out = [points[0]];
-  for(let i = 1; i < points.length - 1; i++){
-    out.push({
-      x: (points[i - 1].x + points[i].x + points[i + 1].x) / 3,
-      y: (points[i - 1].y + points[i].y + points[i + 1].y) / 3,
-    });
+  // Two passes of a wider 5-point average — noticeably smoother than a single
+  // 3-point pass, while still tracking the overall shape the person drew.
+  let pass = points;
+  for(let iter = 0; iter < 2; iter++){
+    const out = [pass[0]];
+    for(let i = 1; i < pass.length - 1; i++){
+      const i0 = Math.max(0, i - 2), i1 = Math.min(pass.length - 1, i + 2);
+      let sx = 0, sy = 0, n = 0;
+      for(let k = i0; k <= i1; k++){ sx += pass[k].x; sy += pass[k].y; n++; }
+      out.push({ x: sx / n, y: sy / n });
+    }
+    out.push(pass[pass.length - 1]);
+    pass = out;
   }
-  out.push(points[points.length - 1]);
-  return out;
+  return pass;
 }
 
 function drawAllMarkups(){
@@ -524,7 +1129,27 @@ function drawAllMarkups(){
   if(!sheet) return;
   sheet.markups.forEach(m => {
     if(m.type === 'freehand') drawStroke(m);
-    else if(m.type === 'callout') drawCallout(m);
+    else if(m.type === 'line') drawLine(m);
+    else if(m.type === 'multiline') drawMultiline(m);
+    else if(m.type === 'shape') drawShape(m);
+    else if(m.type === 'label' || m.type === 'note') drawLeader(m);
+  });
+  if(state.selectedMarkupId){
+    const m = sheet.markups.find(x => x.id === state.selectedMarkupId);
+    if(m) drawHandles(m);
+  }
+}
+
+function drawHandles(m){
+  const ctx = mCanvas.getContext('2d');
+  handlePointsForMarkup(m).forEach(h => {
+    ctx.beginPath();
+    ctx.arc(h.p.x, h.p.y, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#E8622C';
+    ctx.stroke();
   });
 }
 
@@ -533,54 +1158,147 @@ function drawStroke(stroke){
   const pts = smoothPoints(stroke.points);
   if(pts.length < 2) return;
   ctx.strokeStyle = stroke.color;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = stroke.thickness || 3;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.beginPath();
   ctx.moveTo(pts[0].x, pts[0].y);
   for(let i = 1; i < pts.length - 1; i++){
-    const midX = (pts[i].x + pts[i + 1].x) / 2;
-    const midY = (pts[i].y + pts[i + 1].y) / 2;
+    const midX = (pts[i].x + pts[i + 1].x) / 2, midY = (pts[i].y + pts[i + 1].y) / 2;
     ctx.quadraticCurveTo(pts[i].x, pts[i].y, midX, midY);
   }
   ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
   ctx.stroke();
 }
 
-function drawCallout(markup){
+function drawLine(m){
   const ctx = mCanvas.getContext('2d');
-  ctx.strokeStyle = markup.color;
-  ctx.fillStyle = markup.color;
+  ctx.strokeStyle = m.color;
+  ctx.lineWidth = m.thickness || 3;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(m.p0.x, m.p0.y);
+  ctx.lineTo(m.p1.x, m.p1.y);
+  ctx.stroke();
+}
+
+// Rounded-joint polyline: draws straight segments with a fixed-radius arc at
+// each interior vertex, so multi-bend runs read as smooth elbows rather than
+// sharp mitered corners. Diagrammatic, not a precise engineering radius.
+function drawMultiline(m){
+  const ctx = mCanvas.getContext('2d');
+  ctx.strokeStyle = m.color;
+  ctx.lineWidth = m.thickness || 3;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  drawRoundedPolyline(ctx, m.points, JOINT_RADIUS);
+}
+function drawMultilinePreview(points){
+  const ctx = mCanvas.getContext('2d');
+  ctx.save();
+  ctx.strokeStyle = state.color;
+  ctx.lineWidth = state.thickness || 3;
+  ctx.globalAlpha = 0.6;
+  drawRoundedPolyline(ctx, points, JOINT_RADIUS);
+  ctx.restore();
+}
+function drawRoundedPolyline(ctx, points, radius){
+  if(points.length < 2) return;
+  if(points.length === 2){
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    ctx.lineTo(points[1].x, points[1].y);
+    ctx.stroke();
+    return;
+  }
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for(let i = 1; i < points.length - 1; i++){
+    const p0 = points[i - 1], p1 = points[i], p2 = points[i + 1];
+    const d1 = Math.hypot(p1.x - p0.x, p1.y - p0.y), d2 = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+    const r = Math.min(radius, d1 / 2, d2 / 2);
+    const t1 = r / (d1 || 1), t2 = r / (d2 || 1);
+    const preP = { x: p1.x + (p0.x - p1.x) * t1, y: p1.y + (p0.y - p1.y) * t1 };
+    const postP = { x: p1.x + (p2.x - p1.x) * t2, y: p1.y + (p2.y - p1.y) * t2 };
+    ctx.lineTo(preP.x, preP.y);
+    ctx.quadraticCurveTo(p1.x, p1.y, postP.x, postP.y);
+  }
+  ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+  ctx.stroke();
+}
+
+function drawShape(m){
+  const ctx = mCanvas.getContext('2d');
+  ctx.strokeStyle = m.color;
+  ctx.lineWidth = m.thickness || 3;
+  const x0 = Math.min(m.p0.x, m.p1.x), y0 = Math.min(m.p0.y, m.p1.y);
+  const w = Math.abs(m.p1.x - m.p0.x), h = Math.abs(m.p1.y - m.p0.y);
+  const cx = x0 + w / 2, cy = y0 + h / 2;
+  ctx.beginPath();
+  if(m.shape === 'circle'){
+    const r = Math.min(w, h) / 2;
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  } else if(m.shape === 'oval'){
+    ctx.ellipse(cx, cy, w / 2, h / 2, 0, 0, Math.PI * 2);
+  } else if(m.shape === 'rect'){
+    ctx.rect(x0, y0, w, h);
+  } else if(m.shape === 'triangle'){
+    ctx.moveTo(cx, y0); ctx.lineTo(x0 + w, y0 + h); ctx.lineTo(x0, y0 + h); ctx.closePath();
+  } else if(m.shape === 'diamond'){
+    ctx.moveTo(cx, y0); ctx.lineTo(x0 + w, cy); ctx.lineTo(cx, y0 + h); ctx.lineTo(x0, cy); ctx.closePath();
+  } else if(m.shape === 'hexagon'){
+    const pts = [];
+    for(let i = 0; i < 6; i++){
+      const ang = Math.PI / 3 * i - Math.PI / 2;
+      pts.push({ x: cx + (w / 2) * Math.cos(ang), y: cy + (h / 2) * Math.sin(ang) });
+    }
+    ctx.moveTo(pts[0].x, pts[0].y);
+    pts.slice(1).forEach(pt => ctx.lineTo(pt.x, pt.y));
+    ctx.closePath();
+  }
+  ctx.stroke();
+}
+
+// Shared leader renderer for both Label (dot tip) and Note (arrow tip).
+function drawLeader(m){
+  const ctx = mCanvas.getContext('2d');
+  ctx.strokeStyle = m.color;
+  ctx.fillStyle = m.color;
   ctx.lineWidth = 1.5;
 
-  // Leader line
   ctx.beginPath();
-  ctx.moveTo(markup.anchor.x, markup.anchor.y);
-  ctx.lineTo(markup.labelPos.x, markup.labelPos.y);
+  ctx.moveTo(m.textPos.x, m.textPos.y);
+  ctx.lineTo(m.bend.x, m.bend.y);
+  ctx.lineTo(m.anchor.x, m.anchor.y);
   ctx.stroke();
 
-  // Anchor dot
-  ctx.beginPath();
-  ctx.arc(markup.anchor.x, markup.anchor.y, 4, 0, Math.PI * 2);
-  ctx.fill();
+  if(m.type === 'note'){
+    const ang = Math.atan2(m.anchor.y - m.bend.y, m.anchor.x - m.bend.x);
+    const size = 9;
+    ctx.beginPath();
+    ctx.moveTo(m.anchor.x, m.anchor.y);
+    ctx.lineTo(m.anchor.x - size * Math.cos(ang - 0.4), m.anchor.y - size * Math.sin(ang - 0.4));
+    ctx.lineTo(m.anchor.x - size * Math.cos(ang + 0.4), m.anchor.y - size * Math.sin(ang + 0.4));
+    ctx.closePath();
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.arc(m.anchor.x, m.anchor.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
-  // Label pill — fixed readable size regardless of zoom, per the "consistent legible
-  // text stamp" approach rather than handwriting.
   ctx.font = '600 13px Inter, sans-serif';
   const padX = 8, padY = 5;
-  const textW = ctx.measureText(markup.text).width;
+  const textW = ctx.measureText(m.text).width;
   const boxW = textW + padX * 2, boxH = 22;
-  const bx = markup.labelPos.x, by = markup.labelPos.y - boxH / 2;
-
+  const bx = m.textPos.x, by = m.textPos.y - boxH / 2;
   ctx.fillStyle = '#fff';
-  ctx.strokeStyle = markup.color;
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = m.color;
   roundRect(ctx, bx, by, boxW, boxH, 6);
   ctx.fill();
   ctx.stroke();
-
-  ctx.fillStyle = markup.color;
-  ctx.fillText(markup.text, bx + padX, by + boxH / 2 + 4);
+  ctx.fillStyle = m.color;
+  ctx.fillText(m.text, bx + padX, by + boxH / 2 + 4);
 }
 
 function roundRect(ctx, x, y, w, h, r){
@@ -594,38 +1312,13 @@ function roundRect(ctx, x, y, w, h, r){
 }
 
 /* ============================================================
-   NOTE POPOVER (attach a note to any markup at creation time)
-   ============================================================ */
-function openNotePopover(clientX, clientY, initial, onDone){
-  const pop = document.createElement('div');
-  pop.className = 'note-popover';
-  pop.style.left = Math.min(clientX, window.innerWidth - 260) + 'px';
-  pop.style.top = Math.min(clientY, window.innerHeight - 160) + 'px';
-  pop.innerHTML = `
-    <textarea placeholder="Label text (e.g. 6&quot; CU, relocated per RFI 12)">${initial}</textarea>
-    <div class="row">
-      <button class="cancel">Cancel</button>
-      <button class="save">Add</button>
-    </div>`;
-  document.body.appendChild(pop);
-  const textarea = pop.querySelector('textarea');
-  textarea.focus();
-  pop.querySelector('.cancel').addEventListener('click', () => { pop.remove(); onDone(null); });
-  pop.querySelector('.save').addEventListener('click', () => {
-    const val = textarea.value.trim();
-    pop.remove();
-    onDone(val);
-  });
-}
-
-/* ============================================================
    NOTES PANEL
    ============================================================ */
 function renderNoteList(){
   const list = $('#noteList');
   const sheet = activeSheet();
   if(!sheet || sheet.markups.length === 0){
-    list.innerHTML = '<div class="panel-empty">No markups yet. Draw or add a label to see notes here.</div>';
+    list.innerHTML = '<div class="panel-empty">No markups yet.</div>';
     $('#noteCount').textContent = '0 markups';
     return;
   }
@@ -633,25 +1326,21 @@ function renderNoteList(){
   list.innerHTML = '';
   sheet.markups.slice().reverse().forEach(m => {
     const card = document.createElement('div');
-    card.className = 'note-card';
+    card.className = 'note-card' + (m.id === state.selectedMarkupId ? ' selected' : '');
     const time = m.createdAt ? new Date(m.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
-    const label = m.type === 'callout' ? m.text : 'Freehand markup';
-    const noteText = m.note ? m.note : '<span class="nc-empty">No note added</span>';
+    const label = (m.type === 'label' || m.type === 'note') ? m.text : (m.type === 'shape' ? m.shape : m.type);
+    const noteText = m.note ? escapeHtml(m.note) : '<span class="nc-empty">No note added</span>';
     card.innerHTML = `
-      <div class="nc-top"><span class="nc-type">${m.type}</span><span class="nc-time">${time}</span></div>
+      <div class="nc-top"><span class="nc-type">${escapeHtml(m.type)}</span><span class="nc-time">${time}</span></div>
       <div class="nc-text"><strong>${escapeHtml(label)}</strong><br>${noteText}</div>`;
     card.addEventListener('click', () => {
-      const text = prompt('Note for this markup:', m.note || '');
-      if(text !== null){ m.note = text; markDirty(); renderNoteList(); }
+      showModal({
+        title: 'Note', value: m.note || '', placeholder: 'Add a note about this markup', confirmLabel: 'Save',
+        onConfirm: (text) => { m.note = text; markDirty(); renderNoteList(); }
+      });
     });
     list.appendChild(card);
   });
-}
-
-function escapeHtml(s){
-  const d = document.createElement('div');
-  d.textContent = s || '';
-  return d.innerHTML;
 }
 
 /* ============================================================
@@ -676,20 +1365,21 @@ async function saveJob(){
     state.lastModified = result.lastModified;
     state.dirty = false;
     setStatus('saved', 'All changes saved');
+    upsertJobsIndex(state.jobId, state.jobName);
   }catch(e){
     if(e.isConflict){
-      alert('This job\'s markup was updated by someone else since you opened it. Reload the job to see the latest before saving again.');
+      showModal({ title: 'Update conflict', sub: 'This job was updated by someone else since you opened it. Reload the job to see the latest before saving again.', confirmLabel: 'OK', onConfirm: () => {} });
     } else {
-      alert('Save failed: ' + (e.message || 'unknown error'));
+      showModal({ title: 'Save failed', sub: e.message || 'Unknown error', confirmLabel: 'OK', onConfirm: () => {} });
     }
     setStatus('dirty', 'Save failed — changes not saved');
   }
 }
 
-// Warn before leaving with unsaved work.
 window.addEventListener('beforeunload', (e) => {
   if(state.dirty){ e.preventDefault(); e.returnValue = ''; }
 });
+window.addEventListener('resize', () => { if(state.selectedMarkupId) showFloatingEditBtnForSelected(); });
 </script>
 </body>
 </html>
