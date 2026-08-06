@@ -63,7 +63,19 @@ input,textarea{font-family:inherit;}
 .main{flex:1;display:flex;overflow:hidden;position:relative;}
 .canvas-area{flex:1;position:relative;background:#C9CED6;overflow:auto;display:flex;align-items:flex-start;justify-content:center;}
 .canvas-area.panning{cursor:grabbing;}
-.canvas-stack{position:relative;margin:24px;box-shadow:var(--shadow);background:#fff;}
+.zoom-wrapper{position:relative;margin:24px;}
+.canvas-stack{position:absolute;top:0;left:0;box-shadow:var(--shadow);background:#fff;transform-origin:top left;}
+.zoom-controls{position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;gap:6px;z-index:45;}
+.zoom-controls button{width:38px;height:38px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--navy);font-size:17px;font-weight:700;box-shadow:var(--shadow);}
+.zoom-controls button:hover{background:var(--surface-2);}
+#zoomFitBtn{font-size:14px;}
+.run-done-btn{position:absolute;top:16px;right:16px;background:var(--success);color:#fff;border:none;font-weight:600;font-size:13px;padding:9px 16px;border-radius:9px;box-shadow:var(--shadow);z-index:45;}
+.run-done-btn:hover{background:#256e46;}
+.markup-action-group{position:absolute;display:flex;gap:6px;z-index:30;}
+.markup-action-group button{background:var(--navy);color:#fff;font-size:11px;font-weight:600;padding:5px 10px;border-radius:7px;border:none;box-shadow:var(--shadow);white-space:nowrap;}
+.markup-action-group button:hover{background:var(--navy-2);}
+.markup-action-group button.delete-btn{background:var(--danger);}
+.markup-action-group button.delete-btn:hover{background:#9C2E20;}
 .canvas-stack canvas{display:block;}
 #pdfCanvas{position:relative;}
 #markupCanvas{position:absolute;top:0;left:0;touch-action:none;}
@@ -116,8 +128,6 @@ input,textarea{font-family:inherit;}
 .mobile-panel-toggle{display:none;background:var(--navy);color:#fff;border:none;font-weight:600;font-size:12px;padding:7px 12px;border-radius:7px;}
 
 /* ---- Selection handles + floating edit button on canvas ---- */
-.markup-edit-btn{position:absolute;background:var(--navy);color:#fff;font-size:11px;font-weight:600;padding:5px 10px;border-radius:7px;border:none;box-shadow:var(--shadow);z-index:30;white-space:nowrap;}
-.markup-edit-btn:hover{background:var(--navy-2);}
 
 /* ---- Modal (replaces native prompt/confirm everywhere) ---- */
 .modal-backdrop{position:fixed;inset:0;background:rgba(20,30,50,0.45);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px;}
@@ -220,6 +230,8 @@ input,textarea{font-family:inherit;}
       <div class="tool-label">Shape</div>
       <button class="tool-btn" data-tool="label" title="Label with leader (dot tip)">🏷️</button>
       <div class="tool-label">Label</div>
+      <button class="tool-btn" data-tool="select" title="Select / move / edit / delete a markup">👆</button>
+      <div class="tool-label">Select</div>
       <button class="tool-btn" data-tool="note" title="Note with leader (arrow tip)">📌</button>
       <div class="tool-label">Note</div>
       <button class="tool-btn" data-tool="erase" title="Erase a markup">🧹</button>
@@ -240,11 +252,9 @@ input,textarea{font-family:inherit;}
       <div class="tool-sep hidden" id="shapeRowSep"></div>
       <div class="shape-row hidden" id="shapeRow">
         <button class="shape-btn active" data-shape="circle" title="Circle">●</button>
-        <button class="shape-btn" data-shape="rect" title="Rectangle">▭</button>
         <button class="shape-btn" data-shape="triangle" title="Triangle">▲</button>
         <button class="shape-btn" data-shape="diamond" title="Diamond">◆</button>
         <button class="shape-btn" data-shape="hexagon" title="Hexagon">⬡</button>
-        <button class="shape-btn" data-shape="oval" title="Oval">⬭</button>
       </div>
     </div>
 
@@ -255,10 +265,18 @@ input,textarea{font-family:inherit;}
         <input type="file" id="pdfUpload" accept="application/pdf" class="hidden">
         <button id="uploadBtn" class="hidden">Upload floor plan PDF</button>
       </div>
-      <div class="canvas-stack hidden" id="canvasStack">
-        <canvas id="pdfCanvas"></canvas>
-        <canvas id="markupCanvas"></canvas>
+      <div class="zoom-wrapper hidden" id="zoomWrapper">
+        <div class="canvas-stack" id="canvasStack">
+          <canvas id="pdfCanvas"></canvas>
+          <canvas id="markupCanvas"></canvas>
+        </div>
       </div>
+      <div class="zoom-controls hidden" id="zoomControls">
+        <button id="zoomInBtn" title="Zoom in">+</button>
+        <button id="zoomFitBtn" title="Fit to screen">⤢</button>
+        <button id="zoomOutBtn" title="Zoom out">−</button>
+      </div>
+      <button class="run-done-btn hidden" id="runDoneBtn">Done ✓</button>
     </div>
 
     <div class="panel panel-hidden" id="panel">
@@ -326,6 +344,8 @@ const state = {
   panState: null,
   selectedMarkupId: null, dragHandle: null,
   jobsIndexCache: null,
+  zoom: 1, naturalWidth: 0, naturalHeight: 0,
+  activePointers: new Map(), pinchState: null,
 };
 
 const ANGLE_STEP = 15; // degrees — snap increment for line/run tools
@@ -680,9 +700,12 @@ async function resolveSiteIdLocal(token){
 
 async function renderActiveSheet(){
   const sheet = activeSheet();
+  clearMarkupActionButtons();
+  hideRunDoneBtn();
   if(!sheet || !sheet.pdfPath){
     $('#emptyState').classList.remove('hidden');
-    $('#canvasStack').classList.add('hidden');
+    $('#zoomWrapper').classList.add('hidden');
+    $('#zoomControls').classList.add('hidden');
     if(state.jobId){
       $('#emptyStateTitle').textContent = 'No drawing on this sheet yet';
       $('#emptyStateBody').textContent = 'Upload a floor plan PDF for this sheet.';
@@ -696,7 +719,8 @@ async function renderActiveSheet(){
     return;
   }
   $('#emptyState').classList.add('hidden');
-  $('#canvasStack').classList.remove('hidden');
+  $('#zoomWrapper').classList.remove('hidden');
+  $('#zoomControls').classList.remove('hidden');
 
   try{
     const token = await AppCore.getGraphToken();
@@ -710,6 +734,8 @@ async function renderActiveSheet(){
     const page = await pdf.getPage(1);
     const viewport = page.getViewport({ scale: 1.5 });
     state.pageViewport = viewport;
+    state.naturalWidth = viewport.width;
+    state.naturalHeight = viewport.height;
 
     const canvas = pdfCanvasEl();
     canvas.width = viewport.width;
@@ -725,17 +751,104 @@ async function renderActiveSheet(){
     canvas.style.width = viewport.width + 'px';
     canvas.style.height = viewport.height + 'px';
 
+    fitToScreen();
     drawAllMarkups();
     renderNoteList();
   }catch(e){
     console.error('PDF render failed', e);
     $('#emptyState').classList.remove('hidden');
-    $('#canvasStack').classList.add('hidden');
+    $('#zoomWrapper').classList.add('hidden');
+    $('#zoomControls').classList.add('hidden');
   }
 }
 
 /* ============================================================
+   ZOOM (in-app, independent of browser zoom)
+   ============================================================
+   The PDF/markup canvases always render at their natural pixel resolution;
+   zoom is a CSS transform on top, so drawing/selection coordinates (which are
+   computed from the element's on-screen bounding box) stay correct at any
+   zoom level without extra math.
+*/
+const ZOOM_MIN = 0.3, ZOOM_MAX = 4, ZOOM_STEP = 0.2;
+
+function applyZoom(){
+  const wrapper = $('#zoomWrapper');
+  const stack = $('#canvasStack');
+  wrapper.style.width = (state.naturalWidth * state.zoom) + 'px';
+  wrapper.style.height = (state.naturalHeight * state.zoom) + 'px';
+  stack.style.transform = `scale(${state.zoom})`;
+  if(state.selectedMarkupId) showMarkupActionButtons(state.selectedMarkupId);
+}
+function setZoom(z, focalClientX, focalClientY){
+  const area = $('#canvasArea');
+  const rect = area.getBoundingClientRect();
+  const beforeScrollX = area.scrollLeft, beforeScrollY = area.scrollTop;
+  const fx = (focalClientX != null) ? focalClientX - rect.left + beforeScrollX : area.clientWidth / 2 + beforeScrollX;
+  const fy = (focalClientY != null) ? focalClientY - rect.top + beforeScrollY : area.clientHeight / 2 + beforeScrollY;
+  const ratio = fx / (state.naturalWidth * state.zoom || 1);
+  const ratioY = fy / (state.naturalHeight * state.zoom || 1);
+  state.zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z));
+  applyZoom();
+  area.scrollLeft = ratio * (state.naturalWidth * state.zoom) - (focalClientX != null ? focalClientX - rect.left : area.clientWidth / 2);
+  area.scrollTop = ratioY * (state.naturalHeight * state.zoom) - (focalClientY != null ? focalClientY - rect.top : area.clientHeight / 2);
+}
+function fitToScreen(){
+  const area = $('#canvasArea');
+  if(!state.naturalWidth || !state.naturalHeight) return;
+  const availW = area.clientWidth - 48, availH = area.clientHeight - 48;
+  const z = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.min(availW / state.naturalWidth, availH / state.naturalHeight)));
+  state.zoom = z;
+  applyZoom();
+  area.scrollLeft = 0;
+  area.scrollTop = 0;
+}
+$('#zoomInBtn').addEventListener('click', () => setZoom(state.zoom + ZOOM_STEP));
+$('#zoomOutBtn').addEventListener('click', () => setZoom(state.zoom - ZOOM_STEP));
+$('#zoomFitBtn').addEventListener('click', fitToScreen);
+
+/* ---- Pinch-to-zoom + two-finger pan (works in any tool) ---- */
+$('#canvasArea').addEventListener('pointerdown', (e) => {
+  if(!state.naturalWidth) return;
+  state.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if(state.activePointers.size === 2){
+    const pts = Array.from(state.activePointers.values());
+    state.pinchState = {
+      startDist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
+      startZoom: state.zoom,
+      startMid: { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 },
+      startScroll: { left: $('#canvasArea').scrollLeft, top: $('#canvasArea').scrollTop },
+    };
+    // A second finger just landed — cancel any single-pointer draw/select in progress.
+    state.drawing = false; state.currentStroke = null; state.dragHandle = null; state.panState = null;
+  }
+});
+$('#canvasArea').addEventListener('pointermove', (e) => {
+  if(!state.activePointers.has(e.pointerId)) return;
+  state.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if(state.activePointers.size === 2 && state.pinchState){
+    const pts = Array.from(state.activePointers.values());
+    const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+    const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state.pinchState.startZoom * (dist / (state.pinchState.startDist || 1))));
+    state.zoom = newZoom;
+    applyZoom();
+    const area = $('#canvasArea');
+    area.scrollLeft = state.pinchState.startScroll.left - (mid.x - state.pinchState.startMid.x);
+    area.scrollTop = state.pinchState.startScroll.top - (mid.y - state.pinchState.startMid.y);
+  }
+});
+function releasePointer(e){
+  state.activePointers.delete(e.pointerId);
+  if(state.activePointers.size < 2) state.pinchState = null;
+}
+$('#canvasArea').addEventListener('pointerup', releasePointer);
+$('#canvasArea').addEventListener('pointercancel', releasePointer);
+function twoFingersActive(){ return state.activePointers.size >= 2; }
+
+/* ============================================================
    TOOLS — selection (color / thickness / shape type / tool)
+
    ============================================================ */
 document.querySelectorAll('.tool-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -747,7 +860,8 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     $('#shapeRow').classList.toggle('hidden', state.tool !== 'shape');
     $('#shapeRowSep').classList.toggle('hidden', state.tool !== 'shape');
     $('#canvasArea').classList.remove('panning');
-    clearFloatingEditBtn();
+    clearMarkupActionButtons();
+    hideRunDoneBtn();
     drawAllMarkups();
   });
 });
@@ -807,22 +921,27 @@ function angleSnap(from, to){
 }
 
 function onPointerDown(e){
-  if(!state.pageViewport) return;
+  state.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if(!state.pageViewport || twoFingersActive()) return;
   const p = canvasPoint(e);
 
-  if(state.tool === 'pan'){
-    // Try selecting/dragging an existing markup first; otherwise pan the view.
+  if(state.tool === 'select'){
     const hit = hitTestHandle(p) || hitTestMarkup(p);
     if(hit){
       state.selectedMarkupId = hit.markup.id;
       state.dragHandle = { markupId: hit.markup.id, key: hit.key, startPoint: p, origins: cloneMarkupPoints(hit.markup) };
       renderNoteList();
       drawAllMarkups();
+      showMarkupActionButtons(hit.markup.id);
       return;
     }
     state.selectedMarkupId = null;
-    clearFloatingEditBtn();
+    clearMarkupActionButtons();
     drawAllMarkups();
+    return;
+  }
+
+  if(state.tool === 'pan'){
     state.panState = { startX: e.clientX, startY: e.clientY, scrollLeft: $('#canvasArea').scrollLeft, scrollTop: $('#canvasArea').scrollTop };
     $('#canvasArea').classList.add('panning');
     return;
@@ -837,6 +956,7 @@ function onPointerDown(e){
   } else if(state.tool === 'multiline'){
     if(!state.multiPoints) state.multiPoints = [p];
     else state.multiPoints.push(angleSnap(state.multiPoints[state.multiPoints.length - 1], p));
+    showRunDoneBtn();
     drawAllMarkups();
     drawMultilinePreview(state.multiPoints);
   } else if(state.tool === 'shape'){
@@ -849,12 +969,24 @@ function onPointerDown(e){
   }
 }
 
+// All shapes in the current set (circle/triangle/diamond/hexagon) are meant to
+// stay regular/even — this locks the drag to a square bounding box so they
+// can't be dragged into a distorted oval/stretched-triangle shape.
+function squareLock(p0, rawP){
+  const dx = rawP.x - p0.x, dy = rawP.y - p0.y;
+  const size = Math.max(Math.abs(dx), Math.abs(dy));
+  const sx = dx < 0 ? -1 : 1, sy = dy < 0 ? -1 : 1;
+  return { x: p0.x + sx * size, y: p0.y + sy * size };
+}
+
 function onPointerMove(e){
+  if(twoFingersActive()) return;
   const p = canvasPoint(e);
 
-  if(state.tool === 'pan' && state.dragHandle){
+  if(state.tool === 'select' && state.dragHandle){
     applyDragHandle(state.dragHandle, p);
     drawAllMarkups();
+    if(state.selectedMarkupId) positionMarkupActionButtons(state.selectedMarkupId);
     return;
   }
   if(state.tool === 'pan' && state.panState){
@@ -876,7 +1008,7 @@ function onPointerMove(e){
     drawAllMarkups();
     drawLine(state.currentStroke);
   } else if(state.tool === 'shape' && state.drawing){
-    state.currentStroke.p1 = p;
+    state.currentStroke.p1 = squareLock(state.currentStroke.p0, p);
     drawAllMarkups();
     drawShape(state.currentStroke);
   } else if(state.tool === 'multiline' && state.multiPoints){
@@ -887,11 +1019,11 @@ function onPointerMove(e){
 }
 
 function onPointerUp(e){
-  if(state.tool === 'pan' && state.dragHandle){
+  if(state.tool === 'select' && state.dragHandle){
     state.dragHandle = null;
     markDirty();
     renderNoteList();
-    showFloatingEditBtnForSelected();
+    if(state.selectedMarkupId) showMarkupActionButtons(state.selectedMarkupId);
     return;
   }
   if(state.tool === 'pan' && state.panState){
@@ -933,19 +1065,28 @@ function onPointerUp(e){
   }
 }
 
-function onDblClick(){
-  if(state.tool === 'multiline' && state.multiPoints && state.multiPoints.length > 1){
+/* ---- Run tool "Done" button — the visible way to finish a multi-segment run ---- */
+function showRunDoneBtn(){ $('#runDoneBtn').classList.remove('hidden'); }
+function hideRunDoneBtn(){ $('#runDoneBtn').classList.add('hidden'); }
+function finishMultiline(){
+  if(state.multiPoints && state.multiPoints.length > 1){
     const markup = { id: genId(), type: 'multiline', color: state.color, thickness: state.thickness, points: state.multiPoints, note: '', createdAt: Date.now() };
     activeSheet().markups.push(markup);
-    state.multiPoints = null;
     markDirty();
     renderNoteList();
-    drawAllMarkups();
   }
+  state.multiPoints = null;
+  hideRunDoneBtn();
+  drawAllMarkups();
+}
+$('#runDoneBtn').addEventListener('click', finishMultiline);
+
+function onDblClick(){
+  if(state.tool === 'multiline' && state.multiPoints && state.multiPoints.length > 1) finishMultiline();
 }
 
 /* ---- Label / Note placement (single tap places with sensible default leader shape,
-   then it's fully adjustable via drag handles in Pan/select mode) ---- */
+   then it's fully adjustable via drag handles in the Select tool) ---- */
 function placeLeaderMarkup(kind, anchor){
   const defaultColor = kind === 'note' ? DEFAULT_NOTE_COLOR : DEFAULT_LABEL_COLOR;
   showModal({
@@ -965,7 +1106,7 @@ function placeLeaderMarkup(kind, anchor){
       markDirty();
       drawAllMarkups();
       renderNoteList();
-      showFloatingEditBtnForSelected();
+      showMarkupActionButtons(markup.id);
     }
   });
 }
@@ -981,6 +1122,15 @@ function handlePointsForMarkup(m){
   return [];
 }
 function cloneMarkupPoints(m){ return JSON.parse(JSON.stringify(m)); }
+function referencePointForMarkup(m){
+  if(m.type === 'label' || m.type === 'note') return m.textPos;
+  if(m.type === 'line') return { x: Math.min(m.p0.x, m.p1.x), y: Math.min(m.p0.y, m.p1.y) };
+  if(m.type === 'shape') return { x: Math.min(m.p0.x, m.p1.x), y: Math.min(m.p0.y, m.p1.y) };
+  if(m.type === 'multiline' || m.type === 'freehand'){
+    return m.points.reduce((acc, pt) => (pt.y < acc.y ? pt : acc), m.points[0]);
+  }
+  return { x: 0, y: 0 };
+}
 
 function hitTestHandle(p){
   const sheet = activeSheet();
@@ -1055,49 +1205,69 @@ function eraseNear(p){
     markDirty();
     drawAllMarkups();
     renderNoteList();
-    clearFloatingEditBtn();
+    clearMarkupActionButtons();
   }
 }
 
-/* ---- Floating "Edit text" button shown near a selected label/note ---- */
-function clearFloatingEditBtn(){
-  const el = document.getElementById('floatingEditBtn');
+/* ---- Floating action buttons for the Select tool: "Edit text" (label/note only)
+   and "Delete" (every markup type) — Select can fully manage a markup without
+   switching to the Erase tool. ---- */
+function clearMarkupActionButtons(){
+  const el = document.getElementById('markupActionGroup');
   if(el) el.remove();
 }
-function showFloatingEditBtnForSelected(){
-  clearFloatingEditBtn();
+function positionMarkupActionButtons(markupId){
+  const group = document.getElementById('markupActionGroup');
+  if(!group) return;
   const sheet = activeSheet();
-  if(!sheet || !state.selectedMarkupId) return;
-  const m = sheet.markups.find(x => x.id === state.selectedMarkupId);
-  if(!m || (m.type !== 'label' && m.type !== 'note')) return;
+  const m = sheet && sheet.markups.find(x => x.id === markupId);
+  if(!m) return;
   const rect = mCanvas.getBoundingClientRect();
   const scaleX = rect.width / mCanvas.width, scaleY = rect.height / mCanvas.height;
-  const btn = document.createElement('button');
-  btn.id = 'floatingEditBtn';
-  btn.className = 'markup-edit-btn';
-  btn.textContent = 'Edit text';
-  btn.style.left = (rect.left + m.textPos.x * scaleX) + 'px';
-  btn.style.top = (rect.top + m.textPos.y * scaleY - 30) + 'px';
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    showModal({
-      title: m.type === 'note' ? 'Edit note' : 'Edit label', value: m.text, withSymbols: true, confirmLabel: 'Save',
-      destructiveLabel: 'Delete', onDestructive: () => {
-        const idx = sheet.markups.findIndex(x => x.id === m.id);
-        if(idx > -1) sheet.markups.splice(idx, 1);
-        state.selectedMarkupId = null;
-        markDirty(); drawAllMarkups(); renderNoteList(); clearFloatingEditBtn();
-      },
-      onConfirm: (text) => {
-        if(!text) return;
-        m.text = text;
-        markDirty();
-        drawAllMarkups();
-        renderNoteList();
-      }
+  const refP = referencePointForMarkup(m);
+  group.style.left = (rect.left + refP.x * scaleX) + 'px';
+  group.style.top = (rect.top + refP.y * scaleY - 34) + 'px';
+}
+function showMarkupActionButtons(markupId){
+  clearMarkupActionButtons();
+  const sheet = activeSheet();
+  const m = sheet && sheet.markups.find(x => x.id === markupId);
+  if(!m) return;
+  const group = document.createElement('div');
+  group.id = 'markupActionGroup';
+  group.className = 'markup-action-group';
+  if(m.type === 'label' || m.type === 'note'){
+    const editBtn = document.createElement('button');
+    editBtn.textContent = 'Edit text';
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showModal({
+        title: m.type === 'note' ? 'Edit note' : 'Edit label', value: m.text, withSymbols: true, confirmLabel: 'Save',
+        onConfirm: (text) => {
+          if(!text) return;
+          m.text = text;
+          markDirty();
+          drawAllMarkups();
+          renderNoteList();
+          positionMarkupActionButtons(markupId);
+        }
+      });
     });
+    group.appendChild(editBtn);
+  }
+  const delBtn = document.createElement('button');
+  delBtn.className = 'delete-btn';
+  delBtn.textContent = 'Delete';
+  delBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const idx = sheet.markups.findIndex(x => x.id === markupId);
+    if(idx > -1) sheet.markups.splice(idx, 1);
+    state.selectedMarkupId = null;
+    markDirty(); drawAllMarkups(); renderNoteList(); clearMarkupActionButtons();
   });
-  document.body.appendChild(btn);
+  group.appendChild(delBtn);
+  document.body.appendChild(group);
+  positionMarkupActionButtons(markupId);
 }
 
 /* ============================================================
@@ -1379,7 +1549,7 @@ async function saveJob(){
 window.addEventListener('beforeunload', (e) => {
   if(state.dirty){ e.preventDefault(); e.returnValue = ''; }
 });
-window.addEventListener('resize', () => { if(state.selectedMarkupId) showFloatingEditBtnForSelected(); });
+window.addEventListener('resize', () => { if(state.selectedMarkupId) positionMarkupActionButtons(state.selectedMarkupId); });
 </script>
 </body>
 </html>
