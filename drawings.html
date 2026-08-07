@@ -71,7 +71,7 @@ input,textarea{font-family:inherit;}
 #zoomFitBtn{font-size:14px;}
 .run-done-btn{position:fixed;background:var(--success);color:#fff;border:none;font-weight:600;font-size:13px;padding:9px 16px;border-radius:9px;box-shadow:var(--shadow);z-index:45;}
 .run-done-btn:hover{background:#256e46;}
-.markup-action-group{position:fixed;display:flex;flex-direction:column;gap:5px;z-index:30;background:var(--surface);border-radius:9px;padding:6px;box-shadow:var(--shadow);}
+.markup-action-group{position:fixed;left:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:30;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:var(--shadow);max-width:150px;}
 .markup-action-row{display:flex;gap:5px;flex-wrap:wrap;}
 .markup-color-dot{width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);padding:0;}
 .markup-color-dot.active{box-shadow:0 0 0 2px var(--navy);}
@@ -225,24 +225,28 @@ input,textarea{font-family:inherit;}
       <div class="tool-label">Pan</div>
       <button class="tool-btn" data-tool="select" title="Select / move / edit / delete a markup"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M6 3l3 17 2.5-6.5L18 12z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
       <div class="tool-label">Select</div>
+      <div class="tool-sep"></div>
       <button class="tool-btn" data-tool="draw" title="Freehand draw">✎</button>
       <div class="tool-label">Draw</div>
       <button class="tool-btn" data-tool="line" title="Straight line, snapped to 15°"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="3" y1="21" x2="21" y2="3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="3" cy="21" r="2" fill="currentColor"/><circle cx="21" cy="3" r="2" fill="currentColor"/></svg></button>
       <div class="tool-label">Line</div>
       <button class="tool-btn" data-tool="multiline" title="Route: multi-segment run, snapped, rounded joints"><svg width="20" height="20" viewBox="0 0 24 24"><polyline points="3,18 8,18 8,6 20,6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="3" cy="18" r="1.8" fill="currentColor"/><circle cx="20" cy="6" r="1.8" fill="currentColor"/></svg></button>
       <div class="tool-label">Route</div>
-      <button class="tool-btn" data-tool="hatchline" title="Demo Line: cross-out a run"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="7" y1="8" x2="9" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="11" y1="8" x2="13" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="15" y1="8" x2="17" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
-      <div class="tool-label">Demo</div>
-      <button class="tool-btn" data-tool="shape" title="Shapes">⬡</button>
-      <div class="tool-label">Shape</div>
       <button class="tool-btn" data-tool="dimension" title="Dimension line with arrowheads and text"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2"/><polygon points="4,12 8,9 8,15" fill="currentColor"/><polygon points="20,12 16,9 16,15" fill="currentColor"/></svg></button>
       <div class="tool-label">Dim</div>
+      <button class="tool-btn" data-tool="shape" title="Shapes">⬡</button>
+      <div class="tool-label">Shape</div>
+      <div class="tool-sep"></div>
+      <button class="tool-btn" data-tool="hatchline" title="Demo Line: cross-out a run"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="7" y1="8" x2="9" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="11" y1="8" x2="13" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="15" y1="8" x2="17" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+      <div class="tool-label">Demo</div>
       <button class="tool-btn" data-tool="hatcharea" title="Hatch: freeform hatched area (demo'd zone)"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="4" y1="12" x2="12" y2="4" stroke="currentColor" stroke-width="1.2"/><line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="1.2"/><line x1="12" y1="20" x2="20" y2="12" stroke="currentColor" stroke-width="1.2"/></svg></button>
       <div class="tool-label">Hatch</div>
+      <div class="tool-sep"></div>
       <button class="tool-btn" data-tool="label" title="Callout with leader (dot tip)"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="4" width="12" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="15" y1="7.5" x2="19" y2="7.5" stroke="currentColor" stroke-width="1.6"/><line x1="19" y1="7.5" x2="21" y2="15" stroke="currentColor" stroke-width="1.6"/><circle cx="21" cy="15" r="1.6" fill="currentColor"/></svg></button>
       <div class="tool-label">Callout</div>
       <button class="tool-btn" data-tool="note" title="Note with leader (arrow tip)"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="7" y1="9" x2="17" y2="9" stroke="currentColor" stroke-width="1.3"/><line x1="7" y1="12.5" x2="17" y2="12.5" stroke="currentColor" stroke-width="1.3"/><line x1="7" y1="16" x2="13" y2="16" stroke="currentColor" stroke-width="1.3"/></svg></button>
       <div class="tool-label">Note</div>
+      <div class="tool-sep"></div>
       <button class="tool-btn" data-tool="erase" title="Erase a markup"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M2 4 L2 2 L14 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M22 22 L22 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L2 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><g transform="rotate(-45 12 12)"><rect x="4" y="8.5" width="16" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="12" y1="8.5" x2="12" y2="15.5" stroke="currentColor" stroke-width="1.8"/></g></svg></button>
       <div class="tool-label">Erase</div>
       <div class="tool-sep"></div>
@@ -262,10 +266,14 @@ input,textarea{font-family:inherit;}
       </div>
       <div class="tool-sep hidden" id="shapeRowSep"></div>
       <div class="shape-row hidden" id="shapeRow">
-        <button class="shape-btn active" data-shape="circle" title="Circle">●</button>
-        <button class="shape-btn" data-shape="triangle" title="Triangle">▲</button>
-        <button class="shape-btn" data-shape="diamond" title="Diamond">◆</button>
-        <button class="shape-btn" data-shape="hexagon" title="Hexagon"><span style="display:inline-block;transform:rotate(30deg);">⬡</span></button>
+        <button class="shape-btn active" data-shape="circle" title="Circle"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
+        <button class="shape-btn" data-shape="square" title="Square"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
+        <button class="shape-btn" data-shape="rect" title="Rectangle"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
+        <button class="shape-btn" data-shape="triangle" title="Triangle"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 3l9 18H3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
+        <button class="shape-btn" data-shape="diamond" title="Diamond"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2l9 10-9 10-9-10z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
+        <button class="shape-btn" data-shape="hexagon" title="Hexagon"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M6 4h12l4 8-4 8H6l-4-8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
+        <button class="shape-btn" data-shape="arrowFilled" title="Arrow, filled head"><svg width="18" height="18" viewBox="0 0 24 24"><line x1="3" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.8"/><polygon points="16,7 22,12 16,17" fill="currentColor"/></svg></button>
+        <button class="shape-btn" data-shape="arrowOutline" title="Arrow, outline head"><svg width="18" height="18" viewBox="0 0 24 24"><line x1="3" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.8"/><polyline points="12,6 20,12 12,18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
     </div>
 
@@ -360,6 +368,10 @@ const state = {
 };
 
 const ANGLE_STEP = 15; // degrees — snap increment for Line/Run tools
+// Shapes that should always stay regular/even-proportioned. Rectangle and the
+// two Arrows are intentionally excluded — free aspect and free length/angle
+// are the whole point of those.
+const LOCKED_SHAPES = ['circle', 'square', 'triangle', 'diamond', 'hexagon'];
 const AXIS_SNAP_THRESHOLD = 6; // degrees — Dimension tool snaps only near horizontal/vertical, else free angle
 const JOINT_RADIUS = 15; // fixed fillet radius for multi-segment corners (diagrammatic, not exact)
 const PALETTE = ['#FF0000', '#00FF00', '#0000FF', '#FF8000', '#FF00FF', '#000000'];
@@ -827,22 +839,38 @@ $('#zoomInBtn').addEventListener('click', () => setZoom(state.zoom + ZOOM_STEP))
 $('#zoomFitBtn').addEventListener('click', fitToScreen);
 $('#zoomOutBtn').addEventListener('click', () => setZoom(state.zoom - ZOOM_STEP));
 
-// Computes true viewport-fixed pixel positions for the zoom controls and the
-// Done button from canvasArea's actual on-screen bounds. Because these are
-// real position:fixed elements, internal scrolling/zooming of the canvas
-// never moves them — only a genuine layout change (resize, notes panel
-// opening/closing) requires recalculating, which is what this gets called on.
+// Computes true viewport-fixed pixel positions for the zoom controls from
+// canvasArea's actual on-screen bounds. Because these are real position:fixed
+// elements, internal scrolling/zooming of the canvas never moves them — only
+// a genuine layout change (resize, notes panel opening/closing) requires
+// recalculating, which is what this gets called on.
 function positionFloatingControls(){
   const rect = $('#canvasArea').getBoundingClientRect();
   const zc = $('#zoomControls');
   zc.style.left = (rect.right - 54) + 'px';
   zc.style.top = (rect.bottom - 142) + 'px';
-  const rb = $('#runDoneBtn');
-  rb.style.left = (rect.right - 116) + 'px';
-  rb.style.top = (rect.top + 16) + 'px';
+  positionRunDoneBtn();
 }
 window.addEventListener('resize', positionFloatingControls);
 window.addEventListener('orientationchange', () => setTimeout(positionFloatingControls, 200));
+
+// The Done button tracks the last point placed while building a Route or
+// Hatch Area, sitting just above it — so it's always right where you just
+// tapped instead of off in a fixed corner of the screen.
+function positionRunDoneBtn(){
+  const rb = $('#runDoneBtn');
+  const rect = $('#canvasArea').getBoundingClientRect();
+  if(state.multiPoints && state.multiPoints.length > 0 && state.pageViewport){
+    const last = state.multiPoints[state.multiPoints.length - 1];
+    const mRect = mCanvas.getBoundingClientRect();
+    const scaleX = mRect.width / mCanvas.width, scaleY = mRect.height / mCanvas.height;
+    rb.style.left = (mRect.left + last.x * scaleX - 40) + 'px';
+    rb.style.top = (mRect.top + last.y * scaleY - 46) + 'px';
+  } else {
+    rb.style.left = (rect.right - 116) + 'px';
+    rb.style.top = (rect.top + 16) + 'px';
+  }
+}
 
 
 /* ---- Pinch-to-zoom + two-finger pan (works in any tool) ---- */
@@ -984,6 +1012,7 @@ function onPointerDown(e){
     if(hit){
       state.selectedMarkupId = hit.markup.id;
       state.dragHandle = { markupId: hit.markup.id, key: hit.key, startPoint: p, origins: cloneMarkupPoints(hit.markup) };
+      try{ mCanvas.setPointerCapture(e.pointerId); }catch(err){}
       renderNoteList();
       drawAllMarkups();
       showMarkupActionButtons(hit.markup.id);
@@ -1047,7 +1076,6 @@ function onPointerMove(e){
   if(state.tool === 'select' && state.dragHandle){
     applyDragHandle(state.dragHandle, p);
     drawAllMarkups();
-    if(state.selectedMarkupId) positionMarkupActionButtons(state.selectedMarkupId);
     return;
   }
   if(state.tool === 'pan' && state.panState){
@@ -1069,7 +1097,7 @@ function onPointerMove(e){
     drawAllMarkups();
     drawLine(state.currentStroke);
   } else if(state.tool === 'shape' && state.drawing){
-    state.currentStroke.p1 = squareLock(state.currentStroke.p0, p);
+    state.currentStroke.p1 = LOCKED_SHAPES.includes(state.shapeType) ? squareLock(state.currentStroke.p0, p) : p;
     drawAllMarkups();
     drawShape(state.currentStroke);
   } else if(state.tool === 'dimension' && state.drawing){
@@ -1093,6 +1121,7 @@ function onPointerMove(e){
 function onPointerUp(e){
   if(state.tool === 'select' && state.dragHandle){
     state.dragHandle = null;
+    try{ mCanvas.releasePointerCapture(e.pointerId); }catch(err){}
     markDirty();
     renderNoteList();
     if(state.selectedMarkupId) showMarkupActionButtons(state.selectedMarkupId);
@@ -1170,7 +1199,7 @@ function onPointerUp(e){
 
 /* ---- Run tool "Done" button — also used to finish a freeform hatch area,
    since both are the same "tap points, then finish" interaction pattern. ---- */
-function showRunDoneBtn(){ $('#runDoneBtn').classList.remove('hidden'); positionFloatingControls(); }
+function showRunDoneBtn(){ $('#runDoneBtn').classList.remove('hidden'); positionRunDoneBtn(); }
 function hideRunDoneBtn(){ $('#runDoneBtn').classList.add('hidden'); }
 function finishMultiline(){
   if(state.multiPoints && state.multiPoints.length > 1){
@@ -1252,7 +1281,13 @@ function handlePointsForMarkup(m){
   if(m.type === 'label' || m.type === 'note') return [{ key: 'anchor', p: m.anchor }, { key: 'textPos', p: m.textPos }];
   if(m.type === 'dimension') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'textPos', p: m.textPos }];
   if(m.type === 'line' || m.type === 'hatchline') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
-  if(m.type === 'shape') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'rotate', p: computeShapeRotateHandle(m) }];
+  if(m.type === 'shape'){
+    const handles = [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
+    if(m.shape !== 'arrowFilled' && m.shape !== 'arrowOutline'){
+      handles.push({ key: 'rotate', p: computeShapeRotateHandle(m) });
+    }
+    return handles;
+  }
   if(m.type === 'multiline' || m.type === 'hatcharea') return m.points.map((p, i) => ({ key: 'pt' + i, p }));
   return [];
 }
@@ -1335,8 +1370,9 @@ function applyDragHandle(drag, p){
   if(m.type === 'shape' && (drag.key === 'p0' || drag.key === 'p1')){
     // Same square-aspect lock used while first drawing a shape — without this,
     // resizing an already-placed shape via its corner handles could distort it.
+    // Rectangle and both Arrows are excluded, same as at creation time.
     const fixedCorner = drag.key === 'p0' ? m.p1 : m.p0;
-    m[drag.key] = squareLock(fixedCorner, p);
+    m[drag.key] = LOCKED_SHAPES.includes(m.shape) ? squareLock(fixedCorner, p) : p;
     return;
   }
   m[drag.key] = p;
@@ -1377,18 +1413,6 @@ function clearMarkupActionButtons(){
   const el = document.getElementById('markupActionGroup');
   if(el) el.remove();
 }
-function positionMarkupActionButtons(markupId){
-  const group = document.getElementById('markupActionGroup');
-  if(!group) return;
-  const sheet = activeSheet();
-  const m = sheet && sheet.markups.find(x => x.id === markupId);
-  if(!m) return;
-  const rect = mCanvas.getBoundingClientRect();
-  const scaleX = rect.width / mCanvas.width, scaleY = rect.height / mCanvas.height;
-  const refP = referencePointForMarkup(m);
-  group.style.left = (rect.left + refP.x * scaleX) + 'px';
-  group.style.top = (rect.top + refP.y * scaleY - 34) + 'px';
-}
 function showMarkupActionButtons(markupId){
   clearMarkupActionButtons();
   const sheet = activeSheet();
@@ -1414,7 +1438,6 @@ function showMarkupActionButtons(markupId){
           markDirty();
           drawAllMarkups();
           renderNoteList();
-          positionMarkupActionButtons(markupId);
         }
       });
     });
@@ -1488,7 +1511,6 @@ function showMarkupActionButtons(markupId){
   });
   group.appendChild(colorRow);
   document.body.appendChild(group);
-  positionMarkupActionButtons(markupId);
 }
 
 /* ============================================================
@@ -1647,14 +1669,31 @@ function drawShape(m){
   ctx.translate(cx, cy);
   ctx.rotate(m.rotation || 0);
   ctx.translate(-cx, -cy);
+
+  if(m.shape === 'arrowFilled' || m.shape === 'arrowOutline'){
+    // Arrows aren't bounding-box shapes — direction and length come straight
+    // from p0 (tail) to p1 (head), same as the Line tool.
+    ctx.beginPath();
+    ctx.moveTo(m.p0.x, m.p0.y);
+    ctx.lineTo(m.p1.x, m.p1.y);
+    ctx.stroke();
+    if(m.shape === 'arrowFilled'){
+      drawArrowHead(ctx, m.p0, m.p1, m.color, 12);
+    } else {
+      drawOutlineArrowHead(ctx, m.p0, m.p1, m.color, 11, m.thickness || 3);
+    }
+    ctx.restore();
+    return;
+  }
+
   ctx.beginPath();
   if(m.shape === 'circle'){
     const r = Math.min(w, h) / 2;
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  } else if(m.shape === 'rect' || m.shape === 'square'){
+    ctx.rect(x0, y0, w, h);
   } else if(m.shape === 'oval'){
     ctx.ellipse(cx, cy, w / 2, h / 2, 0, 0, Math.PI * 2);
-  } else if(m.shape === 'rect'){
-    ctx.rect(x0, y0, w, h);
   } else if(m.shape === 'triangle'){
     ctx.moveTo(cx, y0); ctx.lineTo(x0 + w, y0 + h); ctx.lineTo(x0, y0 + h); ctx.closePath();
   } else if(m.shape === 'diamond'){
@@ -1698,6 +1737,19 @@ function drawArrowHead(ctx, from, tip, color, size = 9){
   ctx.lineTo(tip.x - size * Math.cos(ang + 0.4), tip.y - size * Math.sin(ang + 0.4));
   ctx.closePath();
   ctx.fill();
+}
+
+// Open chevron (not filled) — used by the Arrow "outline head" shape option.
+function drawOutlineArrowHead(ctx, from, tip, color, size = 9, thickness = 2){
+  const ang = Math.atan2(tip.y - from.y, tip.x - from.x);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = thickness;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(tip.x - size * Math.cos(ang - 0.5), tip.y - size * Math.sin(ang - 0.5));
+  ctx.lineTo(tip.x, tip.y);
+  ctx.lineTo(tip.x - size * Math.cos(ang + 0.5), tip.y - size * Math.sin(ang + 0.5));
+  ctx.stroke();
 }
 
 function drawTextPill(ctx, text, pos, color){
@@ -1937,7 +1989,6 @@ async function saveJob(){
 window.addEventListener('beforeunload', (e) => {
   if(state.dirty){ e.preventDefault(); e.returnValue = ''; }
 });
-window.addEventListener('resize', () => { if(state.selectedMarkupId) positionMarkupActionButtons(state.selectedMarkupId); });
 </script>
 </body>
 </html>
