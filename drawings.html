@@ -1091,7 +1091,6 @@ function onPointerDown(e){
       renderNoteList();
       drawAllMarkups();
       showMarkupActionButtons(hit.markup.id);
-      centerViewOnMarkup(hit.markup);
       // showMarkupActionButtons can reflow the layout (the action bar taking
       // real space shifts the canvas down) — re-read the pointer's position
       // AFTER that shift settles, so the drag's reference point matches the
