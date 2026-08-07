@@ -28,7 +28,6 @@ input,textarea{font-family:inherit;}
 /* ---- Top bar ---- */
 .topbar{background:var(--navy);color:#fff;display:flex;align-items:center;gap:10px;padding:10px 16px;flex-shrink:0;box-shadow:var(--shadow);z-index:20;flex-wrap:wrap;}
 .topbar .brand{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;letter-spacing:0.02em;white-space:nowrap;}
-.brand-block{display:flex;flex-direction:column;align-items:flex-start;gap:5px;}
 .topbar .brand .sub{color:#9FB0C8;font-weight:500;font-size:12px;display:block;letter-spacing:0.06em;text-transform:uppercase;}
 .job-select{display:flex;align-items:center;gap:8px;margin-left:8px;position:relative;flex-wrap:wrap;}
 .job-select input{background:#243A56;border:1px solid #35496A;color:#fff;border-radius:8px;padding:7px 10px;font-size:13px;width:130px;}
@@ -52,7 +51,12 @@ input,textarea{font-family:inherit;}
 .account-chip{color:#CBD8EA;font-size:12px;}
 
 /* ---- Sheet tabs ---- */
-.sheet-tabs{display:flex;align-items:center;gap:4px;background:var(--navy-2);padding:0 12px;overflow-x:auto;flex-shrink:0;}
+.tabs-row{display:flex;align-items:center;gap:8px;background:var(--navy-2);padding:0 8px;overflow-x:auto;}
+.crew-directory-btn{color:#CBD8EA;text-decoration:none;font-weight:600;font-size:13px;border:1px solid #35496A;padding:6px 10px;border-radius:8px;display:flex;align-items:center;flex-shrink:0;white-space:nowrap;}
+.crew-directory-btn:hover{background:#243A56;}
+.crew-directory-btn .cd-text{max-width:0;opacity:0;overflow:hidden;display:inline-block;transition:max-width 0.2s ease, opacity 0.15s ease, margin-left 0.2s ease;}
+.crew-directory-btn:hover .cd-text{max-width:130px;opacity:1;margin-left:6px;}
+.sheet-tabs{display:flex;align-items:center;gap:4px;overflow-x:auto;flex-shrink:1;}
 .sheet-tab{padding:9px 10px 9px 16px;font-size:12.5px;font-weight:600;color:#B9C7DC;border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:6px;}
 .sheet-tab.active{color:#fff;border-bottom-color:var(--orange);}
 .sheet-tab .rename-ic{opacity:0.6;font-size:11px;padding:2px;}
@@ -72,7 +76,8 @@ input,textarea{font-family:inherit;}
 #zoomFitBtn{font-size:14px;}
 .run-done-btn{position:fixed;background:var(--success);color:#fff;border:none;font-weight:600;font-size:13px;padding:9px 16px;border-radius:9px;box-shadow:var(--shadow);z-index:45;}
 .run-done-btn:hover{background:#256e46;}
-.action-bar{background:var(--surface);border-bottom:1px solid var(--line);padding:8px 12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;flex-shrink:0;}
+.action-bar{background:var(--surface);border-bottom:1px solid var(--line);padding:8px 12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;flex-shrink:0;min-height:54px;}
+.action-bar:empty::after{content:"Select a markup to edit it";color:var(--text-muted, var(--muted));font-size:12.5px;}
 .markup-action-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
 .markup-action-row + .markup-action-row{border-left:1px solid var(--line);padding-left:10px;}
 .markup-color-dot{width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);padding:0;}
@@ -112,6 +117,7 @@ input,textarea{font-family:inherit;}
 
 /* ---- Right panel: notes list ---- */
 .panel{width:var(--panel-w);background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;}
+.panel.panel-hidden{display:none;}
 .panel-head{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
 .panel-head .disp{font-size:15px;color:var(--navy);}
 .panel-head .count{font-size:11px;color:var(--muted);}
@@ -134,7 +140,7 @@ input,textarea{font-family:inherit;}
 .save-btn:disabled{opacity:.5;cursor:default;}
 .status-dot{width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0;}
 .status-dot.dirty{background:var(--warn);}
-.mobile-panel-toggle{display:none;background:#2E8B57;color:#FF8000;border:none;font-weight:700;font-size:12px;padding:6px 14px;border-radius:7px;align-self:flex-start;}
+.mobile-panel-toggle{display:inline-block;background:#2E8B57;color:#fff;border:none;font-weight:700;font-size:12px;padding:6px 14px;border-radius:7px;flex-shrink:0;}
 
 /* ---- Selection handles + floating edit button on canvas ---- */
 
@@ -182,12 +188,11 @@ input,textarea{font-family:inherit;}
   }
   .panel.panel-hidden{display:none;}
   .panel-close{display:block;}
-  .mobile-panel-toggle{display:inline-block;}
   .job-select input{width:100px;}
   .job-select{gap:6px;}
   .topbar{padding:8px 10px;gap:6px;}
   .topbar .brand .sub{display:none;}
-  .nav-link{padding:6px 9px;font-size:12px;}
+  .crew-directory-btn{padding:6px 9px;font-size:12px;}
 }
 @media (max-width: 520px){
   .tool-btn{width:38px;height:38px;font-size:16px;}
@@ -208,10 +213,7 @@ input,textarea{font-family:inherit;}
 
 <div class="app hidden" id="app">
   <div class="topbar">
-    <div class="brand-block">
-      <div class="brand">Drawing Markup<span class="sub">PPC Field Tools</span></div>
-      <button class="mobile-panel-toggle" id="mobilePanelToggle">Notes</button>
-    </div>
+    <div class="brand">Drawing Markup<span class="sub">PPC Field Tools</span></div>
     <div class="job-select">
       <input id="jobIdInput" placeholder="Job number">
       <button id="loadJobBtn">Open</button>
@@ -220,13 +222,18 @@ input,textarea{font-family:inherit;}
       <div class="job-dropdown hidden" id="jobDropdown"></div>
     </div>
     <div class="topbar-right">
-      <a class="nav-link" href="index.html">← Crew Directory</a>
       <span class="account-chip" id="accountChip"></span>
     </div>
   </div>
 
-  <div class="sheet-tabs" id="sheetTabs"></div>
-  <div class="action-bar hidden" id="actionBar"></div>
+  <div class="tabs-row">
+    <button class="mobile-panel-toggle" id="mobilePanelToggle">Notes</button>
+    <a class="crew-directory-btn" href="index.html" title="Crew Directory">
+      <span class="cd-arrow">←</span><span class="cd-text">Crew Directory</span>
+    </a>
+    <div class="sheet-tabs" id="sheetTabs"></div>
+  </div>
+  <div class="action-bar" id="actionBar"></div>
 
   <div class="main">
     <div class="toolrail" id="toolrail">
@@ -375,7 +382,7 @@ const state = {
   tool: 'pan', color: '#FF0000', thickness: 2, shapeType: 'circle',
   dirty: false,
   drawing: false, currentStroke: null,
-  multiPoints: null,
+  multiPoints: null, routeDragging: false, routeSegmentStart: null,
   panState: null,
   selectedMarkupId: null, dragHandle: null,
   jobsIndexCache: null,
@@ -903,7 +910,7 @@ $('#canvasArea').addEventListener('pointerdown', (e) => {
       startScroll: { left: $('#canvasArea').scrollLeft, top: $('#canvasArea').scrollTop },
     };
     // A second finger just landed — cancel any single-pointer draw/select in progress.
-    state.drawing = false; state.currentStroke = null; state.dragHandle = null; state.panState = null;
+    state.drawing = false; state.currentStroke = null; state.dragHandle = null; state.panState = null; state.routeDragging = false;
   }
 });
 $('#canvasArea').addEventListener('pointermove', (e) => {
@@ -939,6 +946,8 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     btn.classList.add('active');
     state.tool = btn.dataset.tool;
     state.multiPoints = null;
+    state.routeDragging = false;
+    state.routeSegmentStart = null;
     state.selectedMarkupId = null;
     $('#shapeRow').classList.toggle('hidden', state.tool !== 'shape');
     $('#shapeRowSep').classList.toggle('hidden', state.tool !== 'shape');
@@ -1061,11 +1070,15 @@ function onPointerDown(e){
     const hit = hitTestHandle(p) || hitTestMarkup(p);
     if(hit){
       state.selectedMarkupId = hit.markup.id;
-      state.dragHandle = { markupId: hit.markup.id, key: hit.key, startPoint: p, origins: cloneMarkupPoints(hit.markup) };
       try{ mCanvas.setPointerCapture(e.pointerId); }catch(err){}
       renderNoteList();
       drawAllMarkups();
       showMarkupActionButtons(hit.markup.id);
+      // showMarkupActionButtons can reflow the layout (the action bar taking
+      // real space shifts the canvas down) — re-read the pointer's position
+      // AFTER that shift settles, so the drag's reference point matches the
+      // canvas's new on-screen position instead of its pre-shift one.
+      state.dragHandle = { markupId: hit.markup.id, key: hit.key, startPoint: canvasPoint(e), origins: cloneMarkupPoints(hit.markup) };
       return;
     }
     state.selectedMarkupId = null;
@@ -1086,13 +1099,23 @@ function onPointerDown(e){
   } else if(state.tool === 'line'){
     state.drawing = true;
     state.currentStroke = { id: genId(), type: 'line', color: state.color, thickness: state.thickness, p0: p, p1: p, note: '' };
-  } else if(state.tool === 'multiline' || state.tool === 'hatcharea' || state.tool === 'whiteoutFreeform'){
-    if(!state.multiPoints) state.multiPoints = [p];
-    else state.multiPoints.push(state.tool === 'multiline' ? angleSnap(state.multiPoints[state.multiPoints.length - 1], p) : p);
+  } else if(state.tool === 'multiline'){
+    // Route: touch down starts (or continues) a segment from the last
+    // committed point; dragging previews it live; lifting the finger commits
+    // that endpoint and sets up the next segment. Much easier with a finger
+    // than tapping precisely at each vertex.
+    if(!state.multiPoints) state.multiPoints = [p]; // first touch places the very first anchor
+    state.routeSegmentStart = state.multiPoints[state.multiPoints.length - 1];
+    state.routeDragging = true;
     showRunDoneBtn();
     drawAllMarkups();
-    if(state.tool === 'multiline') drawMultilinePreview(state.multiPoints);
-    else if(state.tool === 'whiteoutFreeform') drawWhiteoutFreeformPreview(state.multiPoints);
+    drawMultilinePreview(state.multiPoints);
+  } else if(state.tool === 'hatcharea' || state.tool === 'whiteoutFreeform'){
+    if(!state.multiPoints) state.multiPoints = [p];
+    else state.multiPoints.push(p);
+    showRunDoneBtn();
+    drawAllMarkups();
+    if(state.tool === 'whiteoutFreeform') drawWhiteoutFreeformPreview(state.multiPoints);
     else drawHatchAreaPreview(state.multiPoints);
   } else if(state.tool === 'shape'){
     state.drawing = true;
@@ -1166,10 +1189,10 @@ function onPointerMove(e){
     state.currentStroke.p1 = p;
     drawAllMarkups();
     drawWhiteoutRectPreview(state.currentStroke.p0, state.currentStroke.p1);
-  } else if(state.tool === 'multiline' && state.multiPoints){
+  } else if(state.tool === 'multiline' && state.routeDragging){
     drawAllMarkups();
-    const preview = state.multiPoints.concat([angleSnap(state.multiPoints[state.multiPoints.length - 1], p)]);
-    drawMultilinePreview(preview);
+    const snapped = angleSnap(state.routeSegmentStart, p);
+    drawMultilinePreview(state.multiPoints.concat([snapped]));
   } else if(state.tool === 'hatcharea' && state.multiPoints){
     drawAllMarkups();
     drawHatchAreaPreview(state.multiPoints.concat([p]));
@@ -1180,6 +1203,16 @@ function onPointerMove(e){
 }
 
 function onPointerUp(e){
+  if(state.tool === 'multiline' && state.routeDragging){
+    state.routeDragging = false;
+    const p = canvasPoint(e);
+    const snapped = angleSnap(state.routeSegmentStart, p);
+    const dist = Math.hypot(snapped.x - state.routeSegmentStart.x, snapped.y - state.routeSegmentStart.y);
+    if(dist > 4) state.multiPoints.push(snapped);
+    positionRunDoneBtn();
+    drawAllMarkups();
+    return;
+  }
   if(state.tool === 'select' && state.dragHandle){
     state.dragHandle = null;
     try{ mCanvas.releasePointerCapture(e.pointerId); }catch(err){}
@@ -1293,6 +1326,8 @@ function finishMultiline(){
     }
   }
   state.multiPoints = null;
+  state.routeDragging = false;
+  state.routeSegmentStart = null;
   hideRunDoneBtn();
   drawAllMarkups();
 }
@@ -1520,7 +1555,6 @@ function eraseNear(p){
 function clearMarkupActionButtons(){
   const bar = $('#actionBar');
   bar.innerHTML = '';
-  bar.classList.add('hidden');
   positionFloatingControls();
 }
 function showMarkupActionButtons(markupId){
@@ -1528,7 +1562,7 @@ function showMarkupActionButtons(markupId){
   bar.innerHTML = '';
   const sheet = activeSheet();
   const m = sheet && sheet.markups.find(x => x.id === markupId);
-  if(!m){ bar.classList.add('hidden'); return; }
+  if(!m) return;
   const group = bar;
 
   const buttonRow = document.createElement('div');
@@ -1636,7 +1670,6 @@ function showMarkupActionButtons(markupId){
   });
   group.appendChild(colorRow);
   }
-  bar.classList.remove('hidden');
   positionFloatingControls();
 }
 
