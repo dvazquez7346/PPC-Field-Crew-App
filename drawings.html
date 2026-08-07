@@ -1236,8 +1236,9 @@ function placeLeaderMarkup(kind, anchor){
     onConfirm: (text) => {
       if(!text) return;
       const textPos = { x: anchor.x + 70, y: anchor.y - 60 };
+      const bend = defaultBendPosition(anchor, textPos);
       const markup = {
-        id: genId(), type: kind, color: defaultColor, text, anchor, textPos,
+        id: genId(), type: kind, color: defaultColor, text, anchor, bend, textPos,
         note: '', createdAt: Date.now(),
       };
       activeSheet().markups.push(markup);
@@ -1265,11 +1266,11 @@ function switchToSelectAndSelect(markupId){
   showMarkupActionButtons(markupId);
 }
 
-// Bluebeam-style callout geometry: the bend is never a handle the user drags —
-// it's always recomputed from the two real handles (anchor + textPos) so the
-// segment nearest the text stays a fixed-length horizontal stub, and the far
-// segment always points straight at wherever the anchor currently is.
-function computeLeaderBend(anchor, textPos){
+// Just a sensible starting position for a brand-new leader — the bend itself
+// is a real, independently draggable handle from here on (see applyDragHandle),
+// snapped to 15° increments around the text so it can be pointed at either
+// side cleanly instead of ending up at a crooked angle.
+function defaultBendPosition(anchor, textPos){
   const dir = anchor.x >= textPos.x ? 1 : -1;
   return { x: textPos.x + dir * LEADER_STUB_LENGTH, y: textPos.y };
 }
@@ -1278,11 +1279,11 @@ function computeLeaderBend(anchor, textPos){
    SELECTION / HANDLE HIT-TESTING + DRAGGING
    ============================================================ */
 function handlePointsForMarkup(m){
-  if(m.type === 'label' || m.type === 'note') return [{ key: 'anchor', p: m.anchor }, { key: 'textPos', p: m.textPos }];
+  if(m.type === 'label' || m.type === 'note') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'textPos', p: m.textPos }];
   if(m.type === 'dimension') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'textPos', p: m.textPos }];
   if(m.type === 'line' || m.type === 'hatchline') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
   if(m.type === 'shape'){
-    const handles = [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
+    const handles = [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: shapeCenter(m) }];
     if(m.shape !== 'arrowFilled' && m.shape !== 'arrowOutline'){
       handles.push({ key: 'rotate', p: computeShapeRotateHandle(m) });
     }
@@ -1307,7 +1308,7 @@ function hitTestHandle(p){
   const m = sheet.markups.find(x => x.id === state.selectedMarkupId);
   if(!m) return null;
   for(const h of handlePointsForMarkup(m)){
-    if(Math.hypot(p.x - h.p.x, p.y - h.p.y) < 16) return { markup: m, key: h.key };
+    if(Math.hypot(p.x - h.p.x, p.y - h.p.y) < 12) return { markup: m, key: h.key };
   }
   return null;
 }
@@ -1350,7 +1351,7 @@ function applyDragHandle(drag, p){
   const sheet = activeSheet();
   const m = sheet.markups.find(x => x.id === drag.markupId);
   if(!m) return;
-  if(drag.key === 'whole'){
+  if(drag.key === 'whole' || drag.key === 'move'){
     const dx = p.x - drag.startPoint.x, dy = p.y - drag.startPoint.y;
     translateMarkup(m, drag.origins, dx, dy);
     return;
@@ -1360,6 +1361,25 @@ function applyDragHandle(drag, p){
     let angle = Math.atan2(p.y - c.y, p.x - c.x) + Math.PI / 2;
     const step = ANGLE_STEP * Math.PI / 180;
     m.rotation = Math.round(angle / step) * step;
+    return;
+  }
+  if(drag.key === 'bend' && (m.type === 'label' || m.type === 'note')){
+    // Manually draggable, snapped to clean angle increments around the text
+    // so it can be pointed at either side deliberately instead of ending up
+    // at a crooked, hard-to-read angle.
+    const dx = p.x - m.textPos.x, dy = p.y - m.textPos.y;
+    const dist = Math.max(12, Math.hypot(dx, dy));
+    const step = ANGLE_STEP * Math.PI / 180;
+    const angle = Math.round(Math.atan2(dy, dx) / step) * step;
+    m.bend = { x: m.textPos.x + Math.cos(angle) * dist, y: m.textPos.y + Math.sin(angle) * dist };
+    return;
+  }
+  if(drag.key === 'textPos' && (m.type === 'label' || m.type === 'note')){
+    // Bend moves along with the text (keeping the stub's shape consistent)
+    // unless the person deliberately drags the bend grip itself.
+    const dx = p.x - m.textPos.x, dy = p.y - m.textPos.y;
+    m.bend = { x: m.bend.x + dx, y: m.bend.y + dy };
+    m.textPos = p;
     return;
   }
   if(drag.key.startsWith('pt')){
@@ -1389,6 +1409,7 @@ function translateMarkup(m, origin, dx, dy){
     m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
   } else if(m.type === 'label' || m.type === 'note'){
     m.anchor = { x: origin.anchor.x + dx, y: origin.anchor.y + dy };
+    m.bend = { x: origin.bend.x + dx, y: origin.bend.y + dy };
     m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
   }
 }
@@ -1572,8 +1593,30 @@ function drawHandles(m){
     ctx.restore();
   }
   handlePointsForMarkup(m).forEach(h => {
+    if(h.key === 'move'){
+      ctx.save();
+      ctx.fillStyle = '#2F5D8A';
+      roundRect(ctx, h.p.x - 6.75, h.p.y - 6.75, 13.5, 13.5, 3);
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(h.p.x - 3.75, h.p.y); ctx.lineTo(h.p.x + 3.75, h.p.y);
+      ctx.moveTo(h.p.x, h.p.y - 3.75); ctx.lineTo(h.p.x, h.p.y + 3.75);
+      ctx.moveTo(h.p.x - 3.75, h.p.y); ctx.lineTo(h.p.x - 1.5, h.p.y - 1.5);
+      ctx.moveTo(h.p.x - 3.75, h.p.y); ctx.lineTo(h.p.x - 1.5, h.p.y + 1.5);
+      ctx.moveTo(h.p.x + 3.75, h.p.y); ctx.lineTo(h.p.x + 1.5, h.p.y - 1.5);
+      ctx.moveTo(h.p.x + 3.75, h.p.y); ctx.lineTo(h.p.x + 1.5, h.p.y + 1.5);
+      ctx.moveTo(h.p.x, h.p.y - 3.75); ctx.lineTo(h.p.x - 1.5, h.p.y - 1.5);
+      ctx.moveTo(h.p.x, h.p.y - 3.75); ctx.lineTo(h.p.x + 1.5, h.p.y - 1.5);
+      ctx.moveTo(h.p.x, h.p.y + 3.75); ctx.lineTo(h.p.x - 1.5, h.p.y + 1.5);
+      ctx.moveTo(h.p.x, h.p.y + 3.75); ctx.lineTo(h.p.x + 1.5, h.p.y + 1.5);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
     ctx.beginPath();
-    ctx.arc(h.p.x, h.p.y, 7, 0, Math.PI * 2);
+    ctx.arc(h.p.x, h.p.y, 5.25, 0, Math.PI * 2);
     ctx.fillStyle = '#fff';
     ctx.fill();
     ctx.lineWidth = 2;
@@ -1774,7 +1817,7 @@ function drawTextPill(ctx, text, pos, color){
 // it is never read from stored data, so old saved markups migrate silently.
 function drawLeader(m){
   const ctx = mCanvas.getContext('2d');
-  const bend = computeLeaderBend(m.anchor, m.textPos);
+  const bend = m.bend || defaultBendPosition(m.anchor, m.textPos);
   ctx.strokeStyle = m.color;
   ctx.fillStyle = m.color;
   ctx.lineWidth = 1.5;
