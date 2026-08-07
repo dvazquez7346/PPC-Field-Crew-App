@@ -55,7 +55,13 @@ const AppCore = (function(){
   }
 
   function isMobileDevice(){
-    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.matchMedia('(max-width: 899px)').matches;
+    // iPadOS 13+ deliberately disguises itself as desktop Mac Safari in the
+    // user agent (Apple did this so sites serve the desktop layout), which
+    // makes the regex check below miss real iPads entirely. A genuine Mac
+    // never reports touch points, but an iPad always does — so that
+    // combination is a reliable second signal specifically for this case.
+    const isDisguisedIPad = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || isDisguisedIPad || window.matchMedia('(max-width: 899px)').matches;
   }
   function isInIframe(){
     try{ return window.parent !== window; }catch(e){ return true; }
@@ -224,6 +230,23 @@ const AppCore = (function(){
     return { lastModified: json.lastModifiedDateTime, itemId: json.id };
   }
 
+  // Lists files in the drive root matching a regex against their name. Used to build
+  // a browsable "recent jobs" list from the job-<id>-markup.json files that already
+  // exist, rather than maintaining a separate index that could drift out of sync.
+  async function listFilesMatching(regex){
+    const token = await getGraphToken();
+    const siteId = await resolveSiteId(token);
+    const res = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root/children?$select=name,lastModifiedDateTime&$top=200`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if(!res.ok) throw new Error(`Could not list files (${res.status})`);
+    const json = await res.json();
+    return (json.value || [])
+      .filter(item => regex.test(item.name))
+      .map(item => ({ name: item.name, lastModifiedDateTime: item.lastModifiedDateTime }));
+  }
+
   /* ---- Uploads a binary file (e.g. a PDF drawing) to the SAME site's drive,
      under a given folder path, for the drawing tool to use later. Kept here so
      any future page can drop files into SharePoint without re-deriving siteId
@@ -246,7 +269,7 @@ const AppCore = (function(){
 
   return {
     initMsal, getActiveAccount, getGraphToken, signIn, signOut, handleRedirectPromise,
-    readJsonFile, writeJsonFile, uploadFile,
+    readJsonFile, writeJsonFile, uploadFile, listFilesMatching,
     isMobileDevice, isInIframe,
   };
 })();
