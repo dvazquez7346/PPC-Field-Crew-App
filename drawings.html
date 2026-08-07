@@ -109,7 +109,7 @@ input,textarea{font-family:inherit;}
 .whiteout-lock-btn.unlocked-mode{background:var(--danger);color:#fff;border-color:var(--danger);}
 .whiteout-group{display:flex;flex-direction:column;align-items:center;gap:2px;}
 .whiteout-label{max-width:46px;text-align:center;line-height:1.05;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:break-word;}
-.whiteout-buttons{display:flex;gap:4px;}
+.whiteout-buttons{display:flex;flex-direction:column;gap:4px;}
 .tool-sep{width:32px;height:1px;background:var(--line);margin:6px 0;}
 .tool-label{font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;margin-top:-2px;text-align:center;}
 .color-row,.thickness-row,.shape-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:0 6px;}
@@ -1350,17 +1350,8 @@ function finishMultiline(){
 }
 $('#runDoneBtn').addEventListener('click', finishMultiline);
 
-function onDblClick(e){
-  const midPolyline = (state.tool === 'multiline' || state.tool === 'hatcharea' || state.tool === 'whiteoutFreeform' || state.tool === 'hatchline') && state.multiPoints && state.multiPoints.length > 1;
-  if(midPolyline){
-    finishMultiline();
-    return;
-  }
-  if(!state.pageViewport) return;
-  const p = canvasPoint(e);
-  const area = $('#canvasArea');
-  area.scrollLeft = p.x * state.zoom - area.clientWidth / 2;
-  area.scrollTop = p.y * state.zoom - area.clientHeight / 2;
+function onDblClick(){
+  if((state.tool === 'multiline' || state.tool === 'hatcharea' || state.tool === 'whiteoutFreeform' || state.tool === 'hatchline') && state.multiPoints && state.multiPoints.length > 1) finishMultiline();
 }
 
 /* ---- Label / Note placement (single tap places with sensible default leader shape,
