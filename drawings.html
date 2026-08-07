@@ -18,7 +18,8 @@
   --toolrail-w:64px; --panel-w:300px;
 }
 *{box-sizing:border-box;}
-html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;height:100%;overflow:hidden;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;height:100%;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
 h1,h2,h3,.disp{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:0.01em;}
 button{font-family:inherit;cursor:pointer;}
 input,textarea{font-family:inherit;}
@@ -76,11 +77,13 @@ input,textarea{font-family:inherit;}
 #zoomFitBtn{font-size:14px;}
 .run-done-btn{position:fixed;background:var(--success);color:#fff;border:none;font-weight:600;font-size:13px;padding:9px 16px;border-radius:9px;box-shadow:var(--shadow);z-index:45;}
 .run-done-btn:hover{background:#256e46;}
-.action-bar{background:var(--surface);border-bottom:1px solid var(--line);padding:8px 12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;flex-shrink:0;min-height:54px;}
-.action-bar:empty::after{content:"Select a markup to edit it";color:var(--text-muted, var(--muted));font-size:12.5px;}
-.markup-action-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
-.markup-action-row + .markup-action-row{border-left:1px solid var(--line);padding-left:10px;}
-.markup-color-dot{width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);padding:0;}
+.action-bar{background:var(--surface);border-bottom:1px solid var(--line);padding:4px 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;flex-shrink:0;min-height:34px;}
+.markup-action-row{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+.markup-action-row + .markup-action-row{border-left:1px solid var(--line);padding-left:8px;}
+.markup-action-row button{font-family:inherit;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer;}
+.markup-action-row button:hover{border-color:var(--blueprint);}
+.markup-action-row button.delete-btn{background:var(--danger-bg);color:var(--danger);border-color:transparent;}
+.markup-color-dot{width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);padding:0;}
 .markup-color-dot.active{box-shadow:0 0 0 2px var(--navy);}
 .markup-action-group button{background:var(--navy);color:#fff;font-size:11px;font-weight:600;padding:5px 10px;border-radius:7px;border:none;box-shadow:var(--shadow);white-space:nowrap;}
 .markup-action-group button:hover{background:var(--navy-2);}
@@ -104,6 +107,9 @@ input,textarea{font-family:inherit;}
 .whiteout-lock-btn{width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:transparent;display:flex;align-items:center;justify-content:center;color:var(--navy);cursor:pointer;}
 .whiteout-lock-btn:hover{background:var(--surface-2);}
 .whiteout-lock-btn.unlocked-mode{background:var(--danger);color:#fff;border-color:var(--danger);}
+.whiteout-group{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.whiteout-label{max-width:46px;text-align:center;line-height:1.05;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:break-word;}
+.whiteout-buttons{display:flex;gap:4px;}
 .tool-sep{width:32px;height:1px;background:var(--line);margin:6px 0;}
 .tool-label{font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;margin-top:-2px;text-align:center;}
 .color-row,.thickness-row,.shape-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:0 6px;}
@@ -266,10 +272,13 @@ input,textarea{font-family:inherit;}
       <button class="tool-btn" data-tool="erase" title="Erase a markup"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M2 4 L2 2 L14 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M22 22 L22 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L2 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><g transform="rotate(-45 12 12)"><rect x="4" y="8.5" width="16" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="12" y1="8.5" x2="12" y2="15.5" stroke="currentColor" stroke-width="1.8"/></g></svg></button>
       <div class="tool-label">Erase</div>
       <div class="tool-sep"></div>
-      <button class="tool-btn" data-tool="whiteoutRect" title="Whiteout (rectangle) \u2014 covers PDF content, not destructive"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2"/></svg></button>
-      <div class="tool-label">W-Rect</div>
-      <button class="tool-btn" data-tool="whiteoutFreeform" title="Whiteout (freeform) \u2014 covers PDF content, not destructive"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M6 6 Q4 10 6 14 Q8 20 14 18 Q20 16 18 10 Q16 4 10 5 Q7 5 6 6 Z" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2"/></svg></button>
-      <div class="tool-label">W-Free</div>
+      <div class="whiteout-group">
+        <div class="tool-label whiteout-label">WHITEOUT</div>
+        <div class="whiteout-buttons">
+          <button class="tool-btn" data-tool="whiteoutRect" title="Whiteout (rectangle) — covers PDF content, not destructive"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2"/></svg></button>
+          <button class="tool-btn" data-tool="whiteoutFreeform" title="Whiteout (freeform) — covers PDF content, not destructive"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M6 6 Q4 10 6 14 Q8 20 14 18 Q20 16 18 10 Q16 4 10 5 Q7 5 6 6 Z" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2"/></svg></button>
+        </div>
+      </div>
       <button class="whiteout-lock-btn" id="whiteoutLockBtn" title="Unlock whiteouts to edit them (locks out every other tool until you lock again)"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></button>
       <div class="tool-label">Lock</div>
       <div class="tool-sep"></div>
@@ -888,8 +897,8 @@ function positionRunDoneBtn(){
     const last = state.multiPoints[state.multiPoints.length - 1];
     const mRect = mCanvas.getBoundingClientRect();
     const scaleX = mRect.width / mCanvas.width, scaleY = mRect.height / mCanvas.height;
-    rb.style.left = (mRect.left + last.x * scaleX - 40) + 'px';
-    rb.style.top = (mRect.top + last.y * scaleY - 46) + 'px';
+    rb.style.left = (mRect.left + last.x * scaleX - 20) + 'px';
+    rb.style.top = (mRect.top + last.y * scaleY - 80) + 'px';
   } else {
     rb.style.left = (rect.right - 116) + 'px';
     rb.style.top = (rect.top + 16) + 'px';
@@ -906,8 +915,6 @@ $('#canvasArea').addEventListener('pointerdown', (e) => {
     state.pinchState = {
       startDist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
       startZoom: state.zoom,
-      startMid: { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 },
-      startScroll: { left: $('#canvasArea').scrollLeft, top: $('#canvasArea').scrollTop },
     };
     // A second finger just landed — cancel any single-pointer draw/select in progress.
     state.drawing = false; state.currentStroke = null; state.dragHandle = null; state.panState = null; state.routeDragging = false;
@@ -921,11 +928,21 @@ $('#canvasArea').addEventListener('pointermove', (e) => {
     const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
     const mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
     const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, state.pinchState.startZoom * (dist / (state.pinchState.startDist || 1))));
+
+    const area = $('#canvasArea');
+    const rect = area.getBoundingClientRect();
+    // The actual drawing-space point currently sitting under the midpoint,
+    // computed with the CURRENT (pre-update) zoom — this is what has to stay
+    // fixed under the fingers regardless of how much they've moved or the
+    // zoom has changed.
+    const naturalX = (area.scrollLeft + (mid.x - rect.left)) / state.zoom;
+    const naturalY = (area.scrollTop + (mid.y - rect.top)) / state.zoom;
+
     state.zoom = newZoom;
     applyZoom();
-    const area = $('#canvasArea');
-    area.scrollLeft = state.pinchState.startScroll.left - (mid.x - state.pinchState.startMid.x);
-    area.scrollTop = state.pinchState.startScroll.top - (mid.y - state.pinchState.startMid.y);
+
+    area.scrollLeft = naturalX * state.zoom - (mid.x - rect.left);
+    area.scrollTop = naturalY * state.zoom - (mid.y - rect.top);
   }
 });
 function releasePointer(e){
@@ -1074,6 +1091,7 @@ function onPointerDown(e){
       renderNoteList();
       drawAllMarkups();
       showMarkupActionButtons(hit.markup.id);
+      centerViewOnMarkup(hit.markup);
       // showMarkupActionButtons can reflow the layout (the action bar taking
       // real space shifts the canvas down) — re-read the pointer's position
       // AFTER that shift settles, so the drag's reference point matches the
@@ -1084,6 +1102,10 @@ function onPointerDown(e){
     state.selectedMarkupId = null;
     clearMarkupActionButtons();
     drawAllMarkups();
+    // Nothing hit — let a one-finger drag pan the view instead of doing
+    // nothing, so there's no need to switch to Pan just to reposition.
+    state.panState = { startX: e.clientX, startY: e.clientY, scrollLeft: $('#canvasArea').scrollLeft, scrollTop: $('#canvasArea').scrollTop };
+    $('#canvasArea').classList.add('panning');
     return;
   }
 
@@ -1099,17 +1121,18 @@ function onPointerDown(e){
   } else if(state.tool === 'line'){
     state.drawing = true;
     state.currentStroke = { id: genId(), type: 'line', color: state.color, thickness: state.thickness, p0: p, p1: p, note: '' };
-  } else if(state.tool === 'multiline'){
-    // Route: touch down starts (or continues) a segment from the last
-    // committed point; dragging previews it live; lifting the finger commits
-    // that endpoint and sets up the next segment. Much easier with a finger
-    // than tapping precisely at each vertex.
+  } else if(state.tool === 'multiline' || state.tool === 'hatchline'){
+    // Route and Demo Line share this mechanic: touch down starts (or
+    // continues) a segment from the last committed point; dragging previews
+    // it live; lifting the finger commits that endpoint and sets up the next
+    // segment. Much easier with a finger than tapping precisely at each vertex.
     if(!state.multiPoints) state.multiPoints = [p]; // first touch places the very first anchor
     state.routeSegmentStart = state.multiPoints[state.multiPoints.length - 1];
     state.routeDragging = true;
     showRunDoneBtn();
     drawAllMarkups();
-    drawMultilinePreview(state.multiPoints);
+    if(state.tool === 'hatchline') drawHatchLinePreview(state.multiPoints);
+    else drawMultilinePreview(state.multiPoints);
   } else if(state.tool === 'hatcharea' || state.tool === 'whiteoutFreeform'){
     if(!state.multiPoints) state.multiPoints = [p];
     else state.multiPoints.push(p);
@@ -1123,9 +1146,6 @@ function onPointerDown(e){
   } else if(state.tool === 'dimension'){
     state.drawing = true;
     state.currentStroke = { id: genId(), type: 'dimension', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: p, p1: p, text: '', textPos: p, note: '' };
-  } else if(state.tool === 'hatchline'){
-    state.drawing = true;
-    state.currentStroke = { id: genId(), type: 'hatchline', color: HATCH_COLOR, thickness: state.thickness, p0: p, p1: p, note: '' };
   } else if(state.tool === 'whiteoutRect'){
     state.drawing = true;
     state.currentStroke = { id: genId(), type: 'whiteoutRect', p0: p, p1: p, note: '' };
@@ -1155,7 +1175,7 @@ function onPointerMove(e){
     drawAllMarkups();
     return;
   }
-  if(state.tool === 'pan' && state.panState){
+  if((state.tool === 'pan' || state.tool === 'select') && state.panState){
     const dx = e.clientX - state.panState.startX, dy = e.clientY - state.panState.startY;
     $('#canvasArea').scrollLeft = state.panState.scrollLeft - dx;
     $('#canvasArea').scrollTop = state.panState.scrollTop - dy;
@@ -1181,18 +1201,15 @@ function onPointerMove(e){
     state.currentStroke.p1 = axisSnap(state.currentStroke.p0, p);
     drawAllMarkups();
     drawDimensionPreview(state.currentStroke.p0, state.currentStroke.p1);
-  } else if(state.tool === 'hatchline' && state.drawing){
-    state.currentStroke.p1 = p;
-    drawAllMarkups();
-    drawHatchLinePreview(state.currentStroke.p0, state.currentStroke.p1);
   } else if(state.tool === 'whiteoutRect' && state.drawing){
     state.currentStroke.p1 = p;
     drawAllMarkups();
     drawWhiteoutRectPreview(state.currentStroke.p0, state.currentStroke.p1);
-  } else if(state.tool === 'multiline' && state.routeDragging){
+  } else if((state.tool === 'multiline' || state.tool === 'hatchline') && state.routeDragging){
     drawAllMarkups();
     const snapped = angleSnap(state.routeSegmentStart, p);
-    drawMultilinePreview(state.multiPoints.concat([snapped]));
+    if(state.tool === 'hatchline') drawHatchLinePreview(state.multiPoints.concat([snapped]));
+    else drawMultilinePreview(state.multiPoints.concat([snapped]));
   } else if(state.tool === 'hatcharea' && state.multiPoints){
     drawAllMarkups();
     drawHatchAreaPreview(state.multiPoints.concat([p]));
@@ -1203,7 +1220,7 @@ function onPointerMove(e){
 }
 
 function onPointerUp(e){
-  if(state.tool === 'multiline' && state.routeDragging){
+  if((state.tool === 'multiline' || state.tool === 'hatchline') && state.routeDragging){
     state.routeDragging = false;
     const p = canvasPoint(e);
     const snapped = angleSnap(state.routeSegmentStart, p);
@@ -1211,6 +1228,11 @@ function onPointerUp(e){
     if(dist > 4) state.multiPoints.push(snapped);
     positionRunDoneBtn();
     drawAllMarkups();
+    // Keep the committed-so-far polyline visible after the lift — it isn't a
+    // saved markup yet, so drawAllMarkups() alone won't render it; without
+    // this it would vanish until the next touch starts a new segment.
+    if(state.tool === 'hatchline') drawHatchLinePreview(state.multiPoints);
+    else drawMultilinePreview(state.multiPoints);
     return;
   }
   if(state.tool === 'select' && state.dragHandle){
@@ -1221,7 +1243,7 @@ function onPointerUp(e){
     if(state.selectedMarkupId) showMarkupActionButtons(state.selectedMarkupId);
     return;
   }
-  if(state.tool === 'pan' && state.panState){
+  if((state.tool === 'pan' || state.tool === 'select') && state.panState){
     state.panState = null;
     $('#canvasArea').classList.remove('panning');
     return;
@@ -1248,16 +1270,6 @@ function onPointerUp(e){
     state.currentStroke = null;
     drawAllMarkups();
   } else if(state.tool === 'shape' && state.drawing){
-    state.drawing = false;
-    if(Math.hypot(state.currentStroke.p1.x - state.currentStroke.p0.x, state.currentStroke.p1.y - state.currentStroke.p0.y) > 4){
-      state.currentStroke.createdAt = Date.now();
-      activeSheet().markups.push(state.currentStroke);
-      markDirty();
-      renderNoteList();
-    }
-    state.currentStroke = null;
-    drawAllMarkups();
-  } else if(state.tool === 'hatchline' && state.drawing){
     state.drawing = false;
     if(Math.hypot(state.currentStroke.p1.x - state.currentStroke.p0.x, state.currentStroke.p1.y - state.currentStroke.p0.y) > 4){
       state.currentStroke.createdAt = Date.now();
@@ -1323,6 +1335,11 @@ function finishMultiline(){
       activeSheet().markups.push(markup);
       markDirty();
       renderNoteList();
+    } else if(state.tool === 'hatchline'){
+      const markup = { id: genId(), type: 'hatchline', color: HATCH_COLOR, thickness: state.thickness, points: state.multiPoints, note: '', createdAt: Date.now() };
+      activeSheet().markups.push(markup);
+      markDirty();
+      renderNoteList();
     }
   }
   state.multiPoints = null;
@@ -1333,8 +1350,17 @@ function finishMultiline(){
 }
 $('#runDoneBtn').addEventListener('click', finishMultiline);
 
-function onDblClick(){
-  if((state.tool === 'multiline' || state.tool === 'hatcharea' || state.tool === 'whiteoutFreeform') && state.multiPoints && state.multiPoints.length > 1) finishMultiline();
+function onDblClick(e){
+  const midPolyline = (state.tool === 'multiline' || state.tool === 'hatcharea' || state.tool === 'whiteoutFreeform' || state.tool === 'hatchline') && state.multiPoints && state.multiPoints.length > 1;
+  if(midPolyline){
+    finishMultiline();
+    return;
+  }
+  if(!state.pageViewport) return;
+  const p = canvasPoint(e);
+  const area = $('#canvasArea');
+  area.scrollLeft = p.x * state.zoom - area.clientWidth / 2;
+  area.scrollTop = p.y * state.zoom - area.clientHeight / 2;
 }
 
 /* ---- Label / Note placement (single tap places with sensible default leader shape,
@@ -1393,7 +1419,7 @@ function defaultBendPosition(anchor, textPos){
 function handlePointsForMarkup(m){
   if(m.type === 'label' || m.type === 'note') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'textPos', p: m.textPos }];
   if(m.type === 'dimension') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'textPos', p: m.textPos }];
-  if(m.type === 'line' || m.type === 'hatchline') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
+  if(m.type === 'line') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
   if(m.type === 'whiteoutRect') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: shapeCenter(m) }];
   if(m.type === 'shape'){
     const handles = [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: shapeCenter(m) }];
@@ -1402,17 +1428,26 @@ function handlePointsForMarkup(m){
     }
     return handles;
   }
-  if(m.type === 'multiline' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform') return m.points.map((p, i) => ({ key: 'pt' + i, p }));
+  if(m.type === 'multiline' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform' || m.type === 'hatchline') return m.points.map((p, i) => ({ key: 'pt' + i, p }));
   return [];
 }
 function cloneMarkupPoints(m){ return JSON.parse(JSON.stringify(m)); }
-function referencePointForMarkup(m){
+function markupCenterPoint(m){
   if(m.type === 'label' || m.type === 'note' || m.type === 'dimension') return m.textPos;
-  if(m.type === 'line' || m.type === 'shape' || m.type === 'hatchline' || m.type === 'whiteoutRect') return { x: Math.min(m.p0.x, m.p1.x), y: Math.min(m.p0.y, m.p1.y) };
-  if(m.type === 'multiline' || m.type === 'freehand' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform'){
-    return m.points.reduce((acc, pt) => (pt.y < acc.y ? pt : acc), m.points[0]);
+  if(m.type === 'line' || m.type === 'shape' || m.type === 'whiteoutRect') return { x: (m.p0.x + m.p1.x) / 2, y: (m.p0.y + m.p1.y) / 2 };
+  if(m.type === 'multiline' || m.type === 'freehand' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform' || m.type === 'hatchline'){
+    const xs = m.points.map(pt => pt.x), ys = m.points.map(pt => pt.y);
+    return { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 };
   }
   return { x: 0, y: 0 };
+}
+// Re-centers the visible canvas on a markup without changing the current
+// zoom level, so it's easy to work with even on a big sheet zoomed way in.
+function centerViewOnMarkup(m){
+  const c = markupCenterPoint(m);
+  const area = $('#canvasArea');
+  area.scrollLeft = c.x * state.zoom - area.clientWidth / 2;
+  area.scrollTop = c.y * state.zoom - area.clientHeight / 2;
 }
 
 function hitTestHandle(p){
@@ -1442,8 +1477,8 @@ function hitTestMarkup(p){
   return { markup: found, key: 'whole' };
 }
 function markupContainsPoint(m, p){
-  if(m.type === 'freehand' || m.type === 'multiline' || m.type === 'hatcharea') return m.points.some(pt => Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
-  if(m.type === 'line' || m.type === 'hatchline' || m.type === 'dimension') return distToSegment(p, m.p0, m.p1) < 12 || (m.textPos && Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 24);
+  if(m.type === 'freehand' || m.type === 'multiline' || m.type === 'hatcharea' || m.type === 'hatchline') return m.points.some(pt => Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
+  if(m.type === 'line' || m.type === 'dimension') return distToSegment(p, m.p0, m.p1) < 12 || (m.textPos && Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 24);
   if(m.type === 'shape' || m.type === 'whiteoutRect'){
     const x0 = Math.min(m.p0.x, m.p1.x), x1 = Math.max(m.p0.x, m.p1.x);
     const y0 = Math.min(m.p0.y, m.p1.y), y1 = Math.max(m.p0.y, m.p1.y);
@@ -1520,9 +1555,9 @@ function applyDragHandle(drag, p){
   m[drag.key] = p;
 }
 function translateMarkup(m, origin, dx, dy){
-  if(m.type === 'freehand' || m.type === 'multiline' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform'){
+  if(m.type === 'freehand' || m.type === 'multiline' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform' || m.type === 'hatchline'){
     m.points = origin.points.map(pt => ({ x: pt.x + dx, y: pt.y + dy }));
-  } else if(m.type === 'line' || m.type === 'shape' || m.type === 'hatchline' || m.type === 'whiteoutRect'){
+  } else if(m.type === 'line' || m.type === 'shape' || m.type === 'whiteoutRect'){
     m.p0 = { x: origin.p0.x + dx, y: origin.p0.y + dy };
     m.p1 = { x: origin.p1.x + dx, y: origin.p1.y + dy };
   } else if(m.type === 'dimension'){
@@ -1567,20 +1602,6 @@ function showMarkupActionButtons(markupId){
 
   const buttonRow = document.createElement('div');
   buttonRow.className = 'markup-action-row';
-  if(m.type === 'whiteoutRect' || m.type === 'whiteoutFreeform'){
-    const lockBtn = document.createElement('button');
-    lockBtn.textContent = m.locked ? 'Unlock' : 'Lock';
-    lockBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      m.locked = !m.locked;
-      markDirty();
-      drawAllMarkups();
-      renderNoteList();
-      if(m.locked){ state.selectedMarkupId = null; clearMarkupActionButtons(); }
-      else showMarkupActionButtons(markupId);
-    });
-    buttonRow.appendChild(lockBtn);
-  }
   if(m.type === 'label' || m.type === 'note' || m.type === 'dimension'){
     const editBtn = document.createElement('button');
     editBtn.textContent = 'Edit text';
@@ -2043,13 +2064,13 @@ function drawHatchTicksAlongPath(ctx, points, color = HATCH_COLOR){
 }
 function drawHatchLine(m){
   const ctx = mCanvas.getContext('2d');
-  drawHatchTicksAlongPath(ctx, [m.p0, m.p1], m.color);
+  drawHatchTicksAlongPath(ctx, m.points || [m.p0, m.p1], m.color);
 }
-function drawHatchLinePreview(p0, p1){
+function drawHatchLinePreview(points){
   const ctx = mCanvas.getContext('2d');
   ctx.save();
   ctx.globalAlpha = 0.6;
-  drawHatchTicksAlongPath(ctx, [p0, p1], HATCH_COLOR);
+  drawHatchTicksAlongPath(ctx, points, HATCH_COLOR);
   ctx.restore();
 }
 
@@ -2066,9 +2087,10 @@ function drawWhiteout(m){
   const ctx = mCanvas.getContext('2d');
   ctx.save();
   ctx.fillStyle = '#FFFFFF';
-  ctx.strokeStyle = 'rgba(20,30,50,0.35)';
-  ctx.lineWidth = 1.2;
-  ctx.setLineDash([4, 3]);
+  ctx.strokeStyle = 'rgba(20,30,50,0.18)';
+  ctx.lineWidth = 1;
+  ctx.lineCap = 'round';
+  ctx.setLineDash([1, 4]);
   ctx.beginPath();
   if(m.type === 'whiteoutRect'){
     const x0 = Math.min(m.p0.x, m.p1.x), y0 = Math.min(m.p0.y, m.p1.y);
@@ -2088,9 +2110,10 @@ function drawWhiteoutRectPreview(p0, p1){
   ctx.save();
   ctx.globalAlpha = 0.6;
   ctx.fillStyle = '#FFFFFF';
-  ctx.strokeStyle = 'rgba(20,30,50,0.35)';
-  ctx.lineWidth = 1.2;
-  ctx.setLineDash([4, 3]);
+  ctx.strokeStyle = 'rgba(20,30,50,0.18)';
+  ctx.lineWidth = 1;
+  ctx.lineCap = 'round';
+  ctx.setLineDash([1, 4]);
   const x0 = Math.min(p0.x, p1.x), y0 = Math.min(p0.y, p1.y);
   ctx.fillRect(x0, y0, Math.abs(p1.x - p0.x), Math.abs(p1.y - p0.y));
   ctx.strokeRect(x0, y0, Math.abs(p1.x - p0.x), Math.abs(p1.y - p0.y));
@@ -2101,9 +2124,10 @@ function drawWhiteoutFreeformPreview(points){
   const ctx = mCanvas.getContext('2d');
   ctx.save();
   ctx.globalAlpha = 0.6;
-  ctx.strokeStyle = 'rgba(20,30,50,0.35)';
-  ctx.lineWidth = 1.2;
-  ctx.setLineDash([4, 3]);
+  ctx.strokeStyle = 'rgba(20,30,50,0.18)';
+  ctx.lineWidth = 1;
+  ctx.lineCap = 'round';
+  ctx.setLineDash([1, 4]);
   ctx.beginPath();
   ctx.moveTo(points[0].x, points[0].y);
   points.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
