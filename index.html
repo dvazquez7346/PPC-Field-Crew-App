@@ -985,7 +985,11 @@ try{
 }
 
 function isMobileDevice(){
-  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.matchMedia('(max-width: 899px)').matches;
+  // iPadOS Safari reports itself as desktop "Macintosh" by default (Apple did this deliberately
+  // so sites serve the desktop layout), so the user-agent check alone misses iPads entirely.
+  // Real Macs never report touch points, so this combination reliably catches iPadOS too.
+  const isIPadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || isIPadOS || window.matchMedia('(max-width: 899px)').matches;
 }
 // Redirect-based sign-in cannot work inside an iframe (e.g. SharePoint's file preview panel,
 // which can also be narrow enough to look "mobile" by width) — MSAL blocks it outright. Popup
