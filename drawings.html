@@ -28,6 +28,7 @@ input,textarea{font-family:inherit;}
 /* ---- Top bar ---- */
 .topbar{background:var(--navy);color:#fff;display:flex;align-items:center;gap:10px;padding:10px 16px;flex-shrink:0;box-shadow:var(--shadow);z-index:20;flex-wrap:wrap;}
 .topbar .brand{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;letter-spacing:0.02em;white-space:nowrap;}
+.brand-block{display:flex;flex-direction:column;align-items:flex-start;gap:5px;}
 .topbar .brand .sub{color:#9FB0C8;font-weight:500;font-size:12px;display:block;letter-spacing:0.06em;text-transform:uppercase;}
 .job-select{display:flex;align-items:center;gap:8px;margin-left:8px;position:relative;flex-wrap:wrap;}
 .job-select input{background:#243A56;border:1px solid #35496A;color:#fff;border-radius:8px;padding:7px 10px;font-size:13px;width:130px;}
@@ -71,8 +72,9 @@ input,textarea{font-family:inherit;}
 #zoomFitBtn{font-size:14px;}
 .run-done-btn{position:fixed;background:var(--success);color:#fff;border:none;font-weight:600;font-size:13px;padding:9px 16px;border-radius:9px;box-shadow:var(--shadow);z-index:45;}
 .run-done-btn:hover{background:#256e46;}
-.markup-action-group{position:fixed;left:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:30;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:var(--shadow);max-width:150px;}
-.markup-action-row{display:flex;gap:5px;flex-wrap:wrap;}
+.action-bar{background:var(--surface);border-bottom:1px solid var(--line);padding:8px 12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;flex-shrink:0;}
+.markup-action-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.markup-action-row + .markup-action-row{border-left:1px solid var(--line);padding-left:10px;}
 .markup-color-dot{width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);padding:0;}
 .markup-color-dot.active{box-shadow:0 0 0 2px var(--navy);}
 .markup-action-group button{background:var(--navy);color:#fff;font-size:11px;font-weight:600;padding:5px 10px;border-radius:7px;border:none;box-shadow:var(--shadow);white-space:nowrap;}
@@ -93,6 +95,10 @@ input,textarea{font-family:inherit;}
 .tool-btn{width:44px;height:44px;border-radius:10px;border:1px solid transparent;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:18px;}
 .tool-btn:hover{background:var(--surface-2);}
 .tool-btn.active{background:var(--navy);color:#fff;}
+.tool-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.whiteout-lock-btn{width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:transparent;display:flex;align-items:center;justify-content:center;color:var(--navy);cursor:pointer;}
+.whiteout-lock-btn:hover{background:var(--surface-2);}
+.whiteout-lock-btn.unlocked-mode{background:var(--danger);color:#fff;border-color:var(--danger);}
 .tool-sep{width:32px;height:1px;background:var(--line);margin:6px 0;}
 .tool-label{font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;margin-top:-2px;text-align:center;}
 .color-row,.thickness-row,.shape-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:0 6px;}
@@ -128,7 +134,7 @@ input,textarea{font-family:inherit;}
 .save-btn:disabled{opacity:.5;cursor:default;}
 .status-dot{width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0;}
 .status-dot.dirty{background:var(--warn);}
-.mobile-panel-toggle{display:none;background:var(--navy);color:#fff;border:none;font-weight:600;font-size:12px;padding:7px 12px;border-radius:7px;}
+.mobile-panel-toggle{display:none;background:#2E8B57;color:#FF8000;border:none;font-weight:700;font-size:12px;padding:6px 14px;border-radius:7px;align-self:flex-start;}
 
 /* ---- Selection handles + floating edit button on canvas ---- */
 
@@ -202,7 +208,10 @@ input,textarea{font-family:inherit;}
 
 <div class="app hidden" id="app">
   <div class="topbar">
-    <div class="brand">Drawing Markup<span class="sub">PPC Field Tools</span></div>
+    <div class="brand-block">
+      <div class="brand">Drawing Markup<span class="sub">PPC Field Tools</span></div>
+      <button class="mobile-panel-toggle" id="mobilePanelToggle">Notes</button>
+    </div>
     <div class="job-select">
       <input id="jobIdInput" placeholder="Job number">
       <button id="loadJobBtn">Open</button>
@@ -211,13 +220,13 @@ input,textarea{font-family:inherit;}
       <div class="job-dropdown hidden" id="jobDropdown"></div>
     </div>
     <div class="topbar-right">
-      <button class="mobile-panel-toggle" id="mobilePanelToggle">Notes</button>
       <a class="nav-link" href="index.html">← Crew Directory</a>
       <span class="account-chip" id="accountChip"></span>
     </div>
   </div>
 
   <div class="sheet-tabs" id="sheetTabs"></div>
+  <div class="action-bar hidden" id="actionBar"></div>
 
   <div class="main">
     <div class="toolrail" id="toolrail">
@@ -249,6 +258,13 @@ input,textarea{font-family:inherit;}
       <div class="tool-sep"></div>
       <button class="tool-btn" data-tool="erase" title="Erase a markup"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M2 4 L2 2 L14 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M22 22 L22 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L2 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><g transform="rotate(-45 12 12)"><rect x="4" y="8.5" width="16" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="12" y1="8.5" x2="12" y2="15.5" stroke="currentColor" stroke-width="1.8"/></g></svg></button>
       <div class="tool-label">Erase</div>
+      <div class="tool-sep"></div>
+      <button class="tool-btn" data-tool="whiteoutRect" title="Whiteout (rectangle) \u2014 covers PDF content, not destructive"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2"/></svg></button>
+      <div class="tool-label">W-Rect</div>
+      <button class="tool-btn" data-tool="whiteoutFreeform" title="Whiteout (freeform) \u2014 covers PDF content, not destructive"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M6 6 Q4 10 6 14 Q8 20 14 18 Q20 16 18 10 Q16 4 10 5 Q7 5 6 6 Z" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2"/></svg></button>
+      <div class="tool-label">W-Free</div>
+      <button class="whiteout-lock-btn" id="whiteoutLockBtn" title="Unlock whiteouts to edit them (locks out every other tool until you lock again)"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></button>
+      <div class="tool-label">Lock</div>
       <div class="tool-sep"></div>
       <div class="color-row">
         <div class="color-dot active" data-color="#FF0000" style="background:#FF0000"></div>
@@ -365,6 +381,7 @@ const state = {
   jobsIndexCache: null,
   zoom: 1, naturalWidth: 0, naturalHeight: 0,
   activePointers: new Map(), pinchState: null,
+  whiteoutsUnlocked: false,
 };
 
 const ANGLE_STEP = 15; // degrees — snap increment for Line/Run tools
@@ -848,7 +865,7 @@ function positionFloatingControls(){
   const rect = $('#canvasArea').getBoundingClientRect();
   const zc = $('#zoomControls');
   zc.style.left = (rect.right - 54) + 'px';
-  zc.style.top = (rect.bottom - 142) + 'px';
+  zc.style.top = (rect.top + 16) + 'px';
   positionRunDoneBtn();
 }
 window.addEventListener('resize', positionFloatingControls);
@@ -930,6 +947,39 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     hideRunDoneBtn();
     drawAllMarkups();
   });
+});
+
+// Governs hit-testing everywhere a markup could be selected/clicked. Locked
+// whiteouts are invisible to clicks in normal mode (so drawing/placing things
+// over them works normally); while globally unlocked, ONLY whiteouts are
+// interactable, and every other tool button is disabled — see
+// toggleWhiteoutLock — so there's no way to accidentally edit anything else
+// until you lock again.
+function isMarkupInteractable(m){
+  if(state.whiteoutsUnlocked) return m.type === 'whiteoutRect' || m.type === 'whiteoutFreeform';
+  return !m.locked;
+}
+
+const LOCK_ICON = '<svg width="16" height="16" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>';
+const UNLOCK_ICON = '<svg width="16" height="16" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 11V8a4 4 0 0 1 8 0" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>';
+
+$('#whiteoutLockBtn').addEventListener('click', () => {
+  state.whiteoutsUnlocked = !state.whiteoutsUnlocked;
+  const lockBtn = $('#whiteoutLockBtn');
+  lockBtn.classList.toggle('unlocked-mode', state.whiteoutsUnlocked);
+  lockBtn.innerHTML = state.whiteoutsUnlocked ? UNLOCK_ICON : LOCK_ICON;
+  document.querySelectorAll('.tool-btn').forEach(b => { b.disabled = state.whiteoutsUnlocked; });
+  if(state.whiteoutsUnlocked){
+    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+    const selectBtn = document.querySelector('.tool-btn[data-tool="select"]');
+    if(selectBtn) selectBtn.classList.add('active');
+    state.tool = 'select';
+  }
+  state.multiPoints = null;
+  state.selectedMarkupId = null;
+  clearMarkupActionButtons();
+  hideRunDoneBtn();
+  drawAllMarkups();
 });
 document.querySelectorAll('.color-dot').forEach(dot => {
   dot.addEventListener('click', () => {
@@ -1036,12 +1086,13 @@ function onPointerDown(e){
   } else if(state.tool === 'line'){
     state.drawing = true;
     state.currentStroke = { id: genId(), type: 'line', color: state.color, thickness: state.thickness, p0: p, p1: p, note: '' };
-  } else if(state.tool === 'multiline' || state.tool === 'hatcharea'){
+  } else if(state.tool === 'multiline' || state.tool === 'hatcharea' || state.tool === 'whiteoutFreeform'){
     if(!state.multiPoints) state.multiPoints = [p];
     else state.multiPoints.push(state.tool === 'multiline' ? angleSnap(state.multiPoints[state.multiPoints.length - 1], p) : p);
     showRunDoneBtn();
     drawAllMarkups();
     if(state.tool === 'multiline') drawMultilinePreview(state.multiPoints);
+    else if(state.tool === 'whiteoutFreeform') drawWhiteoutFreeformPreview(state.multiPoints);
     else drawHatchAreaPreview(state.multiPoints);
   } else if(state.tool === 'shape'){
     state.drawing = true;
@@ -1052,6 +1103,9 @@ function onPointerDown(e){
   } else if(state.tool === 'hatchline'){
     state.drawing = true;
     state.currentStroke = { id: genId(), type: 'hatchline', color: HATCH_COLOR, thickness: state.thickness, p0: p, p1: p, note: '' };
+  } else if(state.tool === 'whiteoutRect'){
+    state.drawing = true;
+    state.currentStroke = { id: genId(), type: 'whiteoutRect', p0: p, p1: p, note: '' };
   } else if(state.tool === 'label' || state.tool === 'note'){
     placeLeaderMarkup(state.tool, p);
   } else if(state.tool === 'erase'){
@@ -1108,6 +1162,10 @@ function onPointerMove(e){
     state.currentStroke.p1 = p;
     drawAllMarkups();
     drawHatchLinePreview(state.currentStroke.p0, state.currentStroke.p1);
+  } else if(state.tool === 'whiteoutRect' && state.drawing){
+    state.currentStroke.p1 = p;
+    drawAllMarkups();
+    drawWhiteoutRectPreview(state.currentStroke.p0, state.currentStroke.p1);
   } else if(state.tool === 'multiline' && state.multiPoints){
     drawAllMarkups();
     const preview = state.multiPoints.concat([angleSnap(state.multiPoints[state.multiPoints.length - 1], p)]);
@@ -1115,6 +1173,9 @@ function onPointerMove(e){
   } else if(state.tool === 'hatcharea' && state.multiPoints){
     drawAllMarkups();
     drawHatchAreaPreview(state.multiPoints.concat([p]));
+  } else if(state.tool === 'whiteoutFreeform' && state.multiPoints){
+    drawAllMarkups();
+    drawWhiteoutFreeformPreview(state.multiPoints.concat([p]));
   }
 }
 
@@ -1173,6 +1234,17 @@ function onPointerUp(e){
     }
     state.currentStroke = null;
     drawAllMarkups();
+  } else if(state.tool === 'whiteoutRect' && state.drawing){
+    state.drawing = false;
+    if(Math.hypot(state.currentStroke.p1.x - state.currentStroke.p0.x, state.currentStroke.p1.y - state.currentStroke.p0.y) > 4){
+      state.currentStroke.locked = true;
+      state.currentStroke.createdAt = Date.now();
+      activeSheet().markups.push(state.currentStroke);
+      markDirty();
+      renderNoteList();
+    }
+    state.currentStroke = null;
+    drawAllMarkups();
   } else if(state.tool === 'dimension' && state.drawing){
     state.drawing = false;
     const dim = state.currentStroke;
@@ -1208,6 +1280,11 @@ function finishMultiline(){
       activeSheet().markups.push(markup);
       markDirty();
       renderNoteList();
+    } else if(state.tool === 'whiteoutFreeform' && state.multiPoints.length >= 3){
+      const markup = { id: genId(), type: 'whiteoutFreeform', points: state.multiPoints, locked: true, note: '', createdAt: Date.now() };
+      activeSheet().markups.push(markup);
+      markDirty();
+      renderNoteList();
     } else if(state.tool === 'multiline'){
       const markup = { id: genId(), type: 'multiline', color: state.color, thickness: state.thickness, points: state.multiPoints, note: '', createdAt: Date.now() };
       activeSheet().markups.push(markup);
@@ -1222,7 +1299,7 @@ function finishMultiline(){
 $('#runDoneBtn').addEventListener('click', finishMultiline);
 
 function onDblClick(){
-  if((state.tool === 'multiline' || state.tool === 'hatcharea') && state.multiPoints && state.multiPoints.length > 1) finishMultiline();
+  if((state.tool === 'multiline' || state.tool === 'hatcharea' || state.tool === 'whiteoutFreeform') && state.multiPoints && state.multiPoints.length > 1) finishMultiline();
 }
 
 /* ---- Label / Note placement (single tap places with sensible default leader shape,
@@ -1282,6 +1359,7 @@ function handlePointsForMarkup(m){
   if(m.type === 'label' || m.type === 'note') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'textPos', p: m.textPos }];
   if(m.type === 'dimension') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'textPos', p: m.textPos }];
   if(m.type === 'line' || m.type === 'hatchline') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
+  if(m.type === 'whiteoutRect') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: shapeCenter(m) }];
   if(m.type === 'shape'){
     const handles = [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: shapeCenter(m) }];
     if(m.shape !== 'arrowFilled' && m.shape !== 'arrowOutline'){
@@ -1289,14 +1367,14 @@ function handlePointsForMarkup(m){
     }
     return handles;
   }
-  if(m.type === 'multiline' || m.type === 'hatcharea') return m.points.map((p, i) => ({ key: 'pt' + i, p }));
+  if(m.type === 'multiline' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform') return m.points.map((p, i) => ({ key: 'pt' + i, p }));
   return [];
 }
 function cloneMarkupPoints(m){ return JSON.parse(JSON.stringify(m)); }
 function referencePointForMarkup(m){
   if(m.type === 'label' || m.type === 'note' || m.type === 'dimension') return m.textPos;
-  if(m.type === 'line' || m.type === 'shape' || m.type === 'hatchline') return { x: Math.min(m.p0.x, m.p1.x), y: Math.min(m.p0.y, m.p1.y) };
-  if(m.type === 'multiline' || m.type === 'freehand' || m.type === 'hatcharea'){
+  if(m.type === 'line' || m.type === 'shape' || m.type === 'hatchline' || m.type === 'whiteoutRect') return { x: Math.min(m.p0.x, m.p1.x), y: Math.min(m.p0.y, m.p1.y) };
+  if(m.type === 'multiline' || m.type === 'freehand' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform'){
     return m.points.reduce((acc, pt) => (pt.y < acc.y ? pt : acc), m.points[0]);
   }
   return { x: 0, y: 0 };
@@ -1315,7 +1393,7 @@ function hitTestHandle(p){
 function hitTestMarkup(p){
   const sheet = activeSheet();
   if(!sheet) return null;
-  const found = sheet.markups.slice().reverse().find(m => markupContainsPoint(m, p));
+  const found = sheet.markups.slice().reverse().find(m => isMarkupInteractable(m) && markupContainsPoint(m, p));
   if(!found) return null;
   if(found.type === 'label' || found.type === 'note'){
     // No rigid "whole" drag for these two — clicking the pill always moves the
@@ -1331,13 +1409,22 @@ function hitTestMarkup(p){
 function markupContainsPoint(m, p){
   if(m.type === 'freehand' || m.type === 'multiline' || m.type === 'hatcharea') return m.points.some(pt => Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
   if(m.type === 'line' || m.type === 'hatchline' || m.type === 'dimension') return distToSegment(p, m.p0, m.p1) < 12 || (m.textPos && Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 24);
-  if(m.type === 'shape'){
+  if(m.type === 'shape' || m.type === 'whiteoutRect'){
     const x0 = Math.min(m.p0.x, m.p1.x), x1 = Math.max(m.p0.x, m.p1.x);
     const y0 = Math.min(m.p0.y, m.p1.y), y1 = Math.max(m.p0.y, m.p1.y);
     return p.x >= x0 - 6 && p.x <= x1 + 6 && p.y >= y0 - 6 && p.y <= y1 + 6;
   }
+  if(m.type === 'whiteoutFreeform') return pointInPolygon(p, m.points) || m.points.some(pt => Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
   if(m.type === 'label' || m.type === 'note') return Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 40 || Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
   return false;
+}
+function pointInPolygon(p, points){
+  let inside = false;
+  for(let i = 0, j = points.length - 1; i < points.length; j = i++){
+    const xi = points[i].x, yi = points[i].y, xj = points[j].x, yj = points[j].y;
+    if(((yi > p.y) !== (yj > p.y)) && (p.x < (xj - xi) * (p.y - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
 }
 function distToSegment(p, a, b){
   const l2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
@@ -1398,9 +1485,9 @@ function applyDragHandle(drag, p){
   m[drag.key] = p;
 }
 function translateMarkup(m, origin, dx, dy){
-  if(m.type === 'freehand' || m.type === 'multiline' || m.type === 'hatcharea'){
+  if(m.type === 'freehand' || m.type === 'multiline' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform'){
     m.points = origin.points.map(pt => ({ x: pt.x + dx, y: pt.y + dy }));
-  } else if(m.type === 'line' || m.type === 'shape' || m.type === 'hatchline'){
+  } else if(m.type === 'line' || m.type === 'shape' || m.type === 'hatchline' || m.type === 'whiteoutRect'){
     m.p0 = { x: origin.p0.x + dx, y: origin.p0.y + dy };
     m.p1 = { x: origin.p1.x + dx, y: origin.p1.y + dy };
   } else if(m.type === 'dimension'){
@@ -1416,7 +1503,7 @@ function translateMarkup(m, origin, dx, dy){
 
 function eraseNear(p){
   const sheet = activeSheet();
-  const idx = sheet.markups.findIndex(m => markupContainsPoint(m, p));
+  const idx = sheet.markups.findIndex(m => isMarkupInteractable(m) && markupContainsPoint(m, p));
   if(idx > -1){
     if(sheet.markups[idx].id === state.selectedMarkupId) state.selectedMarkupId = null;
     sheet.markups.splice(idx, 1);
@@ -1431,20 +1518,35 @@ function eraseNear(p){
    and "Delete" (every markup type) — Select can fully manage a markup without
    switching to the Erase tool. ---- */
 function clearMarkupActionButtons(){
-  const el = document.getElementById('markupActionGroup');
-  if(el) el.remove();
+  const bar = $('#actionBar');
+  bar.innerHTML = '';
+  bar.classList.add('hidden');
+  positionFloatingControls();
 }
 function showMarkupActionButtons(markupId){
-  clearMarkupActionButtons();
+  const bar = $('#actionBar');
+  bar.innerHTML = '';
   const sheet = activeSheet();
   const m = sheet && sheet.markups.find(x => x.id === markupId);
-  if(!m) return;
-  const group = document.createElement('div');
-  group.id = 'markupActionGroup';
-  group.className = 'markup-action-group';
+  if(!m){ bar.classList.add('hidden'); return; }
+  const group = bar;
 
   const buttonRow = document.createElement('div');
   buttonRow.className = 'markup-action-row';
+  if(m.type === 'whiteoutRect' || m.type === 'whiteoutFreeform'){
+    const lockBtn = document.createElement('button');
+    lockBtn.textContent = m.locked ? 'Unlock' : 'Lock';
+    lockBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      m.locked = !m.locked;
+      markDirty();
+      drawAllMarkups();
+      renderNoteList();
+      if(m.locked){ state.selectedMarkupId = null; clearMarkupActionButtons(); }
+      else showMarkupActionButtons(markupId);
+    });
+    buttonRow.appendChild(lockBtn);
+  }
   if(m.type === 'label' || m.type === 'note' || m.type === 'dimension'){
     const editBtn = document.createElement('button');
     editBtn.textContent = 'Edit text';
@@ -1512,8 +1614,10 @@ function showMarkupActionButtons(markupId){
     group.appendChild(thicknessRow);
   }
 
-  // Color control — available for every markup type. This only changes the
-  // one selected markup; it never changes what color new markups default to.
+  // Color control — available for every markup type except Whiteouts, which
+  // are always plain fill. This only changes the one selected markup; it
+  // never changes what color new markups default to.
+  if(m.type !== 'whiteoutRect' && m.type !== 'whiteoutFreeform'){
   const colorRow = document.createElement('div');
   colorRow.className = 'markup-action-row';
   PALETTE.forEach(c => {
@@ -1531,7 +1635,9 @@ function showMarkupActionButtons(markupId){
     colorRow.appendChild(dot);
   });
   group.appendChild(colorRow);
-  document.body.appendChild(group);
+  }
+  bar.classList.remove('hidden');
+  positionFloatingControls();
 }
 
 /* ============================================================
@@ -1561,7 +1667,13 @@ function drawAllMarkups(){
   ctx.clearRect(0, 0, mCanvas.width, mCanvas.height);
   const sheet = activeSheet();
   if(!sheet) return;
-  sheet.markups.forEach(m => {
+  // Whiteouts always render first/below everything else, regardless of the
+  // order they were drawn in — they should only ever cover the PDF, never a
+  // markup that's already been placed on top of them.
+  const whiteouts = sheet.markups.filter(m => m.type === 'whiteoutRect' || m.type === 'whiteoutFreeform');
+  const others = sheet.markups.filter(m => m.type !== 'whiteoutRect' && m.type !== 'whiteoutFreeform');
+  whiteouts.forEach(m => drawWhiteout(m));
+  others.forEach(m => {
     if(m.type === 'freehand') drawStroke(m);
     else if(m.type === 'line') drawLine(m);
     else if(m.type === 'multiline') drawMultiline(m);
@@ -1912,6 +2024,59 @@ function drawHatchLinePreview(p0, p1){
 // traced polygon — the standard "this was demolished" convention.
 function drawHatchArea(m){ renderHatchAreaPolygon(mCanvas.getContext('2d'), m.points, m.color, true); }
 function drawHatchAreaPreview(points){ renderHatchAreaPolygon(mCanvas.getContext('2d'), points, HATCH_COLOR, false); }
+
+// Whiteout: a solid, opaque fill that covers underlying PDF content without
+// touching the actual PDF file — purely a markup-layer overlay, so deleting
+// it (or unlocking + deleting) always restores the original drawing exactly.
+// A subtle dashed outline keeps it visible even while locked and un-clickable.
+function drawWhiteout(m){
+  const ctx = mCanvas.getContext('2d');
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = 'rgba(20,30,50,0.35)';
+  ctx.lineWidth = 1.2;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath();
+  if(m.type === 'whiteoutRect'){
+    const x0 = Math.min(m.p0.x, m.p1.x), y0 = Math.min(m.p0.y, m.p1.y);
+    const w = Math.abs(m.p1.x - m.p0.x), h = Math.abs(m.p1.y - m.p0.y);
+    ctx.rect(x0, y0, w, h);
+  } else {
+    ctx.moveTo(m.points[0].x, m.points[0].y);
+    m.points.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.closePath();
+  }
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+function drawWhiteoutRectPreview(p0, p1){
+  const ctx = mCanvas.getContext('2d');
+  ctx.save();
+  ctx.globalAlpha = 0.6;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.strokeStyle = 'rgba(20,30,50,0.35)';
+  ctx.lineWidth = 1.2;
+  ctx.setLineDash([4, 3]);
+  const x0 = Math.min(p0.x, p1.x), y0 = Math.min(p0.y, p1.y);
+  ctx.fillRect(x0, y0, Math.abs(p1.x - p0.x), Math.abs(p1.y - p0.y));
+  ctx.strokeRect(x0, y0, Math.abs(p1.x - p0.x), Math.abs(p1.y - p0.y));
+  ctx.restore();
+}
+function drawWhiteoutFreeformPreview(points){
+  if(points.length < 2) return;
+  const ctx = mCanvas.getContext('2d');
+  ctx.save();
+  ctx.globalAlpha = 0.6;
+  ctx.strokeStyle = 'rgba(20,30,50,0.35)';
+  ctx.lineWidth = 1.2;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  points.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.stroke();
+  ctx.restore();
+}
 function renderHatchAreaPolygon(ctx, points, color, closed){
   if(points.length < 2) return;
   ctx.save();
@@ -1979,6 +2144,8 @@ function renderNoteList(){
       : (m.type === 'shape') ? m.shape
       : (m.type === 'hatchline') ? 'hatch line'
       : (m.type === 'hatcharea') ? 'hatch area'
+      : (m.type === 'whiteoutRect') ? 'whiteout (rect)' + (m.locked ? ' \u2014 locked' : ' \u2014 unlocked')
+      : (m.type === 'whiteoutFreeform') ? 'whiteout (freeform)' + (m.locked ? ' \u2014 locked' : ' \u2014 unlocked')
       : (m.type === 'line' && m.hatched) ? 'line (hatched)'
       : (m.type === 'multiline' && m.hatched) ? 'run (hatched)'
       : m.type;
