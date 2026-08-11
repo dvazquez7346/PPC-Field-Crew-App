@@ -264,6 +264,8 @@ input,textarea{font-family:inherit;}
       <div class="tool-label">Dim</div>
       <button class="tool-btn" data-tool="shape" title="Shapes">⬡</button>
       <div class="tool-label">Shape</div>
+      <button class="tool-btn" data-tool="symbol" title="Trade symbols (flex duct, valve, etc.)"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 12 L10 7 L10 17 Z M21 12 L14 7 L14 17 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+      <div class="tool-label">Symbol</div>
       <div class="tool-sep"></div>
       <button class="tool-btn" data-tool="hatchline" title="Demo Line: cross-out a run"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="7" y1="8" x2="9" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="11" y1="8" x2="13" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="15" y1="8" x2="17" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
       <div class="tool-label">Demo</div>
@@ -278,6 +280,8 @@ input,textarea{font-family:inherit;}
       <div class="tool-label">Elev</div>
       <button class="tool-btn" data-tool="photo" title="Photo marker with direction cone"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13.5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
       <div class="tool-label">Photo</div>
+      <button class="tool-btn" data-tool="equipment" title="Equipment tag with leader (hexagon, type/number)"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 4h7l3 4-3 4H4L1 8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="1" y1="8" x2="10" y2="8" stroke="currentColor" stroke-width="1.2"/><line x1="14" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.6"/><line x1="18" y1="8" x2="21" y2="17" stroke="currentColor" stroke-width="1.6"/><circle cx="21" cy="17" r="1.6" fill="currentColor"/></svg></button>
+      <div class="tool-label">Equip</div>
       <div class="tool-sep"></div>
       <button class="tool-btn" data-tool="erase" title="Erase a markup"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M2 4 L2 2 L14 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M22 22 L22 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L2 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><g transform="rotate(-45 12 12)"><rect x="4" y="8.5" width="16" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="12" y1="8.5" x2="12" y2="15.5" stroke="currentColor" stroke-width="1.8"/></g></svg></button>
       <div class="tool-label">Erase</div>
@@ -316,6 +320,20 @@ input,textarea{font-family:inherit;}
         <button class="shape-btn" data-shape="hexagon" title="Hexagon"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M6 4h12l4 8-4 8H6l-4-8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
         <button class="shape-btn" data-shape="arrowFilled" title="Arrow, filled head"><svg width="18" height="18" viewBox="0 0 24 24"><line x1="3" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.8"/><polygon points="16,7 22,12 16,17" fill="currentColor"/></svg></button>
         <button class="shape-btn" data-shape="arrowOutline" title="Arrow, outline head"><svg width="18" height="18" viewBox="0 0 24 24"><line x1="3" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.8"/><polyline points="12,6 20,12 12,18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div class="tool-sep hidden" id="symbolRowSep"></div>
+      <div class="shape-row hidden" id="symbolRow">
+        <button class="shape-btn active" data-symbol="flexduct" title="Flex duct"><svg width="24" height="18" viewBox="0 0 70 40"><path d="M24.2 10.8 A13 13 0 1 0 24.2 29.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M15 20 L30 20 L34 8 L38 32 L42 8 L46 32 L50 8 L54 20 L68 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg></button>
+        <button class="shape-btn" data-symbol="pipeup" title="Pipe up"><svg width="18" height="14" viewBox="0 0 34 24"><circle cx="6" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="11" y1="12" x2="30" y2="12" stroke="currentColor" stroke-width="1.6"/></svg></button>
+        <button class="shape-btn" data-symbol="pipedown" title="Pipe down"><svg width="18" height="14" viewBox="0 0 34 24"><path d="M9.3 7.2 A5 5 0 1 0 9.3 16.8" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="6" y1="12" x2="30" y2="12" stroke="currentColor" stroke-width="1.6"/></svg></button>
+        <button class="shape-btn" data-symbol="valve" title="Valve"><svg width="17" height="14" viewBox="0 0 30 24"><path d="M3 7 L3 17 L14 12 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M27 7 L27 17 L16 12 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+        <button class="shape-btn" data-symbol="linebreak" title="Line break"><svg width="18" height="13" viewBox="0 0 34 24"><path d="M2 12 L12 12 L15 6 L19 18 L22 12 L32 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg></button>
+        <button class="shape-btn" data-symbol="thermostat" title="Thermostat"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="12" y="16" font-size="11" font-weight="700" fill="currentColor" text-anchor="middle">T</text></svg></button>
+        <button class="shape-btn" data-symbol="damper" title="Damper"><svg width="13" height="19" viewBox="0 0 24 36"><path d="M12 4 L12 30 L18 30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></button>
+        <button class="shape-btn" data-symbol="cap" title="Cap / end of line"><svg width="13" height="19" viewBox="0 0 24 36"><path d="M9 6 L17 6 L17 30 L9 30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter"/></svg></button>
+        <button class="shape-btn" data-symbol="union" title="Union / coupling"><svg width="16" height="16" viewBox="0 0 24 24"><line x1="2" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="9" y1="7" x2="9" y2="17" stroke="currentColor" stroke-width="1.6"/><line x1="15" y1="7" x2="15" y2="17" stroke="currentColor" stroke-width="1.6"/></svg></button>
+        <button class="shape-btn" data-symbol="flowarrow" title="Flow direction"><svg width="16" height="16" viewBox="0 0 24 24"><line x1="3" y1="12" x2="18" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><polygon points="18,7 23,12 18,17" fill="currentColor"/></svg></button>
+        <button class="shape-btn" data-symbol="poc" title="POC / POD tick"><svg width="16" height="16" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M13 13 L13 2.5 A10.5 10.5 0 0 1 23.5 13 Z" fill="currentColor"/><path d="M13 13 L13 23.5 A10.5 10.5 0 0 1 2.5 13 Z" fill="currentColor"/></svg></button>
       </div>
     </div>
 
@@ -399,7 +417,7 @@ const state = {
   lastModified: null,
   activeSheetIndex: 0,
   pdfDoc: null, pageViewport: null,
-  tool: 'pan', color: '#FF0000', thickness: 2, shapeType: 'circle',
+  tool: 'pan', color: '#FF0000', thickness: 2, shapeType: 'circle', symbolType: 'flexduct',
   dirty: false,
   drawing: false, currentStroke: null,
   multiPoints: null, routeDragging: false, routeSegmentStart: null,
@@ -427,6 +445,7 @@ const DEFAULT_ELEVATION_COLOR = '#FF00FF'; // Elevation Callout — magenta
 const DEFAULT_DIMENSION_COLOR = ANNOTATION_COLOR;
 const HATCH_COLOR = '#FF0000'; // vivid red — reserved for "changed/demo'd" hatch markup
 const DEFAULT_PHOTO_COLOR = '#FF8000'; // orange
+const DEFAULT_EQUIPMENT_COLOR = '#00FF00'; // green
 const LEADER_STUB_LENGTH = 36; // fixed length of the horizontal segment nearest the text, before it bends toward the target
 const HATCH_TICK_SPACING = 10, HATCH_TICK_LENGTH = 9; // px, for hatch-line tick marks and area fill spacing
 const SYMBOLS = ['°','⌀','±','∠','′','″'];
@@ -540,6 +559,60 @@ function showElevationModal({ topValue = '', bottomValue = '', onConfirm, onCanc
     const top = topInput.value.trim(), bottom = bottomInput.value.trim();
     close();
     if(onConfirm) onConfirm(top, bottom);
+  });
+}
+
+// Dedicated two-field modal for Equipment Tag (Type/Number) — mirrors the
+// Elevation modal's structure with its own labels and a hyphen/slash symbol
+// row suited to tags like "AHU" over "1-1".
+const EQUIPMENT_SYMBOLS = ['-', '/'];
+function showEquipmentModal({ typeValue = '', numberValue = '', onConfirm, onCancel }){
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  card.innerHTML = `
+    <div class="disp">Add equipment tag</div>
+    <div class="modal-sub">e.g. Type "AHU", Number "1-1"</div>
+    <label class="modal-field-label">Type</label>
+    <input type="text" id="eqTypeInput" placeholder="e.g. AHU">
+    <label class="modal-field-label">Number</label>
+    <input type="text" id="eqNumberInput" placeholder="e.g. 1-1">
+    <div class="symbol-row">${EQUIPMENT_SYMBOLS.map(s => `<button type="button" class="symbol-btn" data-sym="${escapeAttr(s)}">${escapeHtml(s)}</button>`).join('')}</div>
+    <div class="modal-row">
+      <button type="button" class="cancel">Cancel</button>
+      <button type="button" class="save">Add</button>
+    </div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+  const typeInput = card.querySelector('#eqTypeInput');
+  const numberInput = card.querySelector('#eqNumberInput');
+  typeInput.value = typeValue;
+  numberInput.value = numberValue;
+  typeInput.focus();
+
+  let activeInput = typeInput;
+  [typeInput, numberInput].forEach(inp => inp.addEventListener('focus', () => { activeInput = inp; }));
+
+  card.querySelectorAll('.symbol-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const start = activeInput.selectionStart, end = activeInput.selectionEnd;
+      activeInput.value = activeInput.value.slice(0, start) + btn.dataset.sym + activeInput.value.slice(end);
+      activeInput.focus();
+      activeInput.setSelectionRange(start + btn.dataset.sym.length, start + btn.dataset.sym.length);
+    });
+  });
+  let eqConfirmed = false;
+  function eqClose(){ root.innerHTML = ''; if(!eqConfirmed && onCancel) onCancel(); }
+  card.querySelector('.cancel').addEventListener('click', eqClose);
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) eqClose(); });
+  card.querySelector('.save').addEventListener('click', () => {
+    eqConfirmed = true;
+    const t = typeInput.value.trim(), n = numberInput.value.trim();
+    eqClose();
+    if(onConfirm) onConfirm(t, n);
   });
 }
 
@@ -1145,6 +1218,8 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     state.selectedMarkupId = null;
     $('#shapeRow').classList.toggle('hidden', state.tool !== 'shape');
     $('#shapeRowSep').classList.toggle('hidden', state.tool !== 'shape');
+    $('#symbolRow').classList.toggle('hidden', state.tool !== 'symbol');
+    $('#symbolRowSep').classList.toggle('hidden', state.tool !== 'symbol');
     $('#canvasArea').classList.remove('panning');
     clearMarkupActionButtons();
     hideRunDoneBtn();
@@ -1199,11 +1274,18 @@ document.querySelectorAll('.thickness-dot').forEach(dot => {
     state.thickness = parseInt(dot.dataset.thickness, 10);
   });
 });
-document.querySelectorAll('.shape-btn').forEach(btn => {
+document.querySelectorAll('#shapeRow .shape-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#shapeRow .shape-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     state.shapeType = btn.dataset.shape;
+  });
+});
+document.querySelectorAll('#symbolRow .shape-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#symbolRow .shape-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.symbolType = btn.dataset.symbol;
   });
 });
 
@@ -1346,6 +1428,10 @@ function onPointerDown(e){
     placeElevationMarkup(p);
   } else if(state.tool === 'photo'){
     placePhotoMarker(p);
+  } else if(state.tool === 'equipment'){
+    placeEquipmentMarkup(p);
+  } else if(state.tool === 'symbol'){
+    placeSymbolMarker(p);
   } else if(state.tool === 'erase'){
     eraseNear(p);
   }
@@ -1546,34 +1632,40 @@ function onPointerUp(e){
 function showRunDoneBtn(){ $('#runDoneBtn').classList.remove('hidden'); positionRunDoneBtn(); }
 function hideRunDoneBtn(){ $('#runDoneBtn').classList.add('hidden'); }
 function finishMultiline(){
+  let createdId = null;
   if(state.multiPoints && state.multiPoints.length > 1){
     if(state.tool === 'hatcharea' && state.multiPoints.length >= 3){
       const markup = { id: genId(), type: 'hatcharea', color: HATCH_COLOR, points: state.multiPoints, note: '', createdAt: Date.now() };
       activeSheet().markups.push(markup);
       markDirty();
       renderNoteList();
+      createdId = markup.id;
     } else if(state.tool === 'whiteoutFreeform' && state.multiPoints.length >= 3){
       const markup = { id: genId(), type: 'whiteoutFreeform', points: state.multiPoints, locked: true, note: '', createdAt: Date.now() };
       activeSheet().markups.push(markup);
       markDirty();
       renderNoteList();
+      createdId = markup.id;
     } else if(state.tool === 'multiline'){
       const markup = { id: genId(), type: 'multiline', color: state.color, thickness: state.thickness, points: state.multiPoints, note: '', createdAt: Date.now() };
       activeSheet().markups.push(markup);
       markDirty();
       renderNoteList();
+      createdId = markup.id;
     } else if(state.tool === 'hatchline'){
       const markup = { id: genId(), type: 'hatchline', color: HATCH_COLOR, thickness: state.thickness, points: state.multiPoints, note: '', createdAt: Date.now() };
       activeSheet().markups.push(markup);
       markDirty();
       renderNoteList();
+      createdId = markup.id;
     }
   }
   state.multiPoints = null;
   state.routeDragging = false;
   state.routeSegmentStart = null;
   hideRunDoneBtn();
-  drawAllMarkups();
+  if(createdId) switchToSelectAndSelect(createdId);
+  else drawAllMarkups();
 }
 $('#runDoneBtn').addEventListener('click', finishMultiline);
 
@@ -1619,6 +1711,16 @@ function openTextEditForMarkup(m){
         renderNoteList();
       }
     });
+  } else if(m.type === 'equipment'){
+    showEquipmentModal({
+      typeValue: m.eqType, numberValue: m.eqNumber,
+      onConfirm: (type, number) => {
+        m.eqType = type; m.eqNumber = number;
+        markDirty();
+        drawAllMarkups();
+        renderNoteList();
+      }
+    });
   }
 }
 
@@ -1651,6 +1753,19 @@ function placeElevationMarkup(anchor){
   switchToSelectAndSelect(markup.id);
 }
 
+function placeEquipmentMarkup(anchor){
+  const textPos = { x: anchor.x + 70, y: anchor.y - 60 };
+  const bend = defaultBendPosition(anchor, textPos);
+  const markup = {
+    id: genId(), type: 'equipment', color: DEFAULT_EQUIPMENT_COLOR, eqType: '', eqNumber: '',
+    anchor, bend, textPos, note: '', createdAt: Date.now(),
+  };
+  activeSheet().markups.push(markup);
+  markDirty();
+  renderNoteList();
+  switchToSelectAndSelect(markup.id);
+}
+
 function placePhotoMarker(anchor){
   const sheet = activeSheet();
   const existingNumbers = sheet.markups.filter(m => m.type === 'photo').map(m => parseInt(m.number, 10)).filter(n => !isNaN(n));
@@ -1660,6 +1775,20 @@ function placePhotoMarker(anchor){
     number: String(nextNumber), note: '', createdAt: Date.now(),
   };
   sheet.markups.push(markup);
+  markDirty();
+  renderNoteList();
+  switchToSelectAndSelect(markup.id);
+}
+
+function placeSymbolMarker(anchor){
+  // Every symbol respects the color picker like Shapes do, except POC/POD —
+  // that one always defaults to black, matching the standard convention.
+  const color = state.symbolType === 'poc' ? '#000000' : state.color;
+  const markup = {
+    id: genId(), type: 'symbol', symbolType: state.symbolType, color, thickness: state.thickness,
+    rotation: 0, pocMode: 'POC', anchor, note: '', createdAt: Date.now(),
+  };
+  activeSheet().markups.push(markup);
   markDirty();
   renderNoteList();
   switchToSelectAndSelect(markup.id);
@@ -1695,7 +1824,7 @@ function defaultBendPosition(anchor, textPos){
    SELECTION / HANDLE HIT-TESTING + DRAGGING
    ============================================================ */
 function handlePointsForMarkup(m){
-  if(m.type === 'label' || m.type === 'note' || m.type === 'elevation') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'textPos', p: m.textPos }];
+  if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'textPos', p: m.textPos }];
   if(m.type === 'dimension') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'textPos', p: m.textPos }];
   if(m.type === 'line') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
   if(m.type === 'whiteoutRect') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: shapeCenter(m) }];
@@ -1707,18 +1836,18 @@ function handlePointsForMarkup(m){
     return handles;
   }
   if(m.type === 'multiline' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform' || m.type === 'hatchline') return m.points.map((p, i) => ({ key: 'pt' + i, p }));
-  if(m.type === 'photo') return [{ key: 'anchor', p: m.anchor }, { key: 'rotate', p: computePhotoRotateHandle(m) }];
+  if(m.type === 'photo' || m.type === 'symbol') return [{ key: 'anchor', p: m.anchor }, { key: 'rotate', p: computePhotoRotateHandle(m) }];
   return [];
 }
 function cloneMarkupPoints(m){ return JSON.parse(JSON.stringify(m)); }
 function markupCenterPoint(m){
-  if(m.type === 'label' || m.type === 'note' || m.type === 'dimension' || m.type === 'elevation') return m.textPos;
+  if(m.type === 'label' || m.type === 'note' || m.type === 'dimension' || m.type === 'elevation' || m.type === 'equipment') return m.textPos;
   if(m.type === 'line' || m.type === 'shape' || m.type === 'whiteoutRect') return { x: (m.p0.x + m.p1.x) / 2, y: (m.p0.y + m.p1.y) / 2 };
   if(m.type === 'multiline' || m.type === 'freehand' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform' || m.type === 'hatchline'){
     const xs = m.points.map(pt => pt.x), ys = m.points.map(pt => pt.y);
     return { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 };
   }
-  if(m.type === 'photo') return m.anchor;
+  if(m.type === 'photo' || m.type === 'symbol') return m.anchor;
   return { x: 0, y: 0 };
 }
 // Re-centers the visible canvas on a markup without changing the current
@@ -1771,8 +1900,9 @@ function markupContainsPoint(m, p){
     return p.x >= x0 - 6 && p.x <= x1 + 6 && p.y >= y0 - 6 && p.y <= y1 + 6;
   }
   if(m.type === 'whiteoutFreeform') return pointInPolygon(p, m.points) || m.points.some(pt => Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
-  if(m.type === 'label' || m.type === 'note' || m.type === 'elevation') return Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 40 || Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
+  if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment') return Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 40 || Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
   if(m.type === 'photo') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
+  if(m.type === 'symbol') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 22;
   return false;
 }
 function pointInPolygon(p, points){
@@ -1800,14 +1930,14 @@ function applyDragHandle(drag, p){
     translateMarkup(m, drag.origins, dx, dy);
     return;
   }
-  if(drag.key === 'rotate' && (m.type === 'shape' || m.type === 'photo')){
-    const c = m.type === 'photo' ? m.anchor : shapeCenter(m);
+  if(drag.key === 'rotate' && (m.type === 'shape' || m.type === 'photo' || m.type === 'symbol')){
+    const c = (m.type === 'photo' || m.type === 'symbol') ? m.anchor : shapeCenter(m);
     let angle = Math.atan2(p.y - c.y, p.x - c.x) + Math.PI / 2;
     const step = ANGLE_STEP * Math.PI / 180;
     m.rotation = Math.round(angle / step) * step;
     return;
   }
-  if(drag.key === 'bend' && (m.type === 'label' || m.type === 'note' || m.type === 'elevation')){
+  if(drag.key === 'bend' && (m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment')){
     // Manually draggable, snapped to clean angle increments around the text
     // so it can be pointed at either side deliberately instead of ending up
     // at a crooked, hard-to-read angle.
@@ -1818,7 +1948,7 @@ function applyDragHandle(drag, p){
     m.bend = { x: m.textPos.x + Math.cos(angle) * dist, y: m.textPos.y + Math.sin(angle) * dist };
     return;
   }
-  if(drag.key === 'textPos' && (m.type === 'label' || m.type === 'note' || m.type === 'elevation')){
+  if(drag.key === 'textPos' && (m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment')){
     // Bend moves along with the text (keeping the stub's shape consistent)
     // unless the person deliberately drags the bend grip itself.
     const dx = p.x - m.textPos.x, dy = p.y - m.textPos.y;
@@ -1829,6 +1959,18 @@ function applyDragHandle(drag, p){
   if(drag.key.startsWith('pt')){
     const idx = parseInt(drag.key.slice(2), 10);
     m.points[idx] = p;
+    return;
+  }
+  if(m.type === 'dimension' && (drag.key === 'p0' || drag.key === 'p1')){
+    // Dimension grips had no snapping at all when edited (a real bug — only
+    // the initial draw snapped near horizontal/vertical). A fine 1-degree
+    // snap avoids stray fractional angles while still feeling essentially free.
+    const fixed = drag.key === 'p0' ? m.p1 : m.p0;
+    const dx = p.x - fixed.x, dy = p.y - fixed.y;
+    const dist = Math.hypot(dx, dy);
+    const step = Math.PI / 180;
+    const angle = Math.round(Math.atan2(dy, dx) / step) * step;
+    m[drag.key] = { x: fixed.x + Math.cos(angle) * dist, y: fixed.y + Math.sin(angle) * dist };
     return;
   }
   if(m.type === 'shape' && (drag.key === 'p0' || drag.key === 'p1')){
@@ -1851,11 +1993,11 @@ function translateMarkup(m, origin, dx, dy){
     m.p0 = { x: origin.p0.x + dx, y: origin.p0.y + dy };
     m.p1 = { x: origin.p1.x + dx, y: origin.p1.y + dy };
     m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
-  } else if(m.type === 'label' || m.type === 'note' || m.type === 'elevation'){
+  } else if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment'){
     m.anchor = { x: origin.anchor.x + dx, y: origin.anchor.y + dy };
     m.bend = { x: origin.bend.x + dx, y: origin.bend.y + dy };
     m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
-  } else if(m.type === 'photo'){
+  } else if(m.type === 'photo' || m.type === 'symbol'){
     m.anchor = { x: origin.anchor.x + dx, y: origin.anchor.y + dy };
   }
 }
@@ -1879,7 +2021,7 @@ function eraseNear(p){
 function clearMarkupActionButtons(){
   const bar = $('#actionBar');
   bar.innerHTML = state.whiteoutsUnlocked
-    ? '<span class="action-bar-hint">Select a whiteout to move, resize, or delete it</span>'
+    ? '<span class="action-bar-hint">Select a whiteout to move, resize, or delete it. Click Lock in the tool menu to exit.</span>'
     : '';
   positionFloatingControls();
 }
@@ -1929,6 +2071,35 @@ function showMarkupActionButtons(markupId){
     });
     buttonRow.appendChild(editBtn);
   }
+  if(m.type === 'equipment'){
+    const editBtn = document.createElement('button');
+    editBtn.textContent = (m.eqType || m.eqNumber) ? 'Edit text' : 'Add text';
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showEquipmentModal({
+        typeValue: m.eqType, numberValue: m.eqNumber,
+        onConfirm: (type, number) => {
+          m.eqType = type; m.eqNumber = number;
+          markDirty();
+          drawAllMarkups();
+          renderNoteList();
+        }
+      });
+    });
+    buttonRow.appendChild(editBtn);
+  }
+  if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment'){
+    const leaderBtn = document.createElement('button');
+    leaderBtn.textContent = m.leaderHidden ? 'Show leader' : 'Hide leader';
+    leaderBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      m.leaderHidden = !m.leaderHidden;
+      markDirty();
+      drawAllMarkups();
+      showMarkupActionButtons(markupId);
+    });
+    buttonRow.appendChild(leaderBtn);
+  }
   if(m.type === 'photo'){
     const editBtn = document.createElement('button');
     editBtn.textContent = 'Edit number';
@@ -1967,6 +2138,19 @@ function showMarkupActionButtons(markupId){
       buttonRow.appendChild(viewBtn);
     }
   }
+  if(m.type === 'symbol' && m.symbolType === 'poc'){
+    const pocBtn = document.createElement('button');
+    pocBtn.textContent = m.pocMode === 'POD' ? 'Switch to POC' : 'Switch to POD';
+    pocBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      m.pocMode = m.pocMode === 'POD' ? 'POC' : 'POD';
+      markDirty();
+      drawAllMarkups();
+      renderNoteList();
+      showMarkupActionButtons(markupId);
+    });
+    buttonRow.appendChild(pocBtn);
+  }
   if(m.type === 'line' || m.type === 'multiline'){
     const hatchBtn = document.createElement('button');
     hatchBtn.textContent = m.hatched ? 'Un-hatch' : 'Hatch';
@@ -1996,7 +2180,7 @@ function showMarkupActionButtons(markupId){
   // Stroke-width control — only for the markup types that actually have an
   // adjustable stroke (Dimension, Callout, Note, Hatch, and Hatch Area stay
   // fixed on purpose, per earlier decisions).
-  if(['line', 'multiline', 'freehand', 'shape'].includes(m.type)){
+  if(['line', 'multiline', 'freehand', 'shape', 'symbol'].includes(m.type)){
     const thicknessRow = document.createElement('div');
     thicknessRow.className = 'markup-action-row';
     [2, 4, 7].forEach(t => {
@@ -2080,7 +2264,9 @@ function drawAllMarkups(){
     else if(m.type === 'shape') drawShape(m);
     else if(m.type === 'label' || m.type === 'note') drawLeader(m);
     else if(m.type === 'elevation') drawElevation(m);
+    else if(m.type === 'equipment') drawEquipmentTag(m);
     else if(m.type === 'photo') drawPhoto(m);
+    else if(m.type === 'symbol') drawSymbolMarker(m);
     else if(m.type === 'dimension') drawDimension(m);
     else if(m.type === 'hatchline') drawHatchLine(m);
     else if(m.type === 'hatcharea') drawHatchArea(m);
@@ -2093,9 +2279,9 @@ function drawAllMarkups(){
 
 function drawHandles(m){
   const ctx = mCanvas.getContext('2d');
-  if(m.type === 'shape' || m.type === 'photo'){
-    const c = m.type === 'photo' ? m.anchor : shapeCenter(m);
-    const rh = m.type === 'photo' ? computePhotoRotateHandle(m) : computeShapeRotateHandle(m);
+  if(m.type === 'shape' || m.type === 'photo' || m.type === 'symbol'){
+    const c = (m.type === 'photo' || m.type === 'symbol') ? m.anchor : shapeCenter(m);
+    const rh = (m.type === 'photo' || m.type === 'symbol') ? computePhotoRotateHandle(m) : computeShapeRotateHandle(m);
     ctx.save();
     ctx.strokeStyle = '#E8622C';
     ctx.lineWidth = 1.5;
@@ -2345,17 +2531,19 @@ function drawLeader(m){
   ctx.fillStyle = m.color;
   ctx.lineWidth = 1.5;
 
-  ctx.beginPath();
-  ctx.moveTo(m.textPos.x, m.textPos.y);
-  ctx.lineTo(bend.x, bend.y);
-  ctx.lineTo(m.anchor.x, m.anchor.y);
-  ctx.stroke();
-
-  if(m.type === 'note') drawArrowHead(ctx, bend, m.anchor, m.color);
-  else {
+  if(!m.leaderHidden){
     ctx.beginPath();
-    ctx.arc(m.anchor.x, m.anchor.y, 4, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.moveTo(m.textPos.x, m.textPos.y);
+    ctx.lineTo(bend.x, bend.y);
+    ctx.lineTo(m.anchor.x, m.anchor.y);
+    ctx.stroke();
+
+    if(m.type === 'note') drawArrowHead(ctx, bend, m.anchor, m.color);
+    else {
+      ctx.beginPath();
+      ctx.arc(m.anchor.x, m.anchor.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   drawTextPill(ctx, m.text, m.textPos, m.color);
@@ -2371,15 +2559,17 @@ function drawElevation(m){
   ctx.fillStyle = m.color;
   ctx.lineWidth = 1.5;
 
-  ctx.beginPath();
-  ctx.moveTo(m.textPos.x, m.textPos.y);
-  ctx.lineTo(bend.x, bend.y);
-  ctx.lineTo(m.anchor.x, m.anchor.y);
-  ctx.stroke();
+  if(!m.leaderHidden){
+    ctx.beginPath();
+    ctx.moveTo(m.textPos.x, m.textPos.y);
+    ctx.lineTo(bend.x, bend.y);
+    ctx.lineTo(m.anchor.x, m.anchor.y);
+    ctx.stroke();
 
-  ctx.beginPath();
-  ctx.arc(m.anchor.x, m.anchor.y, 4, 0, Math.PI * 2);
-  ctx.fill();
+    ctx.beginPath();
+    ctx.arc(m.anchor.x, m.anchor.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   drawElevationPill(ctx, m.textTop || '', m.textBottom || '', m.textPos, m.color);
 }
@@ -2417,6 +2607,75 @@ function drawElevationPill(ctx, textTop, textBottom, pos, color){
   ctx.fillText(displayBottom, bx + boxW / 2, by + rowH + rowH / 2 + 4);
   ctx.textAlign = 'left';
 }
+
+// Equipment tag: same leader/dot mechanic as Label, but the text end is a
+// flat-top hexagon (reusing the Shape tool's hexagon vertex formula) divided
+// into a type field and a number field — e.g. "AHU" over "1-1".
+function drawEquipmentTag(m){
+  const ctx = mCanvas.getContext('2d');
+  const bend = m.bend || defaultBendPosition(m.anchor, m.textPos);
+  ctx.strokeStyle = m.color;
+  ctx.fillStyle = m.color;
+  ctx.lineWidth = 1.5;
+
+  if(!m.leaderHidden){
+    ctx.beginPath();
+    ctx.moveTo(m.textPos.x, m.textPos.y);
+    ctx.lineTo(bend.x, bend.y);
+    ctx.lineTo(m.anchor.x, m.anchor.y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(m.anchor.x, m.anchor.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  drawEquipmentHexPill(ctx, m.eqType || '', m.eqNumber || '', m.textPos, m.color);
+}
+function drawEquipmentHexPill(ctx, eqType, eqNumber, pos, color){
+  const isEmpty = !eqType && !eqNumber;
+  ctx.font = isEmpty ? '600 italic 11px Inter, sans-serif' : '600 12px Inter, sans-serif';
+  const padX = 10;
+  const displayTop = isEmpty ? 'Type' : eqType;
+  const displayBottom = isEmpty ? 'Number' : eqNumber;
+  const wTop = ctx.measureText(displayTop || ' ').width;
+  const wBottom = ctx.measureText(displayBottom || ' ').width;
+  const boxW = Math.max(wTop, wBottom, 24) + padX * 2;
+  const rowH = 19, boxH = rowH * 2;
+  const cx = pos.x + boxW / 2, cy = pos.y;
+  const rx = boxW / 2 + 6, ry = boxH / 2;
+  const pts = [];
+  for(let i = 0; i < 6; i++){
+    const ang = Math.PI / 3 * i - Math.PI / 2 - Math.PI / 6; // flat-top orientation, same formula as the Shape tool's hexagon
+    pts.push({ x: cx + rx * Math.cos(ang), y: cy + ry * Math.sin(ang) });
+  }
+  const strokeColor = isEmpty ? 'rgba(20,30,50,0.35)' : color;
+  const fillColor = isEmpty ? 'rgba(20,30,50,0.45)' : color;
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  pts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.closePath();
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = strokeColor;
+  ctx.lineWidth = 1.5;
+  if(isEmpty) ctx.setLineDash([3, 2]);
+  ctx.fill();
+  ctx.stroke();
+  if(isEmpty) ctx.setLineDash([]);
+
+  ctx.beginPath();
+  ctx.moveTo(cx - rx * 0.75, cy);
+  ctx.lineTo(cx + rx * 0.75, cy);
+  ctx.stroke();
+
+  ctx.fillStyle = fillColor;
+  ctx.textAlign = 'center';
+  ctx.fillText(displayTop, cx, cy - rowH / 2 + 4);
+  ctx.fillText(displayBottom, cx, cy + rowH / 2 + 4);
+  ctx.textAlign = 'left';
+}
+
 
 // Photo marker: a cone shows the direction and rough field of view the
 // camera was facing, and a badge at the anchor point carries the reference
@@ -2466,6 +2725,132 @@ function drawPhoto(m){
   ctx.textAlign = 'center';
   ctx.fillText(String(m.number != null ? m.number : ''), anchor.x, anchor.y + (13.5 - 12) * scale + 4);
   ctx.textAlign = 'left';
+}
+
+// Trade symbol library: each drawSym* function draws centered on (0,0) in
+// local coordinates — drawSymbolMarker handles translating to the anchor and
+// applying the rotation, same pattern as Shapes and Photo markers.
+function drawSymbolMarker(m){
+  const ctx = mCanvas.getContext('2d');
+  ctx.save();
+  ctx.translate(m.anchor.x, m.anchor.y);
+  ctx.rotate(m.rotation || 0);
+  ctx.strokeStyle = m.color;
+  ctx.fillStyle = m.color;
+  ctx.lineWidth = m.thickness || 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  switch(m.symbolType){
+    case 'flexduct': drawSymFlexDuct(ctx); break;
+    case 'pipeup': drawSymPipeUp(ctx); break;
+    case 'pipedown': drawSymPipeDown(ctx); break;
+    case 'valve': drawSymValve(ctx); break;
+    case 'linebreak': drawSymLineBreak(ctx); break;
+    case 'thermostat': drawSymThermostat(ctx); break;
+    case 'damper': drawSymDamper(ctx); break;
+    case 'cap': drawSymCap(ctx); break;
+    case 'union': drawSymUnion(ctx); break;
+    case 'flowarrow': drawSymFlowArrow(ctx); break;
+    case 'poc': drawSymPocPod(ctx, m.pocMode || 'POC'); break;
+  }
+  ctx.restore();
+}
+function drawSymFlexDuct(ctx){
+  ctx.beginPath();
+  ctx.arc(-20, 0, 13, Math.PI * 0.25, Math.PI * 1.75);
+  ctx.stroke();
+  const pts = [[-20, 0], [-5, 0], [-1, -12], [3, 12], [7, -12], [11, 12], [15, -12], [19, 0], [33, 0]];
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for(let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.stroke();
+}
+function drawSymPipeUp(ctx){
+  ctx.beginPath();
+  ctx.arc(-9, 0, 5, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-4, 0); ctx.lineTo(15, 0);
+  ctx.stroke();
+}
+function drawSymPipeDown(ctx){
+  ctx.beginPath();
+  ctx.arc(-9, 0, 5, Math.PI * 0.22, Math.PI * 1.78);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-4, 0); ctx.lineTo(15, 0);
+  ctx.stroke();
+}
+function drawSymValve(ctx){
+  ctx.beginPath();
+  ctx.moveTo(-12, -5); ctx.lineTo(-12, 5); ctx.lineTo(-1, 0); ctx.closePath();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(12, -5); ctx.lineTo(12, 5); ctx.lineTo(1, 0); ctx.closePath();
+  ctx.stroke();
+}
+function drawSymLineBreak(ctx){
+  const pts = [[-15, 0], [-5, 0], [-2, -6], [2, 6], [5, 0], [15, 0]];
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for(let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.stroke();
+}
+function drawSymThermostat(ctx){
+  ctx.beginPath();
+  ctx.arc(0, 0, 9, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.font = '700 11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('T', 0, 4);
+  ctx.textAlign = 'left';
+}
+function drawSymDamper(ctx){
+  ctx.beginPath();
+  ctx.moveTo(0, -13); ctx.lineTo(0, 13); ctx.lineTo(6, 13);
+  ctx.stroke();
+}
+function drawSymCap(ctx){
+  ctx.beginPath();
+  ctx.moveTo(-4, -12); ctx.lineTo(4, -12); ctx.lineTo(4, 12); ctx.lineTo(-4, 12);
+  ctx.stroke();
+}
+function drawSymUnion(ctx){
+  ctx.beginPath();
+  ctx.moveTo(-10, 0); ctx.lineTo(10, 0);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-3, -5); ctx.lineTo(-3, 5);
+  ctx.moveTo(3, -5); ctx.lineTo(3, 5);
+  ctx.stroke();
+}
+function drawSymFlowArrow(ctx){
+  ctx.beginPath();
+  ctx.moveTo(-9, 0); ctx.lineTo(6, 0);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(6, -5); ctx.lineTo(11, 0); ctx.lineTo(6, 5); ctx.closePath();
+  ctx.fill();
+}
+function drawSymPocPod(ctx, mode){
+  ctx.beginPath();
+  ctx.arc(0, 0, 10.5, 0, Math.PI * 2);
+  ctx.stroke();
+  if(mode === 'POD'){
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -10.5);
+    ctx.arc(0, 0, 10.5, -Math.PI / 2, Math.PI / 2);
+    ctx.closePath();
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(0, -10.5); ctx.arc(0, 0, 10.5, -Math.PI / 2, 0); ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(0, 0); ctx.lineTo(0, 10.5); ctx.arc(0, 0, 10.5, Math.PI / 2, Math.PI); ctx.closePath();
+    ctx.fill();
+  }
 }
 
 // Dimension: a straight line between two picked points, arrowheads at both
@@ -2663,6 +3048,8 @@ function renderNoteList(){
     const time = m.createdAt ? new Date(m.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
     const label = (m.type === 'label' || m.type === 'note' || m.type === 'dimension') ? m.text
       : (m.type === 'elevation') ? `${m.textTop || ''} / ${m.textBottom || ''}`
+      : (m.type === 'equipment') ? `${m.eqType || ''}/${m.eqNumber || ''}`
+      : (m.type === 'symbol') ? (m.symbolType === 'poc' ? (m.pocMode || 'POC') : m.symbolType)
       : (m.type === 'photo') ? `Photo ${m.number || ''}`
       : (m.type === 'shape') ? m.shape
       : (m.type === 'hatchline') ? 'hatch line'
