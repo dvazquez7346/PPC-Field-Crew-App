@@ -403,6 +403,7 @@ const state = {
   dirty: false,
   drawing: false, currentStroke: null,
   multiPoints: null, routeDragging: false, routeSegmentStart: null,
+  lastTapTime: 0, lastTapX: 0, lastTapY: 0,
   panState: null,
   selectedMarkupId: null, dragHandle: null,
   jobsIndexCache: null,
@@ -1389,6 +1390,19 @@ function onPointerMove(e){
   }
 }
 
+// Native 'dblclick' doesn't reliably fire from two touch taps on iOS Safari
+// (especially with touch-action:none set for drawing), so double-taps are
+// detected manually here: same screen position, within a short time window.
+function checkDoubleTap(e){
+  const now = Date.now();
+  const dx = e.clientX - state.lastTapX, dy = e.clientY - state.lastTapY;
+  const isDouble = (now - state.lastTapTime < 350) && Math.hypot(dx, dy) < 25;
+  state.lastTapTime = isDouble ? 0 : now; // reset so a 3rd quick tap starts a fresh sequence
+  state.lastTapX = e.clientX;
+  state.lastTapY = e.clientY;
+  return isDouble;
+}
+
 function onPointerUp(e){
   if((state.tool === 'multiline' || state.tool === 'hatchline') && state.routeDragging){
     state.routeDragging = false;
@@ -1406,16 +1420,31 @@ function onPointerUp(e){
     return;
   }
   if(state.tool === 'select' && state.dragHandle){
+    const p = canvasPoint(e);
+    const dragDist = Math.hypot(p.x - state.dragHandle.startPoint.x, p.y - state.dragHandle.startPoint.y);
+    const markupId = state.dragHandle.markupId;
     state.dragHandle = null;
     try{ mCanvas.releasePointerCapture(e.pointerId); }catch(err){}
     markDirty();
     renderNoteList();
     if(state.selectedMarkupId) showMarkupActionButtons(state.selectedMarkupId);
+    if(dragDist < 6 && checkDoubleTap(e)){
+      const sheet = activeSheet();
+      const m = sheet && sheet.markups.find(x => x.id === markupId);
+      if(m) openTextEditForMarkup(m);
+    }
     return;
   }
   if((state.tool === 'pan' || state.tool === 'select') && state.panState){
+    const dragDist = Math.hypot(e.clientX - state.panState.startX, e.clientY - state.panState.startY);
     state.panState = null;
     $('#canvasArea').classList.remove('panning');
+    if(state.tool === 'pan' && dragDist < 8 && checkDoubleTap(e)){
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+      const selectBtn = document.querySelector('.tool-btn[data-tool="select"]');
+      if(selectBtn) selectBtn.classList.add('active');
+      state.tool = 'select';
+    }
     return;
   }
 
