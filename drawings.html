@@ -20,6 +20,9 @@
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;height:100%;overflow:hidden;}
 .topbar,.tabs-row,.action-bar,.toolrail,.bottombar,.panel,.gate,.modal-card{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+#canvasArea,#markupCanvas,#pdfCanvas{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
+.topbar,.tabs-row,.action-bar,.toolrail,.bottombar,.panel,.gate,.modal-card{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
 input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
 h1,h2,h3,.disp{font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:0.01em;}
 button{font-family:inherit;cursor:pointer;}
@@ -108,9 +111,9 @@ input,textarea{font-family:inherit;}
 .whiteout-lock-btn{width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:transparent;display:flex;align-items:center;justify-content:center;color:var(--navy);cursor:pointer;}
 .whiteout-lock-btn:hover{background:var(--surface-2);}
 .whiteout-lock-btn.unlocked-mode{background:var(--danger);color:#fff;border-color:var(--danger);}
-.whiteout-group{display:flex;flex-direction:column;align-items:center;gap:2px;}
-.whiteout-label{max-width:46px;text-align:center;line-height:1.05;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:break-word;}
-.whiteout-buttons{display:flex;flex-direction:column;gap:4px;}
+.whiteout-group{display:flex;flex-direction:column;align-items:center;gap:1px;}
+.whiteout-label{max-width:46px;text-align:center;line-height:1;}
+.whiteout-buttons{display:flex;flex-direction:column;gap:2px;}
 .tool-sep{width:32px;height:1px;background:var(--line);margin:6px 0;}
 .tool-label{font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;margin-top:-2px;text-align:center;}
 .color-row,.thickness-row,.shape-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:0 6px;}
@@ -159,6 +162,7 @@ input,textarea{font-family:inherit;}
 .modal-card textarea,.modal-card input[type=text]{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:14px;resize:vertical;min-height:38px;}
 .modal-card textarea{min-height:70px;}
 .symbol-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.modal-field-label{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;margin:8px 0 3px;}
 .symbol-btn{width:32px;height:32px;border:1px solid var(--line);border-radius:7px;background:var(--surface-2);font-size:15px;color:var(--navy);}
 .symbol-btn:hover{border-color:var(--blueprint);}
 .modal-row{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;}
@@ -244,9 +248,9 @@ input,textarea{font-family:inherit;}
 
   <div class="main">
     <div class="toolrail" id="toolrail">
-      <button class="tool-btn active" data-tool="pan" title="Pan"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M9 5l3-3 3 3M12 2v6M15 19l-3 3-3-3M12 22v-6M19 9l3 3-3 3M22 12h-6M5 15l-3-3 3-3M2 12h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="tool-btn" data-tool="pan" title="Pan"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M9 5l3-3 3 3M12 2v6M15 19l-3 3-3-3M12 22v-6M19 9l3 3-3 3M22 12h-6M5 15l-3-3 3-3M2 12h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="tool-label">Pan</div>
-      <button class="tool-btn" data-tool="select" title="Select / move / edit / delete a markup"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M6 3l3 17 2.5-6.5L18 12z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+      <button class="tool-btn active" data-tool="select" title="Select / move / edit / delete a markup"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M6 3l3 17 2.5-6.5L18 12z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
       <div class="tool-label">Select</div>
       <div class="tool-sep"></div>
       <button class="tool-btn" data-tool="draw" title="Freehand draw">✎</button>
@@ -269,19 +273,21 @@ input,textarea{font-family:inherit;}
       <div class="tool-label">Callout</div>
       <button class="tool-btn" data-tool="note" title="Note with leader (arrow tip)"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="7" y1="9" x2="17" y2="9" stroke="currentColor" stroke-width="1.3"/><line x1="7" y1="12.5" x2="17" y2="12.5" stroke="currentColor" stroke-width="1.3"/><line x1="7" y1="16" x2="13" y2="16" stroke="currentColor" stroke-width="1.3"/></svg></button>
       <div class="tool-label">Note</div>
+      <button class="tool-btn" data-tool="elevation" title="Elevation callout with leader (divided pill)"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="2" y="3" width="12" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.3"/><line x1="14" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.6"/><line x1="18" y1="8" x2="21" y2="17" stroke="currentColor" stroke-width="1.6"/><circle cx="21" cy="17" r="1.6" fill="currentColor"/></svg></button>
+      <div class="tool-label">Elev</div>
       <div class="tool-sep"></div>
       <button class="tool-btn" data-tool="erase" title="Erase a markup"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M2 4 L2 2 L14 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M22 22 L22 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L2 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><g transform="rotate(-45 12 12)"><rect x="4" y="8.5" width="16" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="12" y1="8.5" x2="12" y2="15.5" stroke="currentColor" stroke-width="1.8"/></g></svg></button>
       <div class="tool-label">Erase</div>
       <div class="tool-sep"></div>
       <div class="whiteout-group">
-        <div class="tool-label whiteout-label">WHITEOUT</div>
+        <div class="tool-label whiteout-label">WHITE-<br>OUT</div>
         <div class="whiteout-buttons">
           <button class="tool-btn" data-tool="whiteoutRect" title="Whiteout (rectangle) — covers PDF content, not destructive"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2"/></svg></button>
-          <button class="tool-btn" data-tool="whiteoutFreeform" title="Whiteout (freeform) — covers PDF content, not destructive"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M6 6 Q4 10 6 14 Q8 20 14 18 Q20 16 18 10 Q16 4 10 5 Q7 5 6 6 Z" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2"/></svg></button>
+          <button class="tool-btn" data-tool="whiteoutFreeform" title="Whiteout (freeform) — covers PDF content, not destructive"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M4 6 L11 3 L16 7 L21 6 L20 13 L22 18 L16 21 L11 18 L6 21 L3 15 L7 11 Z" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2" stroke-linejoin="round"/></svg></button>
         </div>
       </div>
       <button class="whiteout-lock-btn" id="whiteoutLockBtn" title="Unlock whiteouts to edit them (locks out every other tool until you lock again)"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></button>
-      <div class="tool-label">Lock</div>
+      <div class="tool-label" id="whiteoutLockLabel">Unlock</div>
       <div class="tool-sep"></div>
       <div class="color-row">
         <div class="color-dot active" data-color="#FF0000" style="background:#FF0000"></div>
@@ -389,7 +395,7 @@ const state = {
   lastModified: null,
   activeSheetIndex: 0,
   pdfDoc: null, pageViewport: null,
-  tool: 'pan', color: '#FF0000', thickness: 2, shapeType: 'circle',
+  tool: 'select', color: '#FF0000', thickness: 2, shapeType: 'circle',
   dirty: false,
   drawing: false, currentStroke: null,
   multiPoints: null, routeDragging: false, routeSegmentStart: null,
@@ -425,18 +431,19 @@ const pdfCanvasEl = () => $('#pdfCanvas');
 /* ============================================================
    MODAL SYSTEM — replaces every native prompt()/confirm() in the app
    ============================================================ */
-function showModal({ title, sub, value = '', placeholder = '', withSymbols = false, confirmLabel = 'Save', destructiveLabel = null, onConfirm, onDestructive }){
+function showModal({ title, sub, value = '', placeholder = '', withSymbols = false, symbols = null, confirmLabel = 'Save', destructiveLabel = null, onConfirm, onDestructive, onCancel }){
   const root = $('#modalRoot');
   root.innerHTML = '';
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
   const card = document.createElement('div');
   card.className = 'modal-card';
+  const symbolSet = symbols || SYMBOLS;
   card.innerHTML = `
     <div class="disp">${escapeHtml(title)}</div>
     ${sub ? `<div class="modal-sub">${escapeHtml(sub)}</div>` : ''}
     <textarea id="modalInput" placeholder="${escapeHtml(placeholder)}">${escapeHtml(value)}</textarea>
-    ${withSymbols ? `<div class="symbol-row">${SYMBOLS.map(s => `<button type="button" class="symbol-btn" data-sym="${s}">${s}</button>`).join('')}</div>` : ''}
+    ${withSymbols ? `<div class="symbol-row">${symbolSet.map(s => `<button type="button" class="symbol-btn" data-sym="${s}">${s}</button>`).join('')}</div>` : ''}
     <div class="modal-row">
       ${destructiveLabel ? `<button type="button" class="destructive">${escapeHtml(destructiveLabel)}</button>` : ''}
       <button type="button" class="cancel">Cancel</button>
@@ -456,20 +463,77 @@ function showModal({ title, sub, value = '', placeholder = '', withSymbols = fal
       input.setSelectionRange(start + btn.dataset.sym.length, start + btn.dataset.sym.length);
     });
   });
-  function close(){ root.innerHTML = ''; }
+  let confirmed = false;
+  function close(){ root.innerHTML = ''; if(!confirmed && onCancel) onCancel(); }
   card.querySelector('.cancel').addEventListener('click', close);
   backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
   card.querySelector('.save').addEventListener('click', () => {
     const val = input.value.trim();
+    confirmed = true;
     close();
     if(onConfirm) onConfirm(val);
   });
   if(destructiveLabel){
     card.querySelector('.destructive').addEventListener('click', () => {
+      confirmed = true;
       close();
       if(onDestructive) onDestructive();
     });
   }
+}
+
+// Dedicated two-field modal for Elevation Callout — the general showModal only
+// has one text area, and this needs a separate labeled Top/Bottom pair plus
+// its own symbol set (feet/inch marks) rather than the general °/⌀/± one.
+const ELEVATION_SYMBOLS = ["'", '-', '"'];
+function showElevationModal({ topValue = '', bottomValue = '', onConfirm, onCancel }){
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  card.innerHTML = `
+    <div class="disp">Add elevation callout</div>
+    <div class="modal-sub">Top field is usually a tag; bottom is usually a value.</div>
+    <label class="modal-field-label">Top text</label>
+    <input type="text" id="elevTopInput" placeholder="e.g. EL-1">
+    <label class="modal-field-label">Bottom text</label>
+    <input type="text" id="elevBottomInput" placeholder="e.g. 100.00">
+    <div class="symbol-row">${ELEVATION_SYMBOLS.map(s => `<button type="button" class="symbol-btn" data-sym="${escapeHtml(s)}">${escapeHtml(s)}</button>`).join('')}</div>
+    <div class="modal-row">
+      <button type="button" class="cancel">Cancel</button>
+      <button type="button" class="save">Add</button>
+    </div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+  const topInput = card.querySelector('#elevTopInput');
+  const bottomInput = card.querySelector('#elevBottomInput');
+  topInput.value = topValue;
+  bottomInput.value = bottomValue;
+  topInput.focus();
+
+  let activeInput = topInput;
+  [topInput, bottomInput].forEach(inp => inp.addEventListener('focus', () => { activeInput = inp; }));
+
+  card.querySelectorAll('.symbol-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const start = activeInput.selectionStart, end = activeInput.selectionEnd;
+      activeInput.value = activeInput.value.slice(0, start) + btn.dataset.sym + activeInput.value.slice(end);
+      activeInput.focus();
+      activeInput.setSelectionRange(start + btn.dataset.sym.length, start + btn.dataset.sym.length);
+    });
+  });
+  let confirmed = false;
+  function close(){ root.innerHTML = ''; if(!confirmed && onCancel) onCancel(); }
+  card.querySelector('.cancel').addEventListener('click', close);
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
+  card.querySelector('.save').addEventListener('click', () => {
+    confirmed = true;
+    const top = topInput.value.trim(), bottom = bottomInput.value.trim();
+    close();
+    if(onConfirm) onConfirm(top, bottom);
+  });
 }
 
 function escapeHtml(s){
@@ -1010,6 +1074,7 @@ $('#whiteoutLockBtn').addEventListener('click', () => {
   const lockBtn = $('#whiteoutLockBtn');
   lockBtn.classList.toggle('unlocked-mode', state.whiteoutsUnlocked);
   lockBtn.innerHTML = state.whiteoutsUnlocked ? UNLOCK_ICON : LOCK_ICON;
+  $('#whiteoutLockLabel').textContent = state.whiteoutsUnlocked ? 'Lock' : 'Unlock';
   document.querySelectorAll('.tool-btn').forEach(b => { b.disabled = state.whiteoutsUnlocked; });
   if(state.whiteoutsUnlocked){
     document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
@@ -1166,6 +1231,8 @@ function onPointerDown(e){
     state.currentStroke = { id: genId(), type: 'whiteoutRect', p0: p, p1: p, note: '' };
   } else if(state.tool === 'label' || state.tool === 'note'){
     placeLeaderMarkup(state.tool, p);
+  } else if(state.tool === 'elevation'){
+    placeElevationMarkup(p);
   } else if(state.tool === 'erase'){
     eraseNear(p);
   }
@@ -1373,17 +1440,46 @@ function onDblClick(){
    then it's fully adjustable via drag handles in the Select tool) ---- */
 function placeLeaderMarkup(kind, anchor){
   const defaultColor = kind === 'note' ? DEFAULT_NOTE_COLOR : DEFAULT_LABEL_COLOR;
+  const textPos = { x: anchor.x + 70, y: anchor.y - 60 };
+  const bend = defaultBendPosition(anchor, textPos);
+  // Show the leader/target in place right away — visible (dimmed) through the
+  // modal's translucent backdrop — so the placement is confirmed visually
+  // before you even type the text, instead of appearing only after Add.
+  const preview = { type: kind, color: defaultColor, text: '…', anchor, bend, textPos };
+  drawAllMarkups();
+  drawLeader(preview);
   showModal({
     title: kind === 'note' ? 'Add note' : 'Add label',
     placeholder: kind === 'note' ? 'e.g. "Relocated per RFI 12"' : 'e.g. 6" CU',
     withSymbols: true, confirmLabel: 'Add',
+    onCancel: () => { drawAllMarkups(); },
     onConfirm: (text) => {
-      if(!text) return;
-      const textPos = { x: anchor.x + 70, y: anchor.y - 60 };
-      const bend = defaultBendPosition(anchor, textPos);
+      if(!text){ drawAllMarkups(); return; }
       const markup = {
         id: genId(), type: kind, color: defaultColor, text, anchor, bend, textPos,
         note: '', createdAt: Date.now(),
+      };
+      activeSheet().markups.push(markup);
+      markDirty();
+      renderNoteList();
+      switchToSelectAndSelect(markup.id);
+    }
+  });
+}
+
+function placeElevationMarkup(anchor){
+  const textPos = { x: anchor.x + 70, y: anchor.y - 60 };
+  const bend = defaultBendPosition(anchor, textPos);
+  const preview = { type: 'elevation', color: DEFAULT_LABEL_COLOR, textTop: '…', textBottom: '', anchor, bend, textPos };
+  drawAllMarkups();
+  drawElevation(preview);
+  showElevationModal({
+    onCancel: () => { drawAllMarkups(); },
+    onConfirm: (top, bottom) => {
+      if(!top && !bottom){ drawAllMarkups(); return; }
+      const markup = {
+        id: genId(), type: 'elevation', color: DEFAULT_LABEL_COLOR, textTop: top, textBottom: bottom,
+        anchor, bend, textPos, note: '', createdAt: Date.now(),
       };
       activeSheet().markups.push(markup);
       markDirty();
@@ -1423,7 +1519,7 @@ function defaultBendPosition(anchor, textPos){
    SELECTION / HANDLE HIT-TESTING + DRAGGING
    ============================================================ */
 function handlePointsForMarkup(m){
-  if(m.type === 'label' || m.type === 'note') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'textPos', p: m.textPos }];
+  if(m.type === 'label' || m.type === 'note' || m.type === 'elevation') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'textPos', p: m.textPos }];
   if(m.type === 'dimension') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'textPos', p: m.textPos }];
   if(m.type === 'line') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
   if(m.type === 'whiteoutRect') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: shapeCenter(m) }];
@@ -1439,7 +1535,7 @@ function handlePointsForMarkup(m){
 }
 function cloneMarkupPoints(m){ return JSON.parse(JSON.stringify(m)); }
 function markupCenterPoint(m){
-  if(m.type === 'label' || m.type === 'note' || m.type === 'dimension') return m.textPos;
+  if(m.type === 'label' || m.type === 'note' || m.type === 'dimension' || m.type === 'elevation') return m.textPos;
   if(m.type === 'line' || m.type === 'shape' || m.type === 'whiteoutRect') return { x: (m.p0.x + m.p1.x) / 2, y: (m.p0.y + m.p1.y) / 2 };
   if(m.type === 'multiline' || m.type === 'freehand' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform' || m.type === 'hatchline'){
     const xs = m.points.map(pt => pt.x), ys = m.points.map(pt => pt.y);
@@ -1474,7 +1570,7 @@ function hitTestMarkup(p){
     catch(err){ console.error('Skipping malformed markup during hit-test', m, err); return false; }
   });
   if(!found) return null;
-  if(found.type === 'label' || found.type === 'note'){
+  if(found.type === 'label' || found.type === 'note' || found.type === 'elevation'){
     // No rigid "whole" drag for these two — clicking the pill always moves the
     // text, clicking the target dot always moves the target, whichever the
     // click is closer to. This is what lets the leader correctly recompute
@@ -1497,7 +1593,7 @@ function markupContainsPoint(m, p){
     return p.x >= x0 - 6 && p.x <= x1 + 6 && p.y >= y0 - 6 && p.y <= y1 + 6;
   }
   if(m.type === 'whiteoutFreeform') return pointInPolygon(p, m.points) || m.points.some(pt => Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
-  if(m.type === 'label' || m.type === 'note') return Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 40 || Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
+  if(m.type === 'label' || m.type === 'note' || m.type === 'elevation') return Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 40 || Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
   return false;
 }
 function pointInPolygon(p, points){
@@ -1532,7 +1628,7 @@ function applyDragHandle(drag, p){
     m.rotation = Math.round(angle / step) * step;
     return;
   }
-  if(drag.key === 'bend' && (m.type === 'label' || m.type === 'note')){
+  if(drag.key === 'bend' && (m.type === 'label' || m.type === 'note' || m.type === 'elevation')){
     // Manually draggable, snapped to clean angle increments around the text
     // so it can be pointed at either side deliberately instead of ending up
     // at a crooked, hard-to-read angle.
@@ -1543,7 +1639,7 @@ function applyDragHandle(drag, p){
     m.bend = { x: m.textPos.x + Math.cos(angle) * dist, y: m.textPos.y + Math.sin(angle) * dist };
     return;
   }
-  if(drag.key === 'textPos' && (m.type === 'label' || m.type === 'note')){
+  if(drag.key === 'textPos' && (m.type === 'label' || m.type === 'note' || m.type === 'elevation')){
     // Bend moves along with the text (keeping the stub's shape consistent)
     // unless the person deliberately drags the bend grip itself.
     const dx = p.x - m.textPos.x, dy = p.y - m.textPos.y;
@@ -1576,7 +1672,7 @@ function translateMarkup(m, origin, dx, dy){
     m.p0 = { x: origin.p0.x + dx, y: origin.p0.y + dy };
     m.p1 = { x: origin.p1.x + dx, y: origin.p1.y + dy };
     m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
-  } else if(m.type === 'label' || m.type === 'note'){
+  } else if(m.type === 'label' || m.type === 'note' || m.type === 'elevation'){
     m.anchor = { x: origin.anchor.x + dx, y: origin.anchor.y + dy };
     m.bend = { x: origin.bend.x + dx, y: origin.bend.y + dy };
     m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
@@ -1625,6 +1721,23 @@ function showMarkupActionButtons(markupId){
         onConfirm: (text) => {
           if(!text) return;
           m.text = text;
+          markDirty();
+          drawAllMarkups();
+          renderNoteList();
+        }
+      });
+    });
+    buttonRow.appendChild(editBtn);
+  }
+  if(m.type === 'elevation'){
+    const editBtn = document.createElement('button');
+    editBtn.textContent = 'Edit text';
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showElevationModal({
+        topValue: m.textTop, bottomValue: m.textBottom,
+        onConfirm: (top, bottom) => {
+          m.textTop = top; m.textBottom = bottom;
           markDirty();
           drawAllMarkups();
           renderNoteList();
@@ -1745,6 +1858,7 @@ function drawAllMarkups(){
     else if(m.type === 'multiline') drawMultiline(m);
     else if(m.type === 'shape') drawShape(m);
     else if(m.type === 'label' || m.type === 'note') drawLeader(m);
+    else if(m.type === 'elevation') drawElevation(m);
     else if(m.type === 'dimension') drawDimension(m);
     else if(m.type === 'hatchline') drawHatchLine(m);
     else if(m.type === 'hatcharea') drawHatchArea(m);
@@ -2016,6 +2130,56 @@ function drawLeader(m){
   drawTextPill(ctx, m.text, m.textPos, m.color);
 }
 
+// Elevation callout: same leader/dot mechanic as Label, but the text end is a
+// rounded pill divided by a horizontal line into a top field and bottom
+// field — the standard "tag over value" marker used on trade drawings.
+function drawElevation(m){
+  const ctx = mCanvas.getContext('2d');
+  const bend = m.bend || defaultBendPosition(m.anchor, m.textPos);
+  ctx.strokeStyle = m.color;
+  ctx.fillStyle = m.color;
+  ctx.lineWidth = 1.5;
+
+  ctx.beginPath();
+  ctx.moveTo(m.textPos.x, m.textPos.y);
+  ctx.lineTo(bend.x, bend.y);
+  ctx.lineTo(m.anchor.x, m.anchor.y);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(m.anchor.x, m.anchor.y, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  drawElevationPill(ctx, m.textTop || '', m.textBottom || '', m.textPos, m.color);
+}
+function drawElevationPill(ctx, textTop, textBottom, pos, color){
+  ctx.font = '600 12px Inter, sans-serif';
+  const padX = 9;
+  const wTop = ctx.measureText(textTop || ' ').width;
+  const wBottom = ctx.measureText(textBottom || ' ').width;
+  const boxW = Math.max(wTop, wBottom, 20) + padX * 2;
+  const rowH = 19, boxH = rowH * 2;
+  const bx = pos.x, by = pos.y - boxH / 2;
+
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, bx, by, boxW, boxH, 6);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(bx, by + rowH);
+  ctx.lineTo(bx + boxW, by + rowH);
+  ctx.stroke();
+
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.fillText(textTop, bx + boxW / 2, by + rowH / 2 + 4);
+  ctx.fillText(textBottom, bx + boxW / 2, by + rowH + rowH / 2 + 4);
+  ctx.textAlign = 'left';
+}
+
 // Dimension: a straight line between two picked points, arrowheads at both
 // ends, and independently-draggable text (not attached by a leader).
 function drawDimension(m){
@@ -2210,6 +2374,7 @@ function renderNoteList(){
     card.className = 'note-card' + (m.id === state.selectedMarkupId ? ' selected' : '');
     const time = m.createdAt ? new Date(m.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
     const label = (m.type === 'label' || m.type === 'note' || m.type === 'dimension') ? m.text
+      : (m.type === 'elevation') ? `${m.textTop || ''} / ${m.textBottom || ''}`
       : (m.type === 'shape') ? m.shape
       : (m.type === 'hatchline') ? 'hatch line'
       : (m.type === 'hatcharea') ? 'hatch area'
