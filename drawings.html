@@ -426,7 +426,7 @@ const DEFAULT_NOTE_COLOR = '#FF0000'; // Note — red
 const DEFAULT_ELEVATION_COLOR = '#FF00FF'; // Elevation Callout — magenta
 const DEFAULT_DIMENSION_COLOR = ANNOTATION_COLOR;
 const HATCH_COLOR = '#FF0000'; // vivid red — reserved for "changed/demo'd" hatch markup
-const DEFAULT_PHOTO_COLOR = '#000000'; // black — a neutral documentation-stamp color
+const DEFAULT_PHOTO_COLOR = '#FF8000'; // orange
 const LEADER_STUB_LENGTH = 36; // fixed length of the horizontal segment nearest the text, before it bends toward the target
 const HATCH_TICK_SPACING = 10, HATCH_TICK_LENGTH = 9; // px, for hatch-line tick marks and area fill spacing
 const SYMBOLS = ['°','⌀','±','∠','′','″'];
@@ -1039,6 +1039,16 @@ $('#zoomInBtn').addEventListener('click', () => setZoom(state.zoom + ZOOM_STEP))
 $('#zoomFitBtn').addEventListener('click', fitToScreen);
 $('#zoomOutBtn').addEventListener('click', () => setZoom(state.zoom - ZOOM_STEP));
 
+// Scroll-wheel zoom for mouse users, centered on the cursor rather than a
+// fixed corner — plain wheel (no modifier needed) zooms, matching the
+// convention most drawing/CAD-style tools use.
+$('#canvasArea').addEventListener('wheel', (e) => {
+  if(!state.naturalWidth) return;
+  e.preventDefault();
+  const delta = e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP;
+  setZoom(state.zoom + delta, e.clientX, e.clientY);
+}, { passive: false });
+
 // Computes true viewport-fixed pixel positions for the zoom controls from
 // canvasArea's actual on-screen bounds. Because these are real position:fixed
 // elements, internal scrolling/zooming of the canvas never moves them — only
@@ -1390,6 +1400,13 @@ function onPointerMove(e){
   }
 }
 
+function switchToTool(toolName){
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`.tool-btn[data-tool="${toolName}"]`);
+  if(btn) btn.classList.add('active');
+  state.tool = toolName;
+}
+
 // Native 'dblclick' doesn't reliably fire from two touch taps on iOS Safari
 // (especially with touch-action:none set for drawing), so double-taps are
 // detected manually here: same screen position, within a short time window.
@@ -1439,11 +1456,8 @@ function onPointerUp(e){
     const dragDist = Math.hypot(e.clientX - state.panState.startX, e.clientY - state.panState.startY);
     state.panState = null;
     $('#canvasArea').classList.remove('panning');
-    if(state.tool === 'pan' && dragDist < 8 && checkDoubleTap(e)){
-      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-      const selectBtn = document.querySelector('.tool-btn[data-tool="select"]');
-      if(selectBtn) selectBtn.classList.add('active');
-      state.tool = 'select';
+    if(dragDist < 8 && checkDoubleTap(e)){
+      switchToTool(state.tool === 'pan' ? 'select' : 'pan');
     }
     return;
   }
@@ -1555,16 +1569,14 @@ function onDblClick(e){
     return;
   }
   if(state.tool === 'pan'){
-    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
-    const selectBtn = document.querySelector('.tool-btn[data-tool="select"]');
-    if(selectBtn) selectBtn.classList.add('active');
-    state.tool = 'select';
+    switchToTool('select');
     return;
   }
   if(state.tool === 'select' && state.pageViewport){
     const p = canvasPoint(e);
     const hit = hitTestHandle(p) || hitTestMarkup(p);
     if(hit) openTextEditForMarkup(hit.markup);
+    else switchToTool('pan');
   }
 }
 
