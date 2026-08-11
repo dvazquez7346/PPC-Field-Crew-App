@@ -1230,6 +1230,19 @@ function canvasPoint(e){
   };
 }
 
+// A touch's contact point is hidden right under the fingertip — this nudges
+// the point a fixed distance up the SCREEN (converted through the current
+// zoom level, so it's a consistent visual gap at any zoom) so the Dimension
+// line stays visible just past your finger instead of directly beneath it.
+const FINGERTIP_CLEARANCE_PX = 28;
+function canvasPointClearFingertip(e){
+  const rect = mCanvas.getBoundingClientRect();
+  const scaleY = mCanvas.height / rect.height;
+  const p = canvasPoint(e);
+  p.y -= FINGERTIP_CLEARANCE_PX * scaleY;
+  return p;
+}
+
 function angleSnap(from, to){
   const dx = to.x - from.x, dy = to.y - from.y;
   const dist = Math.hypot(dx, dy);
@@ -1322,7 +1335,8 @@ function onPointerDown(e){
     state.currentStroke = { id: genId(), type: 'shape', shape: state.shapeType, color: state.color, thickness: state.thickness, rotation: 0, p0: p, p1: p, note: '' };
   } else if(state.tool === 'dimension'){
     state.drawing = true;
-    state.currentStroke = { id: genId(), type: 'dimension', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: p, p1: p, text: '', textPos: p, note: '' };
+    const dp = canvasPointClearFingertip(e);
+    state.currentStroke = { id: genId(), type: 'dimension', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: dp, p1: dp, text: '', textPos: dp, note: '' };
   } else if(state.tool === 'whiteoutRect'){
     state.drawing = true;
     state.currentStroke = { id: genId(), type: 'whiteoutRect', p0: p, p1: p, note: '' };
@@ -1379,7 +1393,7 @@ function onPointerMove(e){
     drawAllMarkups();
     drawShape(state.currentStroke);
   } else if(state.tool === 'dimension' && state.drawing){
-    state.currentStroke.p1 = axisSnap(state.currentStroke.p0, p);
+    state.currentStroke.p1 = axisSnap(state.currentStroke.p0, canvasPointClearFingertip(e));
     drawAllMarkups();
     drawDimensionPreview(state.currentStroke.p0, state.currentStroke.p1);
   } else if(state.tool === 'whiteoutRect' && state.drawing){
