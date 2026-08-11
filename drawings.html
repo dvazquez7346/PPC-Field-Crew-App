@@ -82,6 +82,7 @@ input,textarea{font-family:inherit;}
 .run-done-btn{position:fixed;background:var(--success);color:#fff;border:none;font-weight:600;font-size:13px;padding:9px 16px;border-radius:9px;box-shadow:var(--shadow);z-index:45;}
 .run-done-btn:hover{background:#256e46;}
 .action-bar{background:var(--surface);border-bottom:1px solid var(--line);padding:4px 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;flex-shrink:0;min-height:34px;}
+.action-bar-hint{font-size:12px;color:var(--danger);font-weight:600;}
 .markup-action-row{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
 .markup-action-row + .markup-action-row{border-left:1px solid var(--line);padding-left:8px;}
 .markup-action-row button{font-family:inherit;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer;}
@@ -275,6 +276,8 @@ input,textarea{font-family:inherit;}
       <div class="tool-label">Note</div>
       <button class="tool-btn" data-tool="elevation" title="Elevation callout with leader (divided pill)"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="2" y="3" width="12" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.3"/><line x1="14" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.6"/><line x1="18" y1="8" x2="21" y2="17" stroke="currentColor" stroke-width="1.6"/><circle cx="21" cy="17" r="1.6" fill="currentColor"/></svg></button>
       <div class="tool-label">Elev</div>
+      <button class="tool-btn" data-tool="photo" title="Photo marker with direction cone"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13.5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
+      <div class="tool-label">Photo</div>
       <div class="tool-sep"></div>
       <button class="tool-btn" data-tool="erase" title="Erase a markup"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M2 4 L2 2 L14 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M22 22 L22 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L2 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><g transform="rotate(-45 12 12)"><rect x="4" y="8.5" width="16" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="12" y1="8.5" x2="12" y2="15.5" stroke="currentColor" stroke-width="1.8"/></g></svg></button>
       <div class="tool-label">Erase</div>
@@ -415,11 +418,13 @@ const LOCKED_SHAPES = ['circle', 'square', 'triangle', 'diamond', 'hexagon'];
 const AXIS_SNAP_THRESHOLD = 6; // degrees — Dimension tool snaps only near horizontal/vertical, else free angle
 const JOINT_RADIUS = 15; // fixed fillet radius for multi-segment corners (diagrammatic, not exact)
 const PALETTE = ['#FF0000', '#00FF00', '#0000FF', '#FF8000', '#FF00FF', '#000000'];
-const ANNOTATION_COLOR = '#0000FF'; // vivid blue — shared default for Callout, Note, Dimension
-const DEFAULT_LABEL_COLOR = ANNOTATION_COLOR;
-const DEFAULT_NOTE_COLOR = ANNOTATION_COLOR;
+const ANNOTATION_COLOR = '#0000FF'; // vivid blue — used by Callout and Dimension
+const DEFAULT_LABEL_COLOR = '#0000FF'; // Callout — blue
+const DEFAULT_NOTE_COLOR = '#FF0000'; // Note — red
+const DEFAULT_ELEVATION_COLOR = '#FF00FF'; // Elevation Callout — magenta
 const DEFAULT_DIMENSION_COLOR = ANNOTATION_COLOR;
 const HATCH_COLOR = '#FF0000'; // vivid red — reserved for "changed/demo'd" hatch markup
+const DEFAULT_PHOTO_COLOR = '#000000'; // black — a neutral documentation-stamp color
 const LEADER_STUB_LENGTH = 36; // fixed length of the horizontal segment nearest the text, before it bends toward the target
 const HATCH_TICK_SPACING = 10, HATCH_TICK_LENGTH = 9; // px, for hatch-line tick marks and area fill spacing
 const SYMBOLS = ['°','⌀','±','∠','′','″'];
@@ -443,7 +448,7 @@ function showModal({ title, sub, value = '', placeholder = '', withSymbols = fal
     <div class="disp">${escapeHtml(title)}</div>
     ${sub ? `<div class="modal-sub">${escapeHtml(sub)}</div>` : ''}
     <textarea id="modalInput" placeholder="${escapeHtml(placeholder)}">${escapeHtml(value)}</textarea>
-    ${withSymbols ? `<div class="symbol-row">${symbolSet.map(s => `<button type="button" class="symbol-btn" data-sym="${s}">${s}</button>`).join('')}</div>` : ''}
+    ${withSymbols ? `<div class="symbol-row">${symbolSet.map(s => `<button type="button" class="symbol-btn" data-sym="${escapeAttr(s)}">${escapeHtml(s)}</button>`).join('')}</div>` : ''}
     <div class="modal-row">
       ${destructiveLabel ? `<button type="button" class="destructive">${escapeHtml(destructiveLabel)}</button>` : ''}
       <button type="button" class="cancel">Cancel</button>
@@ -500,7 +505,7 @@ function showElevationModal({ topValue = '', bottomValue = '', onConfirm, onCanc
     <input type="text" id="elevTopInput" placeholder="e.g. EL-1">
     <label class="modal-field-label">Bottom text</label>
     <input type="text" id="elevBottomInput" placeholder="e.g. 100.00">
-    <div class="symbol-row">${ELEVATION_SYMBOLS.map(s => `<button type="button" class="symbol-btn" data-sym="${escapeHtml(s)}">${escapeHtml(s)}</button>`).join('')}</div>
+    <div class="symbol-row">${ELEVATION_SYMBOLS.map(s => `<button type="button" class="symbol-btn" data-sym="${escapeAttr(s)}">${escapeHtml(s)}</button>`).join('')}</div>
     <div class="modal-row">
       <button type="button" class="cancel">Cancel</button>
       <button type="button" class="save">Add</button>
@@ -540,6 +545,17 @@ function escapeHtml(s){
   const d = document.createElement('div');
   d.textContent = s == null ? '' : String(s);
   return d.innerHTML;
+}
+// escapeHtml is only safe for text content — it doesn't escape quote
+// characters, so a value like a literal " character breaks out of a
+// double-quoted HTML attribute. This escapes everything needed for that context.
+function escapeAttr(s){
+  return (s == null ? '' : String(s))
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 /* ============================================================
@@ -1233,6 +1249,8 @@ function onPointerDown(e){
     placeLeaderMarkup(state.tool, p);
   } else if(state.tool === 'elevation'){
     placeElevationMarkup(p);
+  } else if(state.tool === 'photo'){
+    placePhotoMarker(p);
   } else if(state.tool === 'erase'){
     eraseNear(p);
   }
@@ -1442,51 +1460,41 @@ function placeLeaderMarkup(kind, anchor){
   const defaultColor = kind === 'note' ? DEFAULT_NOTE_COLOR : DEFAULT_LABEL_COLOR;
   const textPos = { x: anchor.x + 70, y: anchor.y - 60 };
   const bend = defaultBendPosition(anchor, textPos);
-  // Show the leader/target in place right away — visible (dimmed) through the
-  // modal's translucent backdrop — so the placement is confirmed visually
-  // before you even type the text, instead of appearing only after Add.
-  const preview = { type: kind, color: defaultColor, text: '…', anchor, bend, textPos };
-  drawAllMarkups();
-  drawLeader(preview);
-  showModal({
-    title: kind === 'note' ? 'Add note' : 'Add label',
-    placeholder: kind === 'note' ? 'e.g. "Relocated per RFI 12"' : 'e.g. 6" CU',
-    withSymbols: true, confirmLabel: 'Add',
-    onCancel: () => { drawAllMarkups(); },
-    onConfirm: (text) => {
-      if(!text){ drawAllMarkups(); return; }
-      const markup = {
-        id: genId(), type: kind, color: defaultColor, text, anchor, bend, textPos,
-        note: '', createdAt: Date.now(),
-      };
-      activeSheet().markups.push(markup);
-      markDirty();
-      renderNoteList();
-      switchToSelectAndSelect(markup.id);
-    }
-  });
+  const markup = {
+    id: genId(), type: kind, color: defaultColor, text: '', anchor, bend, textPos,
+    note: '', createdAt: Date.now(),
+  };
+  activeSheet().markups.push(markup);
+  markDirty();
+  renderNoteList();
+  switchToSelectAndSelect(markup.id);
 }
 
 function placeElevationMarkup(anchor){
   const textPos = { x: anchor.x + 70, y: anchor.y - 60 };
   const bend = defaultBendPosition(anchor, textPos);
-  const preview = { type: 'elevation', color: DEFAULT_LABEL_COLOR, textTop: '…', textBottom: '', anchor, bend, textPos };
-  drawAllMarkups();
-  drawElevation(preview);
-  showElevationModal({
-    onCancel: () => { drawAllMarkups(); },
-    onConfirm: (top, bottom) => {
-      if(!top && !bottom){ drawAllMarkups(); return; }
-      const markup = {
-        id: genId(), type: 'elevation', color: DEFAULT_LABEL_COLOR, textTop: top, textBottom: bottom,
-        anchor, bend, textPos, note: '', createdAt: Date.now(),
-      };
-      activeSheet().markups.push(markup);
-      markDirty();
-      renderNoteList();
-      switchToSelectAndSelect(markup.id);
-    }
-  });
+  const markup = {
+    id: genId(), type: 'elevation', color: DEFAULT_ELEVATION_COLOR, textTop: '', textBottom: '',
+    anchor, bend, textPos, note: '', createdAt: Date.now(),
+  };
+  activeSheet().markups.push(markup);
+  markDirty();
+  renderNoteList();
+  switchToSelectAndSelect(markup.id);
+}
+
+function placePhotoMarker(anchor){
+  const sheet = activeSheet();
+  const existingNumbers = sheet.markups.filter(m => m.type === 'photo').map(m => parseInt(m.number, 10)).filter(n => !isNaN(n));
+  const nextNumber = existingNumbers.length ? Math.max(...existingNumbers) + 1 : 1;
+  const markup = {
+    id: genId(), type: 'photo', color: DEFAULT_PHOTO_COLOR, anchor, rotation: 0,
+    number: String(nextNumber), note: '', createdAt: Date.now(),
+  };
+  sheet.markups.push(markup);
+  markDirty();
+  renderNoteList();
+  switchToSelectAndSelect(markup.id);
 }
 
 // After placing a Callout, Note, or Dimension, the natural next action is
@@ -1531,6 +1539,7 @@ function handlePointsForMarkup(m){
     return handles;
   }
   if(m.type === 'multiline' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform' || m.type === 'hatchline') return m.points.map((p, i) => ({ key: 'pt' + i, p }));
+  if(m.type === 'photo') return [{ key: 'anchor', p: m.anchor }, { key: 'rotate', p: computePhotoRotateHandle(m) }];
   return [];
 }
 function cloneMarkupPoints(m){ return JSON.parse(JSON.stringify(m)); }
@@ -1541,6 +1550,7 @@ function markupCenterPoint(m){
     const xs = m.points.map(pt => pt.x), ys = m.points.map(pt => pt.y);
     return { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 };
   }
+  if(m.type === 'photo') return m.anchor;
   return { x: 0, y: 0 };
 }
 // Re-centers the visible canvas on a markup without changing the current
@@ -1594,6 +1604,7 @@ function markupContainsPoint(m, p){
   }
   if(m.type === 'whiteoutFreeform') return pointInPolygon(p, m.points) || m.points.some(pt => Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
   if(m.type === 'label' || m.type === 'note' || m.type === 'elevation') return Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 40 || Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
+  if(m.type === 'photo') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
   return false;
 }
 function pointInPolygon(p, points){
@@ -1621,8 +1632,8 @@ function applyDragHandle(drag, p){
     translateMarkup(m, drag.origins, dx, dy);
     return;
   }
-  if(drag.key === 'rotate' && m.type === 'shape'){
-    const c = shapeCenter(m);
+  if(drag.key === 'rotate' && (m.type === 'shape' || m.type === 'photo')){
+    const c = m.type === 'photo' ? m.anchor : shapeCenter(m);
     let angle = Math.atan2(p.y - c.y, p.x - c.x) + Math.PI / 2;
     const step = ANGLE_STEP * Math.PI / 180;
     m.rotation = Math.round(angle / step) * step;
@@ -1676,6 +1687,8 @@ function translateMarkup(m, origin, dx, dy){
     m.anchor = { x: origin.anchor.x + dx, y: origin.anchor.y + dy };
     m.bend = { x: origin.bend.x + dx, y: origin.bend.y + dy };
     m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
+  } else if(m.type === 'photo'){
+    m.anchor = { x: origin.anchor.x + dx, y: origin.anchor.y + dy };
   }
 }
 
@@ -1697,7 +1710,9 @@ function eraseNear(p){
    switching to the Erase tool. ---- */
 function clearMarkupActionButtons(){
   const bar = $('#actionBar');
-  bar.innerHTML = '';
+  bar.innerHTML = state.whiteoutsUnlocked
+    ? '<span class="action-bar-hint">Select a whiteout to move, resize, or delete it</span>'
+    : '';
   positionFloatingControls();
 }
 function showMarkupActionButtons(markupId){
@@ -1712,7 +1727,7 @@ function showMarkupActionButtons(markupId){
   buttonRow.className = 'markup-action-row';
   if(m.type === 'label' || m.type === 'note' || m.type === 'dimension'){
     const editBtn = document.createElement('button');
-    editBtn.textContent = 'Edit text';
+    editBtn.textContent = m.text ? 'Edit text' : 'Add text';
     editBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       showModal({
@@ -1731,13 +1746,31 @@ function showMarkupActionButtons(markupId){
   }
   if(m.type === 'elevation'){
     const editBtn = document.createElement('button');
-    editBtn.textContent = 'Edit text';
+    editBtn.textContent = (m.textTop || m.textBottom) ? 'Edit text' : 'Add text';
     editBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       showElevationModal({
         topValue: m.textTop, bottomValue: m.textBottom,
         onConfirm: (top, bottom) => {
           m.textTop = top; m.textBottom = bottom;
+          markDirty();
+          drawAllMarkups();
+          renderNoteList();
+        }
+      });
+    });
+    buttonRow.appendChild(editBtn);
+  }
+  if(m.type === 'photo'){
+    const editBtn = document.createElement('button');
+    editBtn.textContent = 'Edit number';
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showModal({
+        title: 'Photo reference number', value: m.number || '', placeholder: 'e.g. 1 or IMG_0423', confirmLabel: 'Save',
+        onConfirm: (val) => {
+          if(!val) return;
+          m.number = val;
           markDirty();
           drawAllMarkups();
           renderNoteList();
@@ -1859,6 +1892,7 @@ function drawAllMarkups(){
     else if(m.type === 'shape') drawShape(m);
     else if(m.type === 'label' || m.type === 'note') drawLeader(m);
     else if(m.type === 'elevation') drawElevation(m);
+    else if(m.type === 'photo') drawPhoto(m);
     else if(m.type === 'dimension') drawDimension(m);
     else if(m.type === 'hatchline') drawHatchLine(m);
     else if(m.type === 'hatcharea') drawHatchArea(m);
@@ -1871,9 +1905,9 @@ function drawAllMarkups(){
 
 function drawHandles(m){
   const ctx = mCanvas.getContext('2d');
-  if(m.type === 'shape'){
-    const c = shapeCenter(m);
-    const rh = computeShapeRotateHandle(m);
+  if(m.type === 'shape' || m.type === 'photo'){
+    const c = m.type === 'photo' ? m.anchor : shapeCenter(m);
+    const rh = m.type === 'photo' ? computePhotoRotateHandle(m) : computeShapeRotateHandle(m);
     ctx.save();
     ctx.strokeStyle = '#E8622C';
     ctx.lineWidth = 1.5;
@@ -2059,6 +2093,11 @@ function computeShapeRotateHandle(m){
   const ang = (m.rotation || 0) - Math.PI / 2;
   return { x: c.x + dist * Math.cos(ang), y: c.y + dist * Math.sin(ang) };
 }
+function computePhotoRotateHandle(m){
+  const dist = 30;
+  const ang = (m.rotation || 0) - Math.PI / 2;
+  return { x: m.anchor.x + dist * Math.cos(ang), y: m.anchor.y + dist * Math.sin(ang) };
+}
 
 // Shared arrowhead: draws a filled triangle at `tip`, pointing in the direction
 // of travel from `from` to `tip`. Used by both Note's leader and Dimension's
@@ -2088,19 +2127,23 @@ function drawOutlineArrowHead(ctx, from, tip, color, size = 9, thickness = 2){
 }
 
 function drawTextPill(ctx, text, pos, color){
-  ctx.font = '600 13px Inter, sans-serif';
+  const isEmpty = !text;
+  ctx.font = isEmpty ? '600 italic 12px Inter, sans-serif' : '600 13px Inter, sans-serif';
   const padX = 8;
-  const textW = ctx.measureText(text).width;
+  const displayText = isEmpty ? 'Add text' : text;
+  const textW = ctx.measureText(displayText).width;
   const boxW = textW + padX * 2, boxH = 22;
   const bx = pos.x, by = pos.y - boxH / 2;
   ctx.fillStyle = '#fff';
-  ctx.strokeStyle = color;
+  ctx.strokeStyle = isEmpty ? 'rgba(20,30,50,0.35)' : color;
   ctx.lineWidth = 1.5;
+  if(isEmpty) ctx.setLineDash([3, 2]);
   roundRect(ctx, bx, by, boxW, boxH, 6);
   ctx.fill();
   ctx.stroke();
-  ctx.fillStyle = color;
-  ctx.fillText(text, bx + padX, by + boxH / 2 + 4);
+  if(isEmpty) ctx.setLineDash([]);
+  ctx.fillStyle = isEmpty ? 'rgba(20,30,50,0.45)' : color;
+  ctx.fillText(displayText, bx + padX, by + boxH / 2 + 4);
   return { x: bx, y: by, w: boxW, h: boxH };
 }
 
@@ -2153,17 +2196,23 @@ function drawElevation(m){
   drawElevationPill(ctx, m.textTop || '', m.textBottom || '', m.textPos, m.color);
 }
 function drawElevationPill(ctx, textTop, textBottom, pos, color){
-  ctx.font = '600 12px Inter, sans-serif';
+  const isEmpty = !textTop && !textBottom;
+  ctx.font = isEmpty ? '600 italic 11px Inter, sans-serif' : '600 12px Inter, sans-serif';
   const padX = 9;
-  const wTop = ctx.measureText(textTop || ' ').width;
-  const wBottom = ctx.measureText(textBottom || ' ').width;
+  const displayTop = isEmpty ? 'Top' : (textTop || '');
+  const displayBottom = isEmpty ? 'Bottom' : (textBottom || '');
+  const wTop = ctx.measureText(displayTop || ' ').width;
+  const wBottom = ctx.measureText(displayBottom || ' ').width;
   const boxW = Math.max(wTop, wBottom, 20) + padX * 2;
   const rowH = 19, boxH = rowH * 2;
   const bx = pos.x, by = pos.y - boxH / 2;
+  const strokeColor = isEmpty ? 'rgba(20,30,50,0.35)' : color;
+  const fillColor = isEmpty ? 'rgba(20,30,50,0.45)' : color;
 
   ctx.fillStyle = '#fff';
-  ctx.strokeStyle = color;
+  ctx.strokeStyle = strokeColor;
   ctx.lineWidth = 1.5;
+  if(isEmpty) ctx.setLineDash([3, 2]);
   roundRect(ctx, bx, by, boxW, boxH, 6);
   ctx.fill();
   ctx.stroke();
@@ -2172,11 +2221,55 @@ function drawElevationPill(ctx, textTop, textBottom, pos, color){
   ctx.moveTo(bx, by + rowH);
   ctx.lineTo(bx + boxW, by + rowH);
   ctx.stroke();
+  if(isEmpty) ctx.setLineDash([]);
 
-  ctx.fillStyle = color;
+  ctx.fillStyle = fillColor;
   ctx.textAlign = 'center';
-  ctx.fillText(textTop, bx + boxW / 2, by + rowH / 2 + 4);
-  ctx.fillText(textBottom, bx + boxW / 2, by + rowH + rowH / 2 + 4);
+  ctx.fillText(displayTop, bx + boxW / 2, by + rowH / 2 + 4);
+  ctx.fillText(displayBottom, bx + boxW / 2, by + rowH + rowH / 2 + 4);
+  ctx.textAlign = 'left';
+}
+
+// Photo marker: a cone shows the direction and rough field of view the
+// camera was facing, and a badge at the anchor point carries the reference
+// number so it can be matched back to the actual photo file later.
+function drawPhoto(m){
+  const ctx = mCanvas.getContext('2d');
+  const anchor = m.anchor;
+  const rot = m.rotation || 0;
+  const dir = rot - Math.PI / 2;
+  const coneLength = 46, coneHalfAngle = 26 * Math.PI / 180;
+  const p1 = { x: anchor.x + coneLength * Math.cos(dir - coneHalfAngle), y: anchor.y + coneLength * Math.sin(dir - coneHalfAngle) };
+  const p2 = { x: anchor.x + coneLength * Math.cos(dir + coneHalfAngle), y: anchor.y + coneLength * Math.sin(dir + coneHalfAngle) };
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(anchor.x, anchor.y);
+  ctx.lineTo(p1.x, p1.y);
+  ctx.lineTo(p2.x, p2.y);
+  ctx.closePath();
+  ctx.globalAlpha = 0.16;
+  ctx.fillStyle = m.color;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = m.color;
+  ctx.lineWidth = 1.3;
+  ctx.stroke();
+  ctx.restore();
+
+  const r = 11;
+  ctx.beginPath();
+  ctx.arc(anchor.x, anchor.y, r, 0, Math.PI * 2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  ctx.strokeStyle = m.color;
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+
+  ctx.fillStyle = m.color;
+  ctx.font = '700 11px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(String(m.number != null ? m.number : ''), anchor.x, anchor.y + 4);
   ctx.textAlign = 'left';
 }
 
@@ -2375,6 +2468,7 @@ function renderNoteList(){
     const time = m.createdAt ? new Date(m.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
     const label = (m.type === 'label' || m.type === 'note' || m.type === 'dimension') ? m.text
       : (m.type === 'elevation') ? `${m.textTop || ''} / ${m.textBottom || ''}`
+      : (m.type === 'photo') ? `Photo ${m.number || ''}`
       : (m.type === 'shape') ? m.shape
       : (m.type === 'hatchline') ? 'hatch line'
       : (m.type === 'hatcharea') ? 'hatch area'
