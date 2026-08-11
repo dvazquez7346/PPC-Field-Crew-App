@@ -324,6 +324,7 @@ input,textarea{font-family:inherit;}
         <div class="disp" id="emptyStateTitle">No job open</div>
         <p id="emptyStateBody">Type a job number above and click Open, or click "Browse" to pick from existing jobs.</p>
         <input type="file" id="pdfUpload" accept="application/pdf" class="hidden">
+        <input type="file" id="photoFileUpload" accept="image/*" class="hidden">
         <button id="uploadBtn" class="hidden">Upload floor plan PDF</button>
       </div>
       <div class="zoom-wrapper hidden" id="zoomWrapper">
@@ -845,6 +846,75 @@ $('#pdfUpload').addEventListener('change', async (e) => {
     setStatus('saved', 'All changes saved');
   }
 });
+
+// Which Photo marker triggered the file picker — the browser's file input has
+// no way to carry that context itself, so we stash it here until 'change' fires.
+let pendingPhotoMarkupId = null;
+$('#photoFileUpload').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  const markupId = pendingPhotoMarkupId;
+  pendingPhotoMarkupId = null;
+  if(!file || !markupId || !state.jobId) return;
+  const sheet = activeSheet();
+  const m = sheet && sheet.markups.find(x => x.id === markupId);
+  if(!m) return;
+  setStatus('loading', 'Uploading photo…');
+  try{
+    const buf = await file.arrayBuffer();
+    const folder = `Photos/${state.jobId}`;
+    const filename = `${m.id}-${file.name}`;
+    await AppCore.uploadFile(folder, filename, buf, file.type || 'image/jpeg');
+    m.photoPath = `${folder}/${filename}`;
+    markDirty();
+    drawAllMarkups();
+    renderNoteList();
+    if(state.selectedMarkupId === m.id) showMarkupActionButtons(m.id);
+    setStatus('dirty', 'Photo attached — remember to Save');
+  }catch(err){
+    console.error(err);
+    showModal({ title: 'Upload failed', sub: err.message || 'Unknown error', confirmLabel: 'OK', onConfirm: () => {} });
+    setStatus(state.dirty ? 'dirty' : 'saved', state.dirty ? 'Unsaved changes' : 'All changes saved');
+  }
+});
+
+async function viewAttachedPhoto(photoPath){
+  setStatus('loading', 'Loading photo…');
+  try{
+    const token = await AppCore.getGraphToken();
+    const siteId = await resolveSiteIdLocal(token);
+    const res = await fetch(
+      `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${encodeURIComponent(photoPath)}:/content`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if(!res.ok) throw new Error(`Could not load photo (${res.status})`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    showPhotoLightbox(url);
+    setStatus(state.dirty ? 'dirty' : 'saved', state.dirty ? 'Unsaved changes' : 'All changes saved');
+  }catch(err){
+    console.error(err);
+    showModal({ title: 'Could not load photo', sub: err.message || 'Unknown error', confirmLabel: 'OK', onConfirm: () => {} });
+    setStatus(state.dirty ? 'dirty' : 'saved', state.dirty ? 'Unsaved changes' : 'All changes saved');
+  }
+}
+function showPhotoLightbox(url){
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.style.cursor = 'zoom-out';
+  const img = document.createElement('img');
+  img.src = url;
+  img.style.maxWidth = '92vw';
+  img.style.maxHeight = '92vh';
+  img.style.borderRadius = '8px';
+  img.style.boxShadow = '0 4px 24px rgba(0,0,0,0.4)';
+  img.style.display = 'block';
+  backdrop.appendChild(img);
+  backdrop.addEventListener('click', () => { root.innerHTML = ''; URL.revokeObjectURL(url); });
+  root.appendChild(backdrop);
+}
 
 let _cachedSiteIdLocal = null;
 async function resolveSiteIdLocal(token){
@@ -1778,6 +1848,26 @@ function showMarkupActionButtons(markupId){
       });
     });
     buttonRow.appendChild(editBtn);
+
+    const attachBtn = document.createElement('button');
+    attachBtn.textContent = m.photoPath ? 'Replace photo' : 'Attach photo';
+    attachBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if(!state.jobId) return;
+      pendingPhotoMarkupId = m.id;
+      $('#photoFileUpload').click();
+    });
+    buttonRow.appendChild(attachBtn);
+
+    if(m.photoPath){
+      const viewBtn = document.createElement('button');
+      viewBtn.textContent = 'View photo';
+      viewBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        viewAttachedPhoto(m.photoPath);
+      });
+      buttonRow.appendChild(viewBtn);
+    }
   }
   if(m.type === 'line' || m.type === 'multiline'){
     const hatchBtn = document.createElement('button');
@@ -2258,15 +2348,16 @@ function drawPhoto(m){
   ctx.restore();
 
   const r = 11;
+  const hasPhoto = !!m.photoPath;
   ctx.beginPath();
   ctx.arc(anchor.x, anchor.y, r, 0, Math.PI * 2);
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = hasPhoto ? m.color : '#fff';
   ctx.fill();
   ctx.strokeStyle = m.color;
   ctx.lineWidth = 1.6;
   ctx.stroke();
 
-  ctx.fillStyle = m.color;
+  ctx.fillStyle = hasPhoto ? '#fff' : m.color;
   ctx.font = '700 11px Inter, sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText(String(m.number != null ? m.number : ''), anchor.x, anchor.y + 4);
