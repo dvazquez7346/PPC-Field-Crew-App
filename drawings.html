@@ -641,6 +641,7 @@ async function openJobById(jobId){
     if(!state.data.sheets || state.data.sheets.length === 0){
       state.data.sheets = [{ id: genId(), name: 'Sheet 1', pdfPath: null, markups: [] }];
     }
+    migrateOldMarkupData(state.data);
     updateJobNameChip();
     renderSheetTabs();
     await renderActiveSheet();
@@ -669,6 +670,20 @@ async function openJobById(jobId){
 }
 
 function genId(){ return Math.random().toString(36).slice(2, 10); }
+
+// Demo Line used to store a single p0/p1 pair before it became a polyline.
+// Any job saved before that change still has old-format hatchline markups on
+// disk — this upgrades them in place on load so hit-testing (and everything
+// else that now expects m.points) doesn't crash on them.
+function migrateOldMarkupData(data){
+  (data.sheets || []).forEach(sheet => {
+    (sheet.markups || []).forEach(m => {
+      if(m.type === 'hatchline' && !m.points && m.p0 && m.p1){
+        m.points = [m.p0, m.p1];
+      }
+    });
+  });
+}
 
 /* ============================================================
    SHEET TABS (with rename)
@@ -1454,7 +1469,10 @@ function hitTestHandle(p){
 function hitTestMarkup(p){
   const sheet = activeSheet();
   if(!sheet) return null;
-  const found = sheet.markups.slice().reverse().find(m => isMarkupInteractable(m) && markupContainsPoint(m, p));
+  const found = sheet.markups.slice().reverse().find(m => {
+    try{ return isMarkupInteractable(m) && markupContainsPoint(m, p); }
+    catch(err){ console.error('Skipping malformed markup during hit-test', m, err); return false; }
+  });
   if(!found) return null;
   if(found.type === 'label' || found.type === 'note'){
     // No rigid "whole" drag for these two — clicking the pill always moves the
@@ -1468,7 +1486,10 @@ function hitTestMarkup(p){
   return { markup: found, key: 'whole' };
 }
 function markupContainsPoint(m, p){
-  if(m.type === 'freehand' || m.type === 'multiline' || m.type === 'hatcharea' || m.type === 'hatchline') return m.points.some(pt => Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
+  if(m.type === 'freehand' || m.type === 'multiline' || m.type === 'hatcharea' || m.type === 'hatchline'){
+    const pts = m.points || (m.p0 && m.p1 ? [m.p0, m.p1] : []);
+    return pts.some(pt => pt && Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
+  }
   if(m.type === 'line' || m.type === 'dimension') return distToSegment(p, m.p0, m.p1) < 12 || (m.textPos && Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 24);
   if(m.type === 'shape' || m.type === 'whiteoutRect'){
     const x0 = Math.min(m.p0.x, m.p1.x), x1 = Math.max(m.p0.x, m.p1.x);
