@@ -249,9 +249,9 @@ input,textarea{font-family:inherit;}
 
   <div class="main">
     <div class="toolrail" id="toolrail">
-      <button class="tool-btn" data-tool="pan" title="Pan"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M9 5l3-3 3 3M12 2v6M15 19l-3 3-3-3M12 22v-6M19 9l3 3-3 3M22 12h-6M5 15l-3-3 3-3M2 12h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="tool-btn active" data-tool="pan" title="Pan"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M9 5l3-3 3 3M12 2v6M15 19l-3 3-3-3M12 22v-6M19 9l3 3-3 3M22 12h-6M5 15l-3-3 3-3M2 12h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="tool-label">Pan</div>
-      <button class="tool-btn active" data-tool="select" title="Select / move / edit / delete a markup"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M6 3l3 17 2.5-6.5L18 12z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+      <button class="tool-btn" data-tool="select" title="Select / move / edit / delete a markup"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M6 3l3 17 2.5-6.5L18 12z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
       <div class="tool-label">Select</div>
       <div class="tool-sep"></div>
       <button class="tool-btn" data-tool="draw" title="Freehand draw">✎</button>
@@ -399,7 +399,7 @@ const state = {
   lastModified: null,
   activeSheetIndex: 0,
   pdfDoc: null, pageViewport: null,
-  tool: 'select', color: '#FF0000', thickness: 2, shapeType: 'circle',
+  tool: 'pan', color: '#FF0000', thickness: 2, shapeType: 'circle',
   dirty: false,
   drawing: false, currentStroke: null,
   multiPoints: null, routeDragging: false, routeSegmentStart: null,
@@ -1520,8 +1520,51 @@ function finishMultiline(){
 }
 $('#runDoneBtn').addEventListener('click', finishMultiline);
 
-function onDblClick(){
-  if((state.tool === 'multiline' || state.tool === 'hatcharea' || state.tool === 'whiteoutFreeform' || state.tool === 'hatchline') && state.multiPoints && state.multiPoints.length > 1) finishMultiline();
+function onDblClick(e){
+  if((state.tool === 'multiline' || state.tool === 'hatcharea' || state.tool === 'whiteoutFreeform' || state.tool === 'hatchline') && state.multiPoints && state.multiPoints.length > 1){
+    finishMultiline();
+    return;
+  }
+  if(state.tool === 'pan'){
+    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+    const selectBtn = document.querySelector('.tool-btn[data-tool="select"]');
+    if(selectBtn) selectBtn.classList.add('active');
+    state.tool = 'select';
+    return;
+  }
+  if(state.tool === 'select' && state.pageViewport){
+    const p = canvasPoint(e);
+    const hit = hitTestHandle(p) || hitTestMarkup(p);
+    if(hit) openTextEditForMarkup(hit.markup);
+  }
+}
+
+// Shared by the double-tap shortcut above — opens the right text-edit modal
+// for whichever leader-based markup type was double-tapped.
+function openTextEditForMarkup(m){
+  if(m.type === 'label' || m.type === 'note'){
+    showModal({
+      title: m.type === 'note' ? 'Edit note' : 'Edit label',
+      value: m.text, withSymbols: true, confirmLabel: 'Save',
+      onConfirm: (text) => {
+        if(!text) return;
+        m.text = text;
+        markDirty();
+        drawAllMarkups();
+        renderNoteList();
+      }
+    });
+  } else if(m.type === 'elevation'){
+    showElevationModal({
+      topValue: m.textTop, bottomValue: m.textBottom,
+      onConfirm: (top, bottom) => {
+        m.textTop = top; m.textBottom = bottom;
+        markDirty();
+        drawAllMarkups();
+        renderNoteList();
+      }
+    });
+  }
 }
 
 /* ---- Label / Note placement (single tap places with sensible default leader shape,
@@ -2347,10 +2390,16 @@ function drawPhoto(m){
   ctx.stroke();
   ctx.restore();
 
-  const r = 11;
   const hasPhoto = !!m.photoPath;
+  // Camera-body silhouette (matches the toolbar icon), traced as a single
+  // closed path and scaled/centered on the anchor point.
+  const scale = 1.3;
+  const localPts = [[4, 8], [7, 8], [9, 5], [15, 5], [17, 8], [20, 8], [20, 19], [4, 19]];
+  const pts = localPts.map(([lx, ly]) => ({ x: anchor.x + (lx - 12) * scale, y: anchor.y + (ly - 12) * scale }));
   ctx.beginPath();
-  ctx.arc(anchor.x, anchor.y, r, 0, Math.PI * 2);
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for(let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+  ctx.closePath();
   ctx.fillStyle = hasPhoto ? m.color : '#fff';
   ctx.fill();
   ctx.strokeStyle = m.color;
@@ -2358,9 +2407,9 @@ function drawPhoto(m){
   ctx.stroke();
 
   ctx.fillStyle = hasPhoto ? '#fff' : m.color;
-  ctx.font = '700 11px Inter, sans-serif';
+  ctx.font = '700 10px Inter, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText(String(m.number != null ? m.number : ''), anchor.x, anchor.y + 4);
+  ctx.fillText(String(m.number != null ? m.number : ''), anchor.x, anchor.y + (13.5 - 12) * scale + 4);
   ctx.textAlign = 'left';
 }
 
