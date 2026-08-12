@@ -151,13 +151,15 @@ input,textarea{font-family:inherit;}
 .panel-empty{padding:24px 16px;color:var(--muted);font-size:12.5px;text-align:center;}
 
 /* ---- Bottom bar: save state ---- */
-.bottombar{display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--surface);border-top:1px solid var(--line);font-size:12px;color:var(--muted);flex-shrink:0;}
-.save-btn{margin-left:auto;background:var(--navy);color:#fff;border:none;font-weight:600;font-size:13px;padding:8px 16px;border-radius:8px;}
+.save-btn{background:var(--navy);color:#fff;border:none;font-weight:600;font-size:13px;padding:8px 16px;border-radius:8px;}
 .save-btn:hover{background:var(--navy-2);}
 .save-btn:disabled{opacity:.5;cursor:default;}
 .status-dot{width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0;}
 .status-dot.dirty{background:var(--warn);}
-.mobile-panel-toggle{display:inline-block;background:#2E8B57;color:#fff;border:none;font-weight:700;font-size:12px;padding:6px 14px;border-radius:7px;flex-shrink:0;}
+.action-bar-status-wrap{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.action-bar-status{font-size:12px;color:var(--muted);}
+.action-bar-dynamic{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex:1;justify-content:center;}
+.mobile-panel-toggle{display:inline-block;background:#2E8B57;color:#fff;border:none;font-weight:700;font-size:12px;padding:6px 14px;border-radius:7px;flex-shrink:0;margin-left:auto;}
 
 /* ---- Selection handles + floating edit button on canvas ---- */
 
@@ -247,13 +249,22 @@ input,textarea{font-family:inherit;}
   </div>
 
   <div class="tabs-row">
-    <button class="mobile-panel-toggle" id="mobilePanelToggle">Notes</button>
+    <button class="save-btn" id="undoBtn" disabled title="Undo (last 5 steps, this sheet)" style="margin-left:0;background:var(--surface-2);color:var(--navy);">Undo</button>
+    <button class="save-btn" id="exportBtn" title="Export this sheet as a flattened PNG image" style="margin-left:0;background:var(--surface-2);color:var(--navy);">Export</button>
+    <button class="save-btn" id="saveBtn" disabled style="margin-left:0;">Save</button>
     <a class="crew-directory-btn" href="index.html" title="Crew Directory">
       <span class="cd-arrow">←</span><span class="cd-text">Crew Directory</span>
     </a>
     <div class="sheet-tabs" id="sheetTabs"></div>
+    <button class="mobile-panel-toggle" id="mobilePanelToggle">Notes</button>
   </div>
-  <div class="action-bar" id="actionBar"></div>
+  <div class="action-bar" id="actionBar">
+    <div class="action-bar-status-wrap">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText" class="action-bar-status">No job open</span>
+    </div>
+    <div class="action-bar-dynamic" id="actionBarDynamic"></div>
+  </div>
 
   <div class="main">
     <div class="toolrail" id="toolrail">
@@ -382,13 +393,6 @@ input,textarea{font-family:inherit;}
     </div>
   </div>
 
-  <div class="bottombar">
-    <span class="status-dot" id="statusDot"></span>
-    <span id="statusText">No job open</span>
-    <button class="save-btn" id="undoBtn" disabled title="Undo (last 5 steps, this sheet)" style="margin-left:auto;background:var(--surface-2);color:var(--navy);">Undo</button>
-    <button class="save-btn" id="exportBtn" title="Export this sheet as a flattened PNG image" style="background:var(--surface-2);color:var(--navy);">Export</button>
-    <button class="save-btn" id="saveBtn" disabled>Save</button>
-  </div>
 </div>
 
 <div id="modalRoot"></div>
@@ -1858,11 +1862,13 @@ function onPointerUp(e){
     state.currentStroke = null;
     const pixelDist = Math.hypot(dim.p1.x - dim.p0.x, dim.p1.y - dim.p0.y);
     if(pixelDist > 4){
+      const suggested = suggestDimensionLength(pixelDist);
       showModal({
-        title: 'Dimension text', value: suggestDimensionLength(pixelDist), placeholder: 'e.g. 12\'-6" or 4" CU', withSymbols: true, confirmLabel: 'Add',
+        title: 'Dimension text', value: suggested, placeholder: 'e.g. 12\'-6" or 4" CU', withSymbols: true, confirmLabel: 'Add',
         onConfirm: (text) => {
           if(!text) return;
           dim.text = text;
+          dim.textIsCustom = (text !== suggested);
           dim.textPos = { x: (dim.p0.x + dim.p1.x) / 2, y: (dim.p0.y + dim.p1.y) / 2 - 16 };
           dim.createdAt = Date.now();
           activeSheet().markups.push(dim);
@@ -2227,6 +2233,15 @@ function applyDragHandle(drag, p){
     const step = Math.PI / 180;
     const angle = Math.round(Math.atan2(dy, dx) / step) * step;
     m[drag.key] = { x: fixed.x + Math.cos(angle) * dist, y: fixed.y + Math.sin(angle) * dist };
+    // Keep the text in sync with the new length — but only while it's still
+    // just the auto-suggested value. The moment someone edits it by hand it
+    // locks (see the Edit-text handler), so this never overwrites something
+    // typed on purpose.
+    if(!m.textIsCustom){
+      const newDist = Math.hypot(m.p1.x - m.p0.x, m.p1.y - m.p0.y);
+      const suggestion = suggestDimensionLength(newDist);
+      if(suggestion) m.text = suggestion;
+    }
     return;
   }
   if(m.type === 'shape' && (drag.key === 'p0' || drag.key === 'p1')){
@@ -2300,14 +2315,14 @@ function eraseNear(p){
    and "Delete" (every markup type) — Select can fully manage a markup without
    switching to the Erase tool. ---- */
 function clearMarkupActionButtons(){
-  const bar = $('#actionBar');
+  const bar = $('#actionBarDynamic');
   bar.innerHTML = state.whiteoutsUnlocked
     ? '<span class="action-bar-hint">Select a whiteout to move, resize, or delete it. Click Lock in the tool menu to exit.</span>'
     : '';
   positionFloatingControls();
 }
 function showMarkupActionButtons(markupId){
-  const bar = $('#actionBar');
+  const bar = $('#actionBarDynamic');
   bar.innerHTML = '';
   const sheet = activeSheet();
   const m = sheet && sheet.markups.find(x => x.id === markupId);
@@ -2327,6 +2342,7 @@ function showMarkupActionButtons(markupId){
         onConfirm: (text) => {
           if(!text) return;
           m.text = text;
+          if(m.type === 'dimension') m.textIsCustom = true;
           markDirty();
           drawAllMarkups();
           renderNoteList();
@@ -3189,6 +3205,19 @@ function drawSymPocPod(ctx, mode){
 
 // Dimension: a straight line between two picked points, arrowheads at both
 // ends, and independently-draggable text (not attached by a leader).
+// Blends a hex color toward white — used to visually distinguish a
+// Dimension's pill once its text has been manually customized (and so is no
+// longer auto-updated when the grips move).
+function lightenHexColor(hex, amount = 0.55){
+  const h = (hex || '#000000').replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16) || 0;
+  const g = parseInt(h.substring(2, 4), 16) || 0;
+  const b = parseInt(h.substring(4, 6), 16) || 0;
+  const lr = Math.round(r + (255 - r) * amount);
+  const lg = Math.round(g + (255 - g) * amount);
+  const lb = Math.round(b + (255 - b) * amount);
+  return `rgb(${lr},${lg},${lb})`;
+}
 function drawDimension(m){
   const ctx = mCanvas.getContext('2d');
   ctx.strokeStyle = m.color;
@@ -3199,7 +3228,7 @@ function drawDimension(m){
   ctx.stroke();
   drawArrowHead(ctx, m.p1, m.p0, m.color);
   drawArrowHead(ctx, m.p0, m.p1, m.color);
-  if(m.text) drawTextPill(ctx, m.text, m.textPos, m.color);
+  if(m.text) drawTextPill(ctx, m.text, m.textPos, m.textIsCustom ? lightenHexColor(m.color) : m.color);
 }
 function drawDimensionPreview(p0, p1){
   const ctx = mCanvas.getContext('2d');
