@@ -1005,7 +1005,7 @@ async function getGraphToken(){
     const res = await msalInstance.acquireTokenSilent(req);
     return res.accessToken;
   }catch(e){
-    if(isMobileDevice() && !isInIframe()){
+    if(!isInIframe()){
       await msalInstance.acquireTokenRedirect(req);
       return; // page navigates away; execution resumes via handleRedirectPromise on reload
     }
@@ -1014,10 +1014,12 @@ async function getGraphToken(){
   }
 }
 async function signIn(){
-  if(isMobileDevice() && !isInIframe()){
-    // Popups are unreliable on mobile browsers (blocked by Safari, broken in in-app browsers
-    // like Teams/Slack), so use a full-page redirect flow instead on phones/tablets — but only
-    // when we're not inside a frame, since redirect can't work there at all.
+  if(!isInIframe()){
+    // Redirect is the default for everyone, not just mobile — popups are meaningfully less
+    // reliable across the board (blocked by Safari/ITP, broken by ad blockers and privacy
+    // extensions, unreliable in in-app browsers like Teams/Slack, and prone to MSAL's own
+    // popup-in-popup detection misfiring). Redirect only can't work inside someone else's
+    // iframe, which is the one case that still falls through to popup below.
     try{
       await msalInstance.loginRedirect({ scopes: GRAPH_SCOPES });
     }catch(e){
