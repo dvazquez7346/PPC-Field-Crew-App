@@ -118,6 +118,7 @@ input,textarea{font-family:inherit;}
 .tool-sep{width:32px;height:1px;background:var(--line);margin:6px 0;}
 .tool-label{font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;margin-top:-2px;text-align:center;}
 .color-row,.thickness-row,.shape-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:0 6px;}
+.tool-flyout{position:fixed;display:flex;flex-wrap:wrap;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:var(--shadow);z-index:60;max-width:172px;}
 .color-dot{width:20px;height:20px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer;}
 .color-dot.active{box-shadow:0 0 0 2px var(--navy);}
 .thickness-dot{width:32px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer;}
@@ -310,8 +311,7 @@ input,textarea{font-family:inherit;}
         <div class="thickness-dot" data-thickness="4"><span style="width:14px;height:4px;"></span></div>
         <div class="thickness-dot" data-thickness="7"><span style="width:14px;height:7px;"></span></div>
       </div>
-      <div class="tool-sep hidden" id="shapeRowSep"></div>
-      <div class="shape-row hidden" id="shapeRow">
+      <div class="tool-flyout hidden" id="shapeRow">
         <button class="shape-btn active" data-shape="circle" title="Circle"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
         <button class="shape-btn" data-shape="square" title="Square"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
         <button class="shape-btn" data-shape="rect" title="Rectangle"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
@@ -321,8 +321,7 @@ input,textarea{font-family:inherit;}
         <button class="shape-btn" data-shape="arrowFilled" title="Arrow, filled head"><svg width="18" height="18" viewBox="0 0 24 24"><line x1="3" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.8"/><polygon points="16,7 22,12 16,17" fill="currentColor"/></svg></button>
         <button class="shape-btn" data-shape="arrowOutline" title="Arrow, outline head"><svg width="18" height="18" viewBox="0 0 24 24"><line x1="3" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.8"/><polyline points="12,6 20,12 12,18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
-      <div class="tool-sep hidden" id="symbolRowSep"></div>
-      <div class="shape-row hidden" id="symbolRow">
+      <div class="tool-flyout hidden" id="symbolRow">
         <button class="shape-btn active" data-symbol="flexduct" title="Flex duct"><svg width="24" height="18" viewBox="0 0 70 40"><path d="M24.2 10.8 A13 13 0 1 0 24.2 29.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M15 20 L30 20 L34 8 L38 32 L42 8 L46 32 L50 8 L54 20 L68 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg></button>
         <button class="shape-btn" data-symbol="pipeup" title="Pipe up"><svg width="18" height="14" viewBox="0 0 34 24"><circle cx="6" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="11" y1="12" x2="30" y2="12" stroke="currentColor" stroke-width="1.6"/></svg></button>
         <button class="shape-btn" data-symbol="pipedown" title="Pipe down"><svg width="18" height="14" viewBox="0 0 34 24"><path d="M9.3 7.2 A5 5 0 1 0 9.3 16.8" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="6" y1="12" x2="30" y2="12" stroke="currentColor" stroke-width="1.6"/></svg></button>
@@ -1216,10 +1215,8 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     state.routeDragging = false;
     state.routeSegmentStart = null;
     state.selectedMarkupId = null;
-    $('#shapeRow').classList.toggle('hidden', state.tool !== 'shape');
-    $('#shapeRowSep').classList.toggle('hidden', state.tool !== 'shape');
-    $('#symbolRow').classList.toggle('hidden', state.tool !== 'symbol');
-    $('#symbolRowSep').classList.toggle('hidden', state.tool !== 'symbol');
+    if(state.tool !== 'shape') $('#shapeRow').classList.add('hidden');
+    if(state.tool !== 'symbol') $('#symbolRow').classList.add('hidden');
     $('#canvasArea').classList.remove('panning');
     clearMarkupActionButtons();
     hideRunDoneBtn();
@@ -1279,6 +1276,7 @@ document.querySelectorAll('#shapeRow .shape-btn').forEach(btn => {
     document.querySelectorAll('#shapeRow .shape-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     state.shapeType = btn.dataset.shape;
+    $('#shapeRow').classList.add('hidden'); // auto-hide once a shape is picked
   });
 });
 document.querySelectorAll('#symbolRow .shape-btn').forEach(btn => {
@@ -1286,6 +1284,45 @@ document.querySelectorAll('#symbolRow .shape-btn').forEach(btn => {
     document.querySelectorAll('#symbolRow .shape-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     state.symbolType = btn.dataset.symbol;
+    $('#symbolRow').classList.add('hidden'); // auto-hide once a symbol is picked
+  });
+});
+
+// Shared flyout mechanic for both the Shape and Symbol pickers: opens to the
+// right of its tool button (or the left, if that would run off-screen), and
+// auto-closes once something is picked or you tap anywhere else — same
+// dismiss pattern as the job dropdown.
+function openToolFlyout(toolName, flyoutId){
+  const btn = document.querySelector(`.tool-btn[data-tool="${toolName}"]`);
+  const flyout = document.getElementById(flyoutId);
+  if(!btn || !flyout) return;
+  flyout.classList.remove('hidden');
+  const rect = btn.getBoundingClientRect();
+  const flyoutW = flyout.offsetWidth || 172, flyoutH = flyout.offsetHeight || 200;
+  let left = rect.right + 8;
+  if(left + flyoutW > window.innerWidth - 8) left = rect.left - flyoutW - 8;
+  let top = rect.top;
+  if(top + flyoutH > window.innerHeight - 8) top = window.innerHeight - flyoutH - 8;
+  flyout.style.left = Math.max(8, left) + 'px';
+  flyout.style.top = Math.max(8, top) + 'px';
+}
+function setupToolFlyoutToggle(toolName, flyoutId){
+  const btn = document.querySelector(`.tool-btn[data-tool="${toolName}"]`);
+  if(!btn) return;
+  btn.addEventListener('click', () => {
+    const flyout = document.getElementById(flyoutId);
+    if(flyout.classList.contains('hidden')) openToolFlyout(toolName, flyoutId);
+    else flyout.classList.add('hidden');
+  });
+}
+setupToolFlyoutToggle('shape', 'shapeRow');
+setupToolFlyoutToggle('symbol', 'symbolRow');
+document.addEventListener('click', (e) => {
+  [['shape', 'shapeRow'], ['symbol', 'symbolRow']].forEach(([toolName, flyoutId]) => {
+    const flyout = document.getElementById(flyoutId);
+    if(!flyout.classList.contains('hidden') && !e.target.closest(`#${flyoutId}`) && !e.target.closest(`.tool-btn[data-tool="${toolName}"]`)){
+      flyout.classList.add('hidden');
+    }
   });
 });
 
@@ -1786,7 +1823,7 @@ function placeSymbolMarker(anchor){
   const color = state.symbolType === 'poc' ? '#000000' : state.color;
   const markup = {
     id: genId(), type: 'symbol', symbolType: state.symbolType, color, thickness: state.thickness,
-    rotation: 0, pocMode: 'POC', anchor, note: '', createdAt: Date.now(),
+    rotation: 0, scale: 1, pocMode: 'POC', anchor, note: '', createdAt: Date.now(),
   };
   activeSheet().markups.push(markup);
   markDirty();
@@ -1805,7 +1842,7 @@ function switchToSelectAndSelect(markupId){
   state.tool = 'select';
   state.multiPoints = null;
   $('#shapeRow').classList.add('hidden');
-  $('#shapeRowSep').classList.add('hidden');
+  $('#symbolRow').classList.add('hidden');
   state.selectedMarkupId = markupId;
   drawAllMarkups();
   showMarkupActionButtons(markupId);
@@ -1836,7 +1873,8 @@ function handlePointsForMarkup(m){
     return handles;
   }
   if(m.type === 'multiline' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform' || m.type === 'hatchline') return m.points.map((p, i) => ({ key: 'pt' + i, p }));
-  if(m.type === 'photo' || m.type === 'symbol') return [{ key: 'anchor', p: m.anchor }, { key: 'rotate', p: computePhotoRotateHandle(m) }];
+  if(m.type === 'photo') return [{ key: 'anchor', p: m.anchor }, { key: 'rotate', p: computePhotoRotateHandle(m) }];
+  if(m.type === 'symbol') return [{ key: 'anchor', p: m.anchor }, { key: 'rotate', p: computePhotoRotateHandle(m) }, { key: 'scale', p: computeSymbolScaleHandle(m) }];
   return [];
 }
 function cloneMarkupPoints(m){ return JSON.parse(JSON.stringify(m)); }
@@ -1935,6 +1973,11 @@ function applyDragHandle(drag, p){
     let angle = Math.atan2(p.y - c.y, p.x - c.x) + Math.PI / 2;
     const step = ANGLE_STEP * Math.PI / 180;
     m.rotation = Math.round(angle / step) * step;
+    return;
+  }
+  if(drag.key === 'scale' && m.type === 'symbol'){
+    const dist = Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y);
+    m.scale = Math.max(0.4, Math.min(3, dist / SYMBOL_SCALE_BASE_DIST));
     return;
   }
   if(drag.key === 'bend' && (m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment')){
@@ -2292,6 +2335,18 @@ function drawHandles(m){
     ctx.stroke();
     ctx.restore();
   }
+  if(m.type === 'symbol'){
+    const sh = computeSymbolScaleHandle(m);
+    ctx.save();
+    ctx.strokeStyle = '#2F5D8A';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(m.anchor.x, m.anchor.y);
+    ctx.lineTo(sh.x, sh.y);
+    ctx.stroke();
+    ctx.restore();
+  }
   handlePointsForMarkup(m).forEach(h => {
     if(h.key === 'move'){
       ctx.save();
@@ -2470,6 +2525,12 @@ function computeShapeRotateHandle(m){
 function computePhotoRotateHandle(m){
   const dist = 30;
   const ang = (m.rotation || 0) - Math.PI / 2;
+  return { x: m.anchor.x + dist * Math.cos(ang), y: m.anchor.y + dist * Math.sin(ang) };
+}
+const SYMBOL_SCALE_BASE_DIST = 24;
+function computeSymbolScaleHandle(m){
+  const dist = SYMBOL_SCALE_BASE_DIST * (m.scale || 1);
+  const ang = (m.rotation || 0) + Math.PI * 0.75; // fixed local direction (lower-left), rotates with the symbol
   return { x: m.anchor.x + dist * Math.cos(ang), y: m.anchor.y + dist * Math.sin(ang) };
 }
 
@@ -2735,6 +2796,7 @@ function drawSymbolMarker(m){
   ctx.save();
   ctx.translate(m.anchor.x, m.anchor.y);
   ctx.rotate(m.rotation || 0);
+  ctx.scale(m.scale || 1, m.scale || 1);
   ctx.strokeStyle = m.color;
   ctx.fillStyle = m.color;
   ctx.lineWidth = m.thickness || 2;
