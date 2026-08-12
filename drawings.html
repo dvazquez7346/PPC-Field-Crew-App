@@ -131,6 +131,11 @@ input,textarea{font-family:inherit;}
 .panel{width:var(--panel-w);background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;}
 .panel.panel-hidden{display:none;}
 .panel-head{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+.panel-filter-row{display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid var(--line);}
+.panel-filter-row input{flex:1;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;}
+.panel-filter-row button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);font-size:15px;flex-shrink:0;}
+.type-visibility-flyout{position:fixed;z-index:60;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px;box-shadow:var(--shadow);max-height:280px;overflow-y:auto;}
+.type-visibility-flyout label{display:flex;align-items:center;gap:6px;font-size:12.5px;padding:4px 2px;white-space:nowrap;}
 .panel-head .disp{font-size:15px;color:var(--navy);}
 .panel-head .count{font-size:11px;color:var(--muted);}
 .panel-close{display:none;background:none;border:none;color:var(--muted);font-size:18px;}
@@ -164,6 +169,8 @@ input,textarea{font-family:inherit;}
 .modal-card textarea,.modal-card input[type=text]{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:14px;resize:vertical;min-height:38px;}
 .modal-card textarea{min-height:70px;}
 .symbol-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.recent-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.recent-btn{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:5px 11px;font-size:12px;color:var(--ink);}
 .modal-field-label{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;margin:8px 0 3px;}
 .symbol-btn{width:32px;height:32px;border:1px solid var(--line);border-radius:7px;background:var(--surface-2);font-size:15px;color:var(--navy);}
 .symbol-btn:hover{border-color:var(--blueprint);}
@@ -364,6 +371,11 @@ input,textarea{font-family:inherit;}
         </div>
         <button class="panel-close" id="panelCloseBtn">✕</button>
       </div>
+      <div class="panel-filter-row">
+        <input type="text" id="noteFilterInput" placeholder="Filter by text or type…">
+        <button id="typeVisibilityBtn" title="Show/hide by type">👁</button>
+      </div>
+      <div class="type-visibility-flyout hidden" id="typeVisibilityFlyout"></div>
       <div class="panel-list" id="noteList">
         <div class="panel-empty">No markups yet.</div>
       </div>
@@ -426,6 +438,7 @@ const state = {
   zoom: 1, naturalWidth: 0, naturalHeight: 0,
   activePointers: new Map(), pinchState: null,
   undoStacks: {}, // { [sheetId]: [markups-snapshot, ...] } — runtime only, never saved
+  noteFilterText: '', hiddenTypes: new Set(),
   whiteoutsUnlocked: false,
 };
 
@@ -456,7 +469,17 @@ const pdfCanvasEl = () => $('#pdfCanvas');
 /* ============================================================
    MODAL SYSTEM — replaces every native prompt()/confirm() in the app
    ============================================================ */
-function showModal({ title, sub, value = '', placeholder = '', withSymbols = false, symbols = null, confirmLabel = 'Save', destructiveLabel = null, onConfirm, onDestructive, onCancel }){
+const RECENT_TEXTS_KEY = 'ppc_drawing_recent_texts';
+function getRecentTexts(){
+  try{ return JSON.parse(localStorage.getItem(RECENT_TEXTS_KEY)) || []; }catch(err){ return []; }
+}
+function addRecentText(text){
+  if(!text) return;
+  let recents = getRecentTexts().filter(t => t !== text);
+  recents.unshift(text);
+  try{ localStorage.setItem(RECENT_TEXTS_KEY, JSON.stringify(recents.slice(0, 8))); }catch(err){}
+}
+function showModal({ title, sub, value = '', placeholder = '', withSymbols = false, symbols = null, withRecents = false, confirmLabel = 'Save', destructiveLabel = null, onConfirm, onDestructive, onCancel }){
   const root = $('#modalRoot');
   root.innerHTML = '';
   const backdrop = document.createElement('div');
@@ -464,10 +487,12 @@ function showModal({ title, sub, value = '', placeholder = '', withSymbols = fal
   const card = document.createElement('div');
   card.className = 'modal-card';
   const symbolSet = symbols || SYMBOLS;
+  const recents = withRecents ? getRecentTexts() : [];
   card.innerHTML = `
     <div class="disp">${escapeHtml(title)}</div>
     ${sub ? `<div class="modal-sub">${escapeHtml(sub)}</div>` : ''}
     <textarea id="modalInput" placeholder="${escapeHtml(placeholder)}">${escapeHtml(value)}</textarea>
+    ${recents.length ? `<div class="recent-row">${recents.map(t => `<button type="button" class="recent-btn" data-text="${escapeAttr(t)}">${escapeHtml(t.length > 20 ? t.slice(0, 20) + '\u2026' : t)}</button>`).join('')}</div>` : ''}
     ${withSymbols ? `<div class="symbol-row">${symbolSet.map(s => `<button type="button" class="symbol-btn" data-sym="${escapeAttr(s)}">${escapeHtml(s)}</button>`).join('')}</div>` : ''}
     <div class="modal-row">
       ${destructiveLabel ? `<button type="button" class="destructive">${escapeHtml(destructiveLabel)}</button>` : ''}
@@ -480,6 +505,12 @@ function showModal({ title, sub, value = '', placeholder = '', withSymbols = fal
   input.focus();
   input.setSelectionRange(input.value.length, input.value.length);
 
+  card.querySelectorAll('.recent-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      input.value = btn.dataset.text;
+      input.focus();
+    });
+  });
   card.querySelectorAll('.symbol-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const start = input.selectionStart, end = input.selectionEnd;
@@ -496,6 +527,7 @@ function showModal({ title, sub, value = '', placeholder = '', withSymbols = fal
     const val = input.value.trim();
     confirmed = true;
     close();
+    if(withRecents) addRecentText(val);
     if(onConfirm) onConfirm(val);
   });
   if(destructiveLabel){
@@ -1235,6 +1267,7 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
 // toggleWhiteoutLock — so there's no way to accidentally edit anything else
 // until you lock again.
 function isMarkupInteractable(m){
+  if(state.hiddenTypes.has(m.type)) return false;
   if(state.whiteoutsUnlocked) return m.type === 'whiteoutRect' || m.type === 'whiteoutFreeform';
   return !m.locked;
 }
@@ -1335,6 +1368,44 @@ document.addEventListener('click', (e) => {
    ============================================================ */
 $('#mobilePanelToggle').addEventListener('click', () => $('#panel').classList.toggle('panel-hidden'));
 $('#panelCloseBtn').addEventListener('click', () => $('#panel').classList.add('panel-hidden'));
+$('#noteFilterInput').addEventListener('input', (e) => {
+  state.noteFilterText = e.target.value;
+  renderNoteList();
+});
+$('#typeVisibilityBtn').addEventListener('click', () => {
+  const flyout = $('#typeVisibilityFlyout');
+  if(!flyout.classList.contains('hidden')){
+    flyout.classList.add('hidden');
+    return;
+  }
+  const sheet = activeSheet();
+  const types = [...new Set((sheet ? sheet.markups : []).map(m => m.type))];
+  if(types.length === 0){ flyout.classList.add('hidden'); return; }
+  flyout.innerHTML = types.map(t => {
+    const displayName = markupTypeDisplayName({ type: t });
+    const checked = state.hiddenTypes.has(t) ? '' : 'checked';
+    return `<label><input type="checkbox" data-hide-type="${escapeAttr(t)}" ${checked}> ${escapeHtml(displayName)}</label>`;
+  }).join('');
+  flyout.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const t = cb.dataset.hideType;
+      if(cb.checked) state.hiddenTypes.delete(t);
+      else state.hiddenTypes.add(t);
+      drawAllMarkups();
+    });
+  });
+  flyout.classList.remove('hidden');
+  const btn = $('#typeVisibilityBtn');
+  const rect = btn.getBoundingClientRect();
+  flyout.style.left = Math.max(8, rect.right - 160) + 'px';
+  flyout.style.top = (rect.bottom + 6) + 'px';
+});
+document.addEventListener('click', (e) => {
+  const flyout = $('#typeVisibilityFlyout');
+  if(!flyout.classList.contains('hidden') && !e.target.closest('#typeVisibilityFlyout') && !e.target.closest('#typeVisibilityBtn')){
+    flyout.classList.add('hidden');
+  }
+});
 
 /* ============================================================
    POINTER HANDLING
@@ -1648,9 +1719,10 @@ function onPointerUp(e){
     state.drawing = false;
     const dim = state.currentStroke;
     state.currentStroke = null;
-    if(Math.hypot(dim.p1.x - dim.p0.x, dim.p1.y - dim.p0.y) > 4){
+    const pixelDist = Math.hypot(dim.p1.x - dim.p0.x, dim.p1.y - dim.p0.y);
+    if(pixelDist > 4){
       showModal({
-        title: 'Dimension text', placeholder: 'e.g. 12\'-6" or 4" CU', withSymbols: true, confirmLabel: 'Add',
+        title: 'Dimension text', value: suggestDimensionLength(pixelDist), placeholder: 'e.g. 12\'-6" or 4" CU', withSymbols: true, confirmLabel: 'Add',
         onConfirm: (text) => {
           if(!text) return;
           dim.text = text;
@@ -1733,7 +1805,7 @@ function openTextEditForMarkup(m){
   if(m.type === 'label' || m.type === 'note'){
     showModal({
       title: m.type === 'note' ? 'Edit note' : 'Edit label',
-      value: m.text, withSymbols: true, confirmLabel: 'Save',
+      value: m.text, withSymbols: true, withRecents: true, confirmLabel: 'Save',
       onConfirm: (text) => {
         if(!text) return;
         m.text = text;
@@ -2063,6 +2135,17 @@ function duplicateMarkup(m){
   return clone;
 }
 
+// If the active sheet has a scale calibration set (via a Dimension's "Set as
+// scale reference" action), suggests a real-world length for a newly-drawn
+// Dimension based on its pixel distance — still fully editable, never forced.
+function suggestDimensionLength(pixelDist){
+  const sheet = activeSheet();
+  const cal = sheet && sheet.scaleCalibration;
+  if(!cal || !cal.pixelDist) return '';
+  const real = (pixelDist / cal.pixelDist) * cal.realLength;
+  return `${real.toFixed(1)} ${cal.unit || 'ft'}`;
+}
+
 function eraseNear(p){
   const sheet = activeSheet();
   const idx = sheet.markups.findIndex(m => isMarkupInteractable(m) && markupContainsPoint(m, p));
@@ -2103,7 +2186,7 @@ function showMarkupActionButtons(markupId){
       e.stopPropagation();
       showModal({
         title: m.type === 'note' ? 'Edit note' : (m.type === 'dimension' ? 'Edit dimension text' : 'Edit label'),
-        value: m.text, withSymbols: true, confirmLabel: 'Save',
+        value: m.text, withSymbols: true, withRecents: m.type !== 'dimension', confirmLabel: 'Save',
         onConfirm: (text) => {
           if(!text) return;
           m.text = text;
@@ -2114,6 +2197,26 @@ function showMarkupActionButtons(markupId){
       });
     });
     buttonRow.appendChild(editBtn);
+  }
+  if(m.type === 'dimension'){
+    const calBtn = document.createElement('button');
+    calBtn.textContent = 'Set as scale ref';
+    calBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const guess = (m.text.match(/[\d.]+/) || [''])[0];
+      showModal({
+        title: 'Set scale reference', sub: 'Real-world length this dimension represents, in decimal feet.',
+        value: guess, placeholder: 'e.g. 12.5', confirmLabel: 'Set',
+        onConfirm: (val) => {
+          const realLength = parseFloat(val);
+          if(!realLength || realLength <= 0) return;
+          const pixelDist = Math.hypot(m.p1.x - m.p0.x, m.p1.y - m.p0.y);
+          sheet.scaleCalibration = { pixelDist, realLength, unit: 'ft' };
+          markDirty();
+        }
+      });
+    });
+    buttonRow.appendChild(calBtn);
   }
   if(m.type === 'elevation'){
     const editBtn = document.createElement('button');
@@ -2326,8 +2429,8 @@ function drawAllMarkups(){
   // Whiteouts always render first/below everything else, regardless of the
   // order they were drawn in — they should only ever cover the PDF, never a
   // markup that's already been placed on top of them.
-  const whiteouts = sheet.markups.filter(m => m.type === 'whiteoutRect' || m.type === 'whiteoutFreeform');
-  const others = sheet.markups.filter(m => m.type !== 'whiteoutRect' && m.type !== 'whiteoutFreeform');
+  const whiteouts = sheet.markups.filter(m => (m.type === 'whiteoutRect' || m.type === 'whiteoutFreeform') && !state.hiddenTypes.has(m.type));
+  const others = sheet.markups.filter(m => m.type !== 'whiteoutRect' && m.type !== 'whiteoutFreeform' && !state.hiddenTypes.has(m.type));
   whiteouts.forEach(m => drawWhiteout(m));
   others.forEach(m => {
     if(m.type === 'freehand') drawStroke(m);
@@ -3131,9 +3234,20 @@ function renderNoteList(){
     $('#noteCount').textContent = '0 markups';
     return;
   }
-  $('#noteCount').textContent = sheet.markups.length + ' markup' + (sheet.markups.length === 1 ? '' : 's');
+  const filterText = (state.noteFilterText || '').trim().toLowerCase();
+  const visible = sheet.markups.filter(m => {
+    if(!filterText) return true;
+    const haystack = [markupTypeDisplayName(m), m.text, m.note, m.textTop, m.textBottom, m.eqType, m.eqNumber, m.number, m.symbolType]
+      .filter(Boolean).join(' ').toLowerCase();
+    return haystack.includes(filterText);
+  });
+  $('#noteCount').textContent = sheet.markups.length + ' markup' + (sheet.markups.length === 1 ? '' : 's') + (filterText ? ` (${visible.length} shown)` : '');
+  if(visible.length === 0){
+    list.innerHTML = '<div class="panel-empty">No markups match that filter.</div>';
+    return;
+  }
   list.innerHTML = '';
-  sheet.markups.slice().reverse().forEach(m => {
+  visible.slice().reverse().forEach(m => {
     const card = document.createElement('div');
     card.className = 'note-card' + (m.id === state.selectedMarkupId ? ' selected' : '');
     const time = m.createdAt ? new Date(m.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
