@@ -257,8 +257,6 @@ input,textarea{font-family:inherit;}
       <div class="tool-sep"></div>
       <button class="tool-btn" data-tool="draw" title="Freehand draw">✎</button>
       <div class="tool-label">Draw</div>
-      <button class="tool-btn" data-tool="line" title="Straight line, snapped to 15°"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="3" y1="21" x2="21" y2="3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><circle cx="3" cy="21" r="2" fill="currentColor"/><circle cx="21" cy="3" r="2" fill="currentColor"/></svg></button>
-      <div class="tool-label">Line</div>
       <button class="tool-btn" data-tool="multiline" title="Route: multi-segment run, snapped, rounded joints"><svg width="20" height="20" viewBox="0 0 24 24"><polyline points="3,18 8,18 8,6 20,6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="3" cy="18" r="1.8" fill="currentColor"/><circle cx="20" cy="6" r="1.8" fill="currentColor"/></svg></button>
       <div class="tool-label">Route</div>
       <button class="tool-btn" data-tool="dimension" title="Dimension line with arrowheads and text"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2"/><polygon points="4,12 8,9 8,15" fill="currentColor"/><polygon points="20,12 16,9 16,15" fill="currentColor"/></svg></button>
@@ -375,6 +373,7 @@ input,textarea{font-family:inherit;}
   <div class="bottombar">
     <span class="status-dot" id="statusDot"></span>
     <span id="statusText">No job open</span>
+    <button class="save-btn" id="undoBtn" disabled title="Undo (last 5 steps, this sheet)" style="margin-left:auto;background:var(--surface-2);color:var(--navy);">Undo</button>
     <button class="save-btn" id="saveBtn" disabled>Save</button>
   </div>
 </div>
@@ -426,6 +425,7 @@ const state = {
   jobsIndexCache: null,
   zoom: 1, naturalWidth: 0, naturalHeight: 0,
   activePointers: new Map(), pinchState: null,
+  undoStacks: {}, // { [sheetId]: [markups-snapshot, ...] } — runtime only, never saved
   whiteoutsUnlocked: false,
 };
 
@@ -1004,6 +1004,10 @@ async function renderActiveSheet(){
   const sheet = activeSheet();
   clearMarkupActionButtons();
   hideRunDoneBtn();
+  if(sheet && !state.undoStacks[sheet.id]){
+    state.undoStacks[sheet.id] = [JSON.parse(JSON.stringify(sheet.markups))];
+  }
+  updateUndoBtn();
   if(!sheet || !sheet.pdfPath){
     $('#emptyState').classList.remove('hidden');
     $('#zoomWrapper').classList.add('hidden');
@@ -2045,6 +2049,20 @@ function translateMarkup(m, origin, dx, dy){
   }
 }
 
+// Deep-clones a markup with a new ID and a fixed visual offset, reusing
+// translateMarkup's existing per-type position logic so this works correctly
+// for every markup shape (anchor-only, p0/p1, points array, leader) without
+// needing its own separate case for each type.
+function duplicateMarkup(m){
+  const clone = JSON.parse(JSON.stringify(m));
+  const origin = JSON.parse(JSON.stringify(m));
+  clone.id = genId();
+  clone.createdAt = Date.now();
+  if(clone.locked !== undefined) clone.locked = true; // duplicated whiteouts stay auto-locked
+  translateMarkup(clone, origin, 20, 20);
+  return clone;
+}
+
 function eraseNear(p){
   const sheet = activeSheet();
   const idx = sheet.markups.findIndex(m => isMarkupInteractable(m) && markupContainsPoint(m, p));
@@ -2207,6 +2225,17 @@ function showMarkupActionButtons(markupId){
     });
     buttonRow.appendChild(hatchBtn);
   }
+  const dupBtn = document.createElement('button');
+  dupBtn.textContent = 'Duplicate';
+  dupBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const copy = duplicateMarkup(m);
+    sheet.markups.push(copy);
+    markDirty();
+    renderNoteList();
+    switchToSelectAndSelect(copy.id);
+  });
+  buttonRow.appendChild(dupBtn);
   const delBtn = document.createElement('button');
   delBtn.className = 'delete-btn';
   delBtn.textContent = 'Delete';
@@ -3114,18 +3143,20 @@ function renderNoteList(){
       : (m.type === 'symbol') ? (m.symbolType === 'poc' ? (m.pocMode || 'POC') : m.symbolType)
       : (m.type === 'photo') ? `Photo ${m.number || ''}`
       : (m.type === 'shape') ? m.shape
-      : (m.type === 'hatchline') ? 'hatch line'
-      : (m.type === 'hatcharea') ? 'hatch area'
       : (m.type === 'whiteoutRect') ? 'whiteout (rect)' + (m.locked ? ' \u2014 locked' : ' \u2014 unlocked')
       : (m.type === 'whiteoutFreeform') ? 'whiteout (freeform)' + (m.locked ? ' \u2014 locked' : ' \u2014 unlocked')
-      : (m.type === 'line' && m.hatched) ? 'line (hatched)'
-      : (m.type === 'multiline' && m.hatched) ? 'run (hatched)'
-      : m.type;
+      : (m.type === 'line' && m.hatched) ? 'Line (hatched)'
+      : (m.type === 'multiline' && m.hatched) ? 'Route (hatched)'
+      : null; // generic types with no distinguishing content — title line gets skipped below
+    const isGeneric = label === null;
     const noteText = m.note ? escapeHtml(m.note) : '<span class="nc-empty">No note added</span>';
     card.innerHTML = `
-      <div class="nc-top"><span class="nc-type">${escapeHtml(m.type)}</span><span class="nc-time">${time}</span></div>
-      <div class="nc-text"><strong>${escapeHtml(label)}</strong><br>${noteText}</div>`;
+      <div class="nc-top"><span class="nc-type">${escapeHtml(markupTypeDisplayName(m))}</span><span class="nc-time">${time}</span></div>
+      <div class="nc-text">${isGeneric ? '' : `<strong>${escapeHtml(label)}</strong><br>`}${noteText}</div>`;
     card.addEventListener('click', () => {
+      // Select it on the canvas too, not just open the note editor — so
+      // clicking an item in this list actually takes you to it.
+      switchToSelectAndSelect(m.id);
       showModal({
         title: 'Note', value: m.note || '', placeholder: 'Add a note about this markup', confirmLabel: 'Save',
         onConfirm: (text) => { m.note = text; markDirty(); renderNoteList(); }
@@ -3135,13 +3166,66 @@ function renderNoteList(){
   });
 }
 
+// Maps internal markup type strings to the names actually shown in the
+// toolbar today — several tools have been renamed since their type string
+// was first chosen, and this keeps the Notes list from showing the old
+// internal name (e.g. "multiline" instead of "Route").
+function markupTypeDisplayName(m){
+  const map = {
+    label: 'Callout', note: 'Note', dimension: 'Dimension', elevation: 'Elevation',
+    equipment: 'Equipment', photo: 'Photo', shape: 'Shape', symbol: 'Symbol',
+    multiline: 'Route', hatchline: 'Demo Line', hatcharea: 'Hatch',
+    whiteoutRect: 'Whiteout', whiteoutFreeform: 'Whiteout', line: 'Line', freehand: 'Draw',
+  };
+  let name = map[m.type] || m.type;
+  if((m.type === 'line' || m.type === 'multiline') && m.hatched) name += ' (hatched)';
+  return name;
+}
+
 /* ============================================================
    SAVE / DIRTY STATE
    ============================================================ */
 function markDirty(){
   state.dirty = true;
   setStatus('dirty', 'Unsaved changes');
+  pushUndoSnapshot();
 }
+// Checkpoint-style undo: every markDirty() call snapshots the sheet's
+// current (post-mutation) markups, keeping only the last 5 per sheet.
+// Undo discards the current checkpoint and restores the one before it —
+// this covers every mutation in the app for free, since they all already
+// call markDirty(), without needing to instrument each one individually.
+function pushUndoSnapshot(){
+  const sheet = activeSheet();
+  if(!sheet) return;
+  if(!state.undoStacks[sheet.id]) state.undoStacks[sheet.id] = [];
+  const stack = state.undoStacks[sheet.id];
+  stack.push(JSON.parse(JSON.stringify(sheet.markups)));
+  if(stack.length > 5) stack.shift();
+  updateUndoBtn();
+}
+function performUndo(){
+  const sheet = activeSheet();
+  if(!sheet) return;
+  const stack = state.undoStacks[sheet.id];
+  if(!stack || stack.length < 2) return;
+  stack.pop(); // discard the current (already-applied) checkpoint
+  const prev = stack[stack.length - 1];
+  sheet.markups = JSON.parse(JSON.stringify(prev));
+  state.selectedMarkupId = null;
+  clearMarkupActionButtons();
+  state.dirty = true;
+  setStatus('dirty', 'Unsaved changes');
+  drawAllMarkups();
+  renderNoteList();
+  updateUndoBtn();
+}
+function updateUndoBtn(){
+  const sheet = activeSheet();
+  const stack = sheet ? state.undoStacks[sheet.id] : null;
+  $('#undoBtn').disabled = !stack || stack.length < 2;
+}
+$('#undoBtn').addEventListener('click', performUndo);
 function setStatus(kind, text){
   $('#statusText').textContent = text;
   $('#statusDot').classList.toggle('dirty', kind !== 'saved');
@@ -3167,6 +3251,27 @@ async function saveJob(){
     setStatus('dirty', 'Save failed — changes not saved');
   }
 }
+
+// Delete/Backspace deletes the selected markup — but never while typing in a
+// text field (input/textarea), so it doesn't interfere with editing text.
+document.addEventListener('keydown', (e) => {
+  if(e.key !== 'Delete' && e.key !== 'Backspace') return;
+  const tag = (document.activeElement && document.activeElement.tagName) || '';
+  if(tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if($('#modalRoot').innerHTML.trim() !== '') return; // a modal is open — never delete underneath it
+  if(!state.selectedMarkupId) return;
+  const sheet = activeSheet();
+  if(!sheet) return;
+  const idx = sheet.markups.findIndex(x => x.id === state.selectedMarkupId);
+  if(idx === -1) return;
+  e.preventDefault();
+  sheet.markups.splice(idx, 1);
+  state.selectedMarkupId = null;
+  markDirty();
+  drawAllMarkups();
+  renderNoteList();
+  clearMarkupActionButtons();
+});
 
 window.addEventListener('beforeunload', (e) => {
   if(state.dirty){ e.preventDefault(); e.returnValue = ''; }
