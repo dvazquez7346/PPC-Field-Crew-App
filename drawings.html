@@ -386,6 +386,7 @@ input,textarea{font-family:inherit;}
     <span class="status-dot" id="statusDot"></span>
     <span id="statusText">No job open</span>
     <button class="save-btn" id="undoBtn" disabled title="Undo (last 5 steps, this sheet)" style="margin-left:auto;background:var(--surface-2);color:var(--navy);">Undo</button>
+    <button class="save-btn" id="exportBtn" title="Export this sheet as a flattened PNG image" style="background:var(--surface-2);color:var(--navy);">Export</button>
     <button class="save-btn" id="saveBtn" disabled>Save</button>
   </div>
 </div>
@@ -465,6 +466,40 @@ const SYMBOLS = ['°','⌀','±','∠','′','″'];
 const $ = (sel) => document.querySelector(sel);
 const markupCanvasEl = () => $('#markupCanvas');
 const pdfCanvasEl = () => $('#pdfCanvas');
+
+// Exports the current sheet as a single flattened PNG — the PDF and every
+// markup baked into one image, for sharing outside the app (email, print,
+// archiving) without needing this tool to view it.
+function exportFlattenedImage(){
+  const pdfCanvas = pdfCanvasEl();
+  const markupCanvas = markupCanvasEl();
+  if(!pdfCanvas || !markupCanvas || !state.naturalWidth){
+    showModal({ title: 'Nothing to export', sub: 'Open a sheet with a floor plan first.', confirmLabel: 'OK', onConfirm: () => {} });
+    return;
+  }
+  const out = document.createElement('canvas');
+  out.width = pdfCanvas.width;
+  out.height = pdfCanvas.height;
+  const ctx = out.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, out.width, out.height);
+  ctx.drawImage(pdfCanvas, 0, 0);
+  ctx.drawImage(markupCanvas, 0, 0);
+  out.toBlob((blob) => {
+    if(!blob) return;
+    const url = URL.createObjectURL(blob);
+    const sheet = activeSheet();
+    const sheetName = (sheet && sheet.name ? sheet.name : 'sheet').replace(/[^a-z0-9]+/gi, '_');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${state.jobId || 'job'}-${sheetName}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, 'image/png');
+}
+$('#exportBtn').addEventListener('click', exportFlattenedImage);
 
 /* ============================================================
    MODAL SYSTEM — replaces every native prompt()/confirm() in the app
@@ -597,6 +632,29 @@ function showElevationModal({ topValue = '', bottomValue = '', onConfirm, onCanc
 // Elevation modal's structure with its own labels and a hyphen/slash symbol
 // row suited to tags like "AHU" over "1-1".
 const EQUIPMENT_SYMBOLS = ['-', '/'];
+function showConfirmModal({ title, sub, confirmLabel = 'OK', cancelLabel = 'Cancel', onConfirm, onCancel }){
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  card.innerHTML = `
+    <div class="disp">${escapeHtml(title)}</div>
+    ${sub ? `<div class="modal-sub">${escapeHtml(sub)}</div>` : ''}
+    <div class="modal-row">
+      <button type="button" class="cancel">${escapeHtml(cancelLabel)}</button>
+      <button type="button" class="save">${escapeHtml(confirmLabel)}</button>
+    </div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+  let confirmed = false;
+  function close(){ root.innerHTML = ''; if(!confirmed && onCancel) onCancel(); }
+  card.querySelector('.cancel').addEventListener('click', close);
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
+  card.querySelector('.save').addEventListener('click', () => { confirmed = true; close(); if(onConfirm) onConfirm(); });
+}
+
 function showEquipmentModal({ typeValue = '', numberValue = '', onConfirm, onCancel }){
   const root = $('#modalRoot');
   root.innerHTML = '';
@@ -874,11 +932,13 @@ async function openJobById(jobId){
       state.data.sheets = [{ id: genId(), name: 'Sheet 1', pdfPath: null, markups: [] }];
     }
     migrateOldMarkupData(state.data);
+    state.loadedSnapshot = JSON.parse(JSON.stringify(state.data.sheets)); // baseline for save-conflict auto-merge
     updateJobNameChip();
     renderSheetTabs();
     await renderActiveSheet();
     setStatus('saved', 'Job ' + jobId + ' — all changes saved');
     refreshJobDropdown();
+    checkForLocalDraft(jobId, state.data);
     if(!state.jobName){
       showModal({
         title: 'Name this job', sub: 'Helps you find it later in the Browse list.',
@@ -902,6 +962,37 @@ async function openJobById(jobId){
 }
 
 function genId(){ return Math.random().toString(36).slice(2, 10); }
+
+// Offers to restore unsaved local work if it differs from what the server
+// just gave us — protects against a dropped connection, closed tab, or
+// crash between edits and hitting Save.
+function checkForLocalDraft(jobId, serverData){
+  let draft;
+  try{ draft = JSON.parse(localStorage.getItem(`ppc_draft_${jobId}`)); }catch(err){ return; }
+  if(!draft || !draft.data){ return; }
+  if(JSON.stringify(draft.data) === JSON.stringify(serverData)){
+    clearLocalDraft(jobId); // already matches, nothing to offer
+    return;
+  }
+  const when = new Date(draft.savedAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  showConfirmModal({
+    title: 'Unsaved work found',
+    sub: `This device has local changes from ${when} for this job that were never saved to SharePoint. Restore them?`,
+    confirmLabel: 'Restore', cancelLabel: 'Discard',
+    onConfirm: () => {
+      state.data = draft.data;
+      state.jobName = draft.data.jobName || state.jobName;
+      state.activeSheetIndex = 0;
+      state.selectedMarkupId = null;
+      migrateOldMarkupData(state.data);
+      updateJobNameChip();
+      renderSheetTabs();
+      renderActiveSheet();
+      markDirty();
+    },
+    onCancel: () => { clearLocalDraft(jobId); }
+  });
+}
 
 // Demo Line used to store a single p0/p1 pair before it became a polyline.
 // Any job saved before that change still has old-format hatchline markups on
@@ -3352,6 +3443,20 @@ function markDirty(){
   state.dirty = true;
   setStatus('dirty', 'Unsaved changes');
   pushUndoSnapshot();
+  saveDraftToLocalStorage();
+}
+let draftSaveTimer = null;
+function saveDraftToLocalStorage(){
+  if(!state.jobId) return;
+  clearTimeout(draftSaveTimer);
+  draftSaveTimer = setTimeout(() => {
+    try{
+      localStorage.setItem(`ppc_draft_${state.jobId}`, JSON.stringify({ data: state.data, savedAt: Date.now(), jobName: state.jobName }));
+    }catch(err){ console.error('Local draft save failed', err); }
+  }, 400);
+}
+function clearLocalDraft(jobId){
+  try{ localStorage.removeItem(`ppc_draft_${jobId}`); }catch(err){}
 }
 // Checkpoint-style undo: every markDirty() call snapshots the sheet's
 // current (post-mutation) markups, keeping only the last 5 per sheet.
@@ -3396,6 +3501,41 @@ function setStatus(kind, text){
 }
 $('#saveBtn').addEventListener('click', saveJob);
 
+// Merges local changes with the server's latest version at the individual
+// markup level, so a save conflict never means discarding work. My current
+// local markups always win (covers my edits/additions/unchanged items); an
+// item I deleted stays deleted (it's absent from my local array AND was
+// present in the load-time baseline, so it's never re-added); anything the
+// server has that I never had is someone else's addition, and gets kept.
+function mergeSheetsData(localSheets, serverSheets, originalSnapshot){
+  const originalSheetIds = new Set((originalSnapshot || []).map(s => s.id));
+  const originalMarkupIdsBySheet = {};
+  (originalSnapshot || []).forEach(s => { originalMarkupIdsBySheet[s.id] = new Set((s.markups || []).map(m => m.id)); });
+  const serverById = {};
+  (serverSheets || []).forEach(s => { serverById[s.id] = s; });
+  const localIds = new Set(localSheets.map(s => s.id));
+
+  const merged = localSheets.map(localSheet => {
+    const serverSheet = serverById[localSheet.id];
+    if(!serverSheet) return localSheet; // a sheet I added — server never had it, keep mine entirely
+    const originalMarkupIds = originalMarkupIdsBySheet[localSheet.id] || new Set();
+    const localMarkupIds = new Set(localSheet.markups.map(m => m.id));
+    const mergedMarkups = localSheet.markups.slice();
+    serverSheet.markups.forEach(serverItem => {
+      if(!localMarkupIds.has(serverItem.id) && !originalMarkupIds.has(serverItem.id)){
+        mergedMarkups.push(serverItem); // someone else added this since I loaded
+      }
+    });
+    return Object.assign({}, localSheet, { markups: mergedMarkups });
+  });
+  (serverSheets || []).forEach(serverSheet => {
+    if(!localIds.has(serverSheet.id) && !originalSheetIds.has(serverSheet.id)){
+      merged.push(serverSheet); // someone else added a whole new sheet
+    }
+  });
+  return merged;
+}
+
 async function saveJob(){
   if(!state.jobId) return;
   setStatus('loading', 'Saving…');
@@ -3403,15 +3543,34 @@ async function saveJob(){
     const result = await AppCore.writeJsonFile(state.fileName, state.data, state.lastModified);
     state.lastModified = result.lastModified;
     state.dirty = false;
+    state.loadedSnapshot = JSON.parse(JSON.stringify(state.data.sheets));
     setStatus('saved', 'All changes saved');
     upsertJobsIndex(state.jobId, state.jobName);
+    clearLocalDraft(state.jobId);
   }catch(e){
     if(e.isConflict){
-      showModal({ title: 'Update conflict', sub: 'This job was updated by someone else since you opened it. Reload the job to see the latest before saving again.', confirmLabel: 'OK', onConfirm: () => {} });
+      setStatus('loading', 'Merging with other changes…');
+      try{
+        const latest = await AppCore.readJsonFile(state.fileName, { jobId: state.jobId, jobName: state.jobName, sheets: [] });
+        state.data.sheets = mergeSheetsData(state.data.sheets, latest.data.sheets, state.loadedSnapshot);
+        const retryResult = await AppCore.writeJsonFile(state.fileName, state.data, latest.lastModified);
+        state.lastModified = retryResult.lastModified;
+        state.loadedSnapshot = JSON.parse(JSON.stringify(state.data.sheets));
+        state.dirty = false;
+        await renderActiveSheet();
+        renderNoteList();
+        setStatus('saved', 'All changes saved (merged with other changes)');
+        upsertJobsIndex(state.jobId, state.jobName);
+        clearLocalDraft(state.jobId);
+      }catch(mergeErr){
+        console.error(mergeErr);
+        showModal({ title: 'Could not save', sub: mergeErr.message || 'Please try saving again.', confirmLabel: 'OK', onConfirm: () => {} });
+        setStatus('dirty', 'Save failed — changes not saved');
+      }
     } else {
       showModal({ title: 'Save failed', sub: e.message || 'Unknown error', confirmLabel: 'OK', onConfirm: () => {} });
+      setStatus('dirty', 'Save failed — changes not saved');
     }
-    setStatus('dirty', 'Save failed — changes not saved');
   }
 }
 
@@ -3435,6 +3594,14 @@ document.addEventListener('keydown', (e) => {
   renderNoteList();
   clearMarkupActionButtons();
 });
+
+// Periodic silent auto-save — every 2 minutes, if there's unsaved work,
+// save it automatically so forgetting to hit Save stops being a real risk.
+setInterval(() => {
+  if(state.jobId && state.dirty && $('#modalRoot').innerHTML.trim() === ''){
+    saveJob();
+  }
+}, 120000);
 
 window.addEventListener('beforeunload', (e) => {
   if(state.dirty){ e.preventDefault(); e.returnValue = ''; }
