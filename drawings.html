@@ -647,6 +647,52 @@ function showEquipmentModal({ typeValue = '', numberValue = '', onConfirm, onCan
   });
 }
 
+// Feet/Inches formatting shared by scale calibration — matches how a tape
+// measure actually reads, rather than requiring decimal feet math.
+function formatFeetInches(decimalFeet){
+  const totalInches = Math.round(decimalFeet * 12);
+  const feet = Math.floor(totalInches / 12);
+  const inches = totalInches % 12;
+  return inches === 0 ? `${feet}'` : `${feet}'-${inches}"`;
+}
+function showFeetInchesModal({ title, sub, feetValue = '', inchesValue = '', confirmLabel = 'Set', onConfirm, onCancel }){
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  card.innerHTML = `
+    <div class="disp">${escapeHtml(title)}</div>
+    ${sub ? `<div class="modal-sub">${escapeHtml(sub)}</div>` : ''}
+    <label class="modal-field-label">Feet</label>
+    <input type="number" inputmode="decimal" id="ftInput" placeholder="e.g. 12">
+    <label class="modal-field-label">Inches</label>
+    <input type="number" inputmode="decimal" id="inInput" placeholder="e.g. 6">
+    <div class="modal-row">
+      <button type="button" class="cancel">Cancel</button>
+      <button type="button" class="save">${escapeHtml(confirmLabel)}</button>
+    </div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+  const ftInput = card.querySelector('#ftInput');
+  const inInput = card.querySelector('#inInput');
+  ftInput.value = feetValue;
+  inInput.value = inchesValue;
+  ftInput.focus();
+  let fiConfirmed = false;
+  function fiClose(){ root.innerHTML = ''; if(!fiConfirmed && onCancel) onCancel(); }
+  card.querySelector('.cancel').addEventListener('click', fiClose);
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) fiClose(); });
+  card.querySelector('.save').addEventListener('click', () => {
+    const feet = parseFloat(ftInput.value) || 0;
+    const inches = parseFloat(inInput.value) || 0;
+    fiConfirmed = true;
+    fiClose();
+    if(onConfirm) onConfirm(feet, inches);
+  });
+}
+
 function escapeHtml(s){
   const d = document.createElement('div');
   d.textContent = s == null ? '' : String(s);
@@ -2143,7 +2189,7 @@ function suggestDimensionLength(pixelDist){
   const cal = sheet && sheet.scaleCalibration;
   if(!cal || !cal.pixelDist) return '';
   const real = (pixelDist / cal.pixelDist) * cal.realLength;
-  return `${real.toFixed(1)} ${cal.unit || 'ft'}`;
+  return formatFeetInches(real);
 }
 
 function eraseNear(p){
@@ -2203,12 +2249,15 @@ function showMarkupActionButtons(markupId){
     calBtn.textContent = 'Set as scale ref';
     calBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const guess = (m.text.match(/[\d.]+/) || [''])[0];
-      showModal({
-        title: 'Set scale reference', sub: 'Real-world length this dimension represents, in decimal feet.',
-        value: guess, placeholder: 'e.g. 12.5', confirmLabel: 'Set',
-        onConfirm: (val) => {
-          const realLength = parseFloat(val);
+      const ftMatch = m.text.match(/(\d+)\s*'[\s-]*(\d+)?/);
+      const plainMatch = m.text.match(/[\d.]+/);
+      const guessFeet = ftMatch ? ftMatch[1] : (plainMatch ? plainMatch[0] : '');
+      const guessInches = ftMatch && ftMatch[2] ? ftMatch[2] : '';
+      showFeetInchesModal({
+        title: 'Set scale reference', sub: 'Real-world length this dimension represents.',
+        feetValue: guessFeet, inchesValue: guessInches, confirmLabel: 'Set',
+        onConfirm: (feet, inches) => {
+          const realLength = feet + inches / 12;
           if(!realLength || realLength <= 0) return;
           const pixelDist = Math.hypot(m.p1.x - m.p0.x, m.p1.y - m.p0.y);
           sheet.scaleCalibration = { pixelDist, realLength, unit: 'ft' };
