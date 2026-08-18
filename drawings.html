@@ -1938,7 +1938,7 @@ function onPointerDown(e){
   } else if(state.tool === 'symbol'){
     placeSymbolMarker(p);
   } else if(state.tool === 'airOutletTag'){
-    placeAirOutletTag(p);
+    handleAirOutletTagTap(p);
   } else if(state.tool === 'erase'){
     eraseNear(p);
   }
@@ -2020,6 +2020,11 @@ function onPointerMove(e){
   } else if(state.tool === 'whiteoutFreeform' && state.multiPoints){
     drawAllMarkups();
     drawWhiteoutFreeformPreview(state.multiPoints.concat([p]));
+  }
+  // Ghost air outlet tag follows pointer in placement mode (unless frozen at pending anchor)
+  if(state.tool === 'airOutletTag' && state.airOutletRunItem && !state.airOutletPendingAnchor){
+    state.ghostAirOutletPos = p;
+    drawAllMarkups();
   }
 }
 
@@ -2199,10 +2204,13 @@ function onPointerUp(e){
 function showRunDoneBtn(){ $('#runDoneBtn').classList.remove('hidden'); positionRunDoneBtn(); }
 function hideRunDoneBtn(){
   $('#runDoneBtn').classList.add('hidden');
-  // If we were in an airOutletTag placement run, end it
+  // If we were in an airOutletTag placement run, end it and clear all ghost state
   if(state.airOutletRunItem){
+    clearAirOutletPending();
+    state.ghostAirOutletPos = null;
     state.airOutletRunItem = null;
     clearMarkupActionButtons();
+    drawAllMarkups();
   }
 }
 function finishMultiline(){
@@ -2378,26 +2386,55 @@ function placeSymbolMarker(anchor){
   switchToSelectAndSelect(markup.id);
 }
 
-// Place an Air Outlet Tag on the canvas at the given point.
-// If airOutletRunItem is set we're in rapid-fire placement for a known item;
-// otherwise we ask the user to pick an item from the takeoff list first.
-function placeAirOutletTag(anchor){
-  if(!state.airOutletRunItem){
-    // No active run — open the takeoff panel and start an add flow
-    const sheet = activeSheet();
-    const items = state.data.airTerminalTakeoff;
-    const allItems = [...(items.supply||[]).map(li=>({...li,cat:'supply'})),
-                     ...(items.return||[]).map(li=>({...li,cat:'return'})),
-                     ...(items.exhaust||[]).map(li=>({...li,cat:'exhaust'}))];
-    if(allItems.length === 0){
-      showModal({ title: 'No outlet items yet', sub: 'Add items to the Takeoff list first, then use "Place tag" to place them on the drawing.', confirmLabel: 'OK', onConfirm: () => {} });
-      switchToTool('select');
-      return;
-    }
-    // Prompt user to pick from the takeoff list
-    showAirOutletTagPickerModal();
+// Called when the airOutletTag tool is tapped with NO active run item —
+// opens the picker so the user can choose which item to place.
+function placeAirOutletTag(){
+  const items = state.data.airTerminalTakeoff;
+  const allItems = [...(items.supply||[]).map(li=>({...li,cat:'supply'})),
+                   ...(items.return||[]).map(li=>({...li,cat:'return'})),
+                   ...(items.exhaust||[]).map(li=>({...li,cat:'exhaust'}))];
+  if(allItems.length === 0){
+    showModal({ title: 'No outlet items yet', sub: 'Add items to the Takeoff list first, then use "Place tag" to place them on the drawing.', confirmLabel: 'OK', onConfirm: () => {} });
+    switchToTool('select');
     return;
   }
+  showAirOutletTagPickerModal();
+}
+
+// Tap handler for the airOutletTag tool. Implements two-step ghost placement:
+// first tap freezes the ghost, second tap within 35px (or ✓ button) confirms.
+function handleAirOutletTagTap(p){
+  if(!state.airOutletRunItem){
+    placeAirOutletTag();
+    return;
+  }
+  if(state.airOutletPendingAnchor){
+    const dist = Math.hypot(p.x - state.airOutletPendingAnchor.x, p.y - state.airOutletPendingAnchor.y);
+    if(dist <= 35){
+      confirmAirOutletPlacement();
+    } else {
+      // Far tap: re-aim — move ghost to the new position
+      clearAirOutletPending();
+      state.airOutletPendingAnchor = p;
+      state.ghostAirOutletPos = p;
+      startAirOutletPendingTimer();
+      showAirOutletConfirmBar();
+      drawAllMarkups();
+    }
+  } else {
+    // First tap — freeze ghost here and wait for confirm
+    state.airOutletPendingAnchor = p;
+    state.ghostAirOutletPos = p;
+    startAirOutletPendingTimer();
+    showAirOutletConfirmBar();
+    drawAllMarkups();
+  }
+}
+
+function confirmAirOutletPlacement(){
+  const anchor = state.airOutletPendingAnchor;
+  if(!anchor || !state.airOutletRunItem) return;
+  clearAirOutletPending();
   const run = state.airOutletRunItem;
   const cat = run.category;
   const color = AIR_OUTLET_COLORS[cat] || '#555';
@@ -2414,11 +2451,98 @@ function placeAirOutletTag(anchor){
   renderNoteList();
   renderTakeoffList();
   drawAllMarkups();
-  // Show Done button to exit placement run
-  showRunDoneBtn();
-  // Update action bar to show "placing X" hint
+  // Restore placement hint in action bar
   const bar = $('#actionBarDynamic');
-  bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(run.description)}</strong> — tap to add more, or click Done</span>`;
+  bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(run.tagLabel || run.description || '')}</strong> — tap to aim, tap again to confirm</span>`;
+}
+
+function clearAirOutletPending(){
+  if(state.airOutletPendingTimer){ clearTimeout(state.airOutletPendingTimer); state.airOutletPendingTimer = null; }
+  state.airOutletPendingAnchor = null;
+}
+
+function startAirOutletPendingTimer(){
+  if(state.airOutletPendingTimer) clearTimeout(state.airOutletPendingTimer);
+  state.airOutletPendingTimer = setTimeout(() => {
+    if(!state.airOutletPendingAnchor) return;
+    clearAirOutletPending();
+    drawAllMarkups();
+    if(state.airOutletRunItem){
+      const run = state.airOutletRunItem;
+      $('#actionBarDynamic').innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(run.tagLabel || run.description || '')}</strong> — tap to aim, tap again to confirm</span>`;
+    }
+  }, 4000);
+}
+
+function showAirOutletConfirmBar(){
+  $('#actionBarDynamic').innerHTML = `
+    <button id="aoConfirmBtn" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;">&#10003; Place here</button>
+    <button id="aoCancelBtn" style="background:none;border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;margin-left:6px;flex-shrink:0;">&#10005; Cancel</button>
+    <span style="font-size:11px;color:var(--muted);margin-left:10px;">Tap near the tag to confirm &bull; auto-cancels in 4s</span>`;
+  document.getElementById('aoConfirmBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    confirmAirOutletPlacement();
+  });
+  document.getElementById('aoCancelBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearAirOutletPending();
+    state.ghostAirOutletPos = null;
+    drawAllMarkups();
+    const run = state.airOutletRunItem;
+    if(run){
+      $('#actionBarDynamic').innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(run.tagLabel || run.description || '')}</strong> — tap to aim, tap again to confirm</span>`;
+    }
+  });
+}
+
+/* Ghost pill preview — drawn semi-transparent on the markup canvas while
+   aiming (ghostAlpha ≈ 0.45) or frozen / pending-confirm (ghostAlpha ≈ 0.75). */
+function drawAirOutletGhost(anchor, isPending){
+  const run = state.airOutletRunItem;
+  if(!run) return;
+  const cat   = run.category;
+  const color = AIR_OUTLET_COLORS[cat] || '#555';
+  const label = `#${run.scheduleNum != null ? run.scheduleNum : '?'} / ${run.tagLabel || run.description || ''}`;
+  const ctx   = mCanvas.getContext('2d');
+  const font  = 'bold 13px Inter, sans-serif';
+  ctx.save();
+  ctx.font = font;
+  const textW  = ctx.measureText(label).width;
+  const pillH  = 22, pillR = 11, dotR = 5, dotGap = 8, paddingX = 10;
+  const pillW  = paddingX + dotR * 2 + dotGap + textW + paddingX;
+  const x = anchor.x - pillW / 2;
+  const y = anchor.y - pillH / 2;
+  ctx.globalAlpha = isPending ? 0.78 : 0.42;
+  // Pill background
+  ctx.fillStyle = '#fff';
+  roundRect(ctx, x, y, pillW, pillH, pillR);
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = isPending ? 2.5 : 2;
+  if(isPending) ctx.setLineDash([5, 4]);
+  roundRect(ctx, x, y, pillW, pillH, pillR);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // Color dot
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x + paddingX + dotR, anchor.y, dotR, 0, Math.PI * 2);
+  ctx.fill();
+  // Label
+  ctx.fillStyle = '#16202C';
+  ctx.font = font;
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, x + paddingX + dotR * 2 + dotGap, anchor.y);
+  if(isPending){
+    // Outer ring to indicate "waiting for confirm"
+    ctx.globalAlpha = 0.55;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(anchor.x, anchor.y, pillH / 2 + 9, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 function showAirOutletTagPickerModal(){
@@ -3176,6 +3300,11 @@ function drawAllMarkups(){
       ctx.strokeRect(x0, y0, w, h);
       ctx.restore();
     }
+  }
+  // Ghost air outlet tag preview (follows cursor or frozen at pending anchor)
+  if(state.tool === 'airOutletTag' && state.airOutletRunItem){
+    const pos = state.airOutletPendingAnchor || state.ghostAirOutletPos;
+    if(pos) drawAirOutletGhost(pos, !!state.airOutletPendingAnchor);
   }
 }
 
@@ -3986,6 +4115,16 @@ function drawAirOutletTag(m){
   ctx.font = font;
   ctx.textBaseline = 'middle';
   ctx.fillText(label, x + paddingX + dotR * 2 + dotGap, anchor.y);
+  // Selection ring
+  if(m.id === state.selectedMarkupId){
+    ctx.strokeStyle = '#3B82F6';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.arc(anchor.x, anchor.y, pillH / 2 + 8, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
   ctx.restore();
 }
 
@@ -4479,9 +4618,11 @@ function wireTakeoffRowEvents(){
         description: li.scheduleTag || li.description || '',
         category: cat,
       };
+      state.ghostAirOutletPos = null;
+      clearAirOutletPending();
       switchToTool('airOutletTag');
       const bar = $('#actionBarDynamic');
-      bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(li.scheduleTag || li.description || '')}</strong> — tap canvas to add, Done to finish</span>`;
+      bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(li.scheduleTag || li.description || '')}</strong> — tap to aim, tap again to confirm</span>`;
       showRunDoneBtn();
     });
   });
