@@ -66,13 +66,14 @@ input,textarea{font-family:inherit;}
 .crew-directory-btn:hover{background:#243A56;}
 .crew-directory-btn .cd-text{max-width:0;opacity:0;overflow:hidden;display:inline-block;transition:max-width 0.2s ease, opacity 0.15s ease, margin-left 0.2s ease;}
 .crew-directory-btn:hover .cd-text{max-width:130px;opacity:1;margin-left:6px;}
-.sheet-tabs{display:flex;align-items:center;gap:4px;overflow-x:auto;flex:1;min-width:0;}
-.sheet-tab{padding:9px 10px 9px 16px;font-size:12.5px;font-weight:600;color:#B9C7DC;border-bottom:2px solid transparent;border:1px solid transparent;border-radius:7px 7px 0 0;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:-1px;}
+.sheet-tabs{display:flex;align-items:center;gap:3px;overflow:hidden;flex:1;min-width:0;}
+.sheet-tab{padding:7px 8px 7px 10px;font-size:12px;font-weight:600;color:#B9C7DC;border:1px solid transparent;border-radius:7px 7px 0 0;cursor:pointer;display:flex;align-items:center;gap:4px;margin-bottom:-1px;flex-shrink:1;min-width:0;max-width:180px;}
 .sheet-tab:hover{border-color:#35496A;color:#fff;}
 .sheet-tab.active{color:#fff;border-color:#35496A;border-bottom-color:var(--orange);background:#1B2A41;}
-.sheet-tab .rename-ic{opacity:0.6;font-size:11px;padding:2px;}
+.sheet-tab .tab-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+.sheet-tab .rename-ic{opacity:0.6;font-size:11px;padding:2px;flex-shrink:0;}
 .sheet-tab .rename-ic:hover{opacity:1;}
-.sheet-tab-add{padding:9px 12px;font-size:16px;color:#9FB0C8;cursor:pointer;}
+.sheet-tab-add{padding:7px 10px;font-size:16px;color:#9FB0C8;cursor:pointer;flex-shrink:0;}
 .sheet-tab-add:hover{color:#fff;}
 
 /* ---- Main layout ---- */
@@ -279,6 +280,7 @@ input,textarea{font-family:inherit;}
 .ao-table .ao-th-place,.ao-table .ao-td-place{width:30px;min-width:30px;padding:4px 6px;text-align:center;}
 .ao-table .ao-th-num,.ao-table .ao-td-num{text-align:center;font-weight:700;}
 .ao-table .ao-th-del,.ao-table .ao-td-del{width:28px;min-width:28px;padding:4px 4px;text-align:center;}
+.ao-table .ao-th-action,.ao-table .ao-td-action{width:26px;min-width:26px;padding:4px 2px;text-align:center;}
 /* Group header rows */
 .ao-group-style td{background:#1c2e46;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:5px 10px;}
 .ao-group-mfr td{background:var(--surface-2);color:var(--navy);font-size:11px;font-weight:700;padding:4px 12px;border-bottom:1px solid var(--line);}
@@ -287,9 +289,11 @@ input,textarea{font-family:inherit;}
 /* Place tag button */
 .ao-place-btn{width:24px;height:24px;border-radius:6px;border:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;padding:0;flex-shrink:0;}
 .ao-place-btn:hover{opacity:0.8;}
-/* Delete button */
-.ao-del-btn{width:22px;height:22px;border-radius:5px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;padding:0;}
+/* Action buttons (edit / dup / del) */
+.ao-del-btn,.ao-edit-btn,.ao-dup-btn{width:22px;height:22px;border-radius:5px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;padding:0;}
 .ao-del-btn:hover{background:#fee2e2;color:#dc2626;}
+.ao-edit-btn:hover{background:#dbeafe;color:#1d4ed8;}
+.ao-dup-btn:hover{background:#d1fae5;color:#065f46;}
 </style>
 </head>
 <body>
@@ -304,7 +308,7 @@ input,textarea{font-family:inherit;}
   <div class="topbar">
     <div class="brand">Drawing Markup<span class="sub">PPC Field Tools</span></div>
     <div class="job-select">
-      <input id="jobIdInput" placeholder="Job number">
+      <input id="jobIdInput" placeholder="JN#">
       <button id="loadJobBtn">Open</button>
       <button class="job-browse-btn" id="browseJobsBtn">Browse ▾</button>
       <span class="job-name-chip hidden" id="jobNameChip"></span>
@@ -2400,6 +2404,8 @@ function placeAirOutletTag(anchor){
   const markup = {
     id: genId(), type: 'airOutletTag',
     catalogId: run.catalogId, lineId: run.lineId,
+    scheduleNum: run.scheduleNum || null,
+    tagLabel: run.tagLabel || run.description || '',
     description: run.description, category: cat,
     color, anchor, note: '', createdAt: Date.now(),
   };
@@ -2898,33 +2904,19 @@ function showMarkupActionButtons(markupId){
     });
     buttonRow.appendChild(hatchBtn);
   }
-  if(m.type === 'airOutletTag'){
-    const editDescBtn = document.createElement('button');
-    editDescBtn.textContent = 'Edit tag';
-    editDescBtn.addEventListener('click', (e) => {
+  if(m.type !== 'airOutletTag'){
+    const dupBtn = document.createElement('button');
+    dupBtn.textContent = 'Duplicate';
+    dupBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      showModal({
-        title: 'Edit Air Outlet Tag', value: m.tagLabel || '', placeholder: 'e.g. CD-3', confirmLabel: 'Save',
-        onConfirm: (val) => {
-          if(!val) return;
-          m.tagLabel = val.toUpperCase();
-          markDirty(); drawAllMarkups(); renderNoteList(); renderTakeoffList();
-        }
-      });
+      const copy = duplicateMarkup(m);
+      sheet.markups.push(copy);
+      markDirty();
+      renderNoteList();
+      switchToSelectAndSelect(copy.id);
     });
-    buttonRow.appendChild(editDescBtn);
+    buttonRow.appendChild(dupBtn);
   }
-  const dupBtn = document.createElement('button');
-  dupBtn.textContent = 'Duplicate';
-  dupBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const copy = duplicateMarkup(m);
-    sheet.markups.push(copy);
-    markDirty();
-    renderNoteList();
-    switchToSelectAndSelect(copy.id);
-  });
-  buttonRow.appendChild(dupBtn);
   const delBtn = document.createElement('button');
   delBtn.className = 'delete-btn';
   delBtn.textContent = 'Delete';
@@ -3961,11 +3953,11 @@ function renderHatchAreaPolygon(ctx, points, color, closed){
   ctx.restore();
 }
 
-/* Air Outlet Tag — pill badge: colored dot + "#ID / Description" */
+/* Air Outlet Tag — pill badge: colored dot + "#scheduleNum / tagLabel" */
 function drawAirOutletTag(m){
   const ctx = mCanvas.getContext('2d');
-  const { anchor, color, description, catalogId } = m;
-  const label = `#${catalogId != null ? catalogId : '?'} / ${description || ''}`;
+  const { anchor, color } = m;
+  const label = `#${m.scheduleNum != null ? m.scheduleNum : '?'} / ${m.tagLabel || m.description || ''}`;
   const font = 'bold 13px Inter, sans-serif';
   ctx.font = font;
   const textW = ctx.measureText(label).width;
@@ -4160,6 +4152,33 @@ function forceUpperCaseInput(input){
   });
 }
 
+// Assigns sequential scheduleNum (1, 2, 3…) to every lineItem across all
+// categories in insertion order (supply first, then return, then exhaust).
+// Also syncs scheduleNum and tagLabel on every matching canvas airOutletTag markup.
+function renumberTakeoffItems(){
+  const takeoff = state.data.airTerminalTakeoff;
+  if(!takeoff) return;
+  let seq = 1;
+  ['supply', 'return', 'exhaust'].forEach(cat => {
+    (takeoff[cat] || []).forEach(li => {
+      li.scheduleNum = seq++;
+    });
+  });
+  // Sync canvas markups on every sheet
+  (state.data.sheets || []).forEach(sheet => {
+    (sheet.markups || []).forEach(m => {
+      if(m.type !== 'airOutletTag') return;
+      const cat = ['supply', 'return', 'exhaust'].find(c =>
+        (takeoff[c] || []).some(li => li.lineId === m.lineId));
+      if(!cat) return;
+      const li = takeoff[cat].find(li => li.lineId === m.lineId);
+      if(!li) return;
+      m.scheduleNum = li.scheduleNum;
+      m.tagLabel    = li.scheduleTag || li.description || '';
+    });
+  });
+}
+
 // Returns how many airOutletTag markups on the CURRENT sheet belong to a given lineId
 function countTagsForLine(lineId){
   const sheet = activeSheet();
@@ -4212,7 +4231,7 @@ function renderTakeoffList(){
     groups[style][mfr][row.cat].push(row);
   });
 
-  const NCOLS = 14; // Place | ID | Sched Tag | Mfr | Model | SizeA | SizeB | Frame | Color | Sheet Qty | Loc | Notes | Total | Del
+  const NCOLS = 17; // Place | # | Sched Tag | Mfr | Model | Neck | Face | Frame | Color | Sheet Qty | Loc | Notes | Vendor | Total | Edit | Dup | Del
   const table = document.createElement('table');
   table.className = 'ao-table';
 
@@ -4221,7 +4240,7 @@ function renderTakeoffList(){
   const hdr = thead.insertRow();
   [
     { label:'',           cls:'ao-th-place' },
-    { label:'ID',         cls:'ao-th-id' },
+    { label:'#',          cls:'ao-th-id' },
     { label:'Schedule Tag' },
     { label:'Manufacturer' },
     { label:'Model' },
@@ -4232,7 +4251,10 @@ function renderTakeoffList(){
     { label:'Sheet Qty',  cls:'ao-th-num' },
     { label:'Location' },
     { label:'Notes' },
+    { label:'Vendor' },
     { label:'Total Qty',  cls:'ao-th-num' },
+    { label:'',           cls:'ao-th-action' },
+    { label:'',           cls:'ao-th-action' },
     { label:'',           cls:'ao-th-del' },
   ].forEach(h => {
     const th = document.createElement('th');
@@ -4313,28 +4335,55 @@ function renderTakeoffList(){
           placeBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
           tdPlace.appendChild(placeBtn);
 
-          // Cols 1–12: data
+          // Get vendor from manufacturer directory
+          const mfrEntry = (state.manufacturerDirectory.manufacturers || []).find(m => m.name === c.manufacturer);
+          const vendor = (mfrEntry && mfrEntry.vendor) || '';
+
+          // Cols 1–13: data (#, Sched Tag, Mfr, Model, Neck, Face, Frame, Color, Sheet Qty, Loc, Notes, Vendor, Total)
           [
-            c.id != null ? String(c.id) : '',
-            li.description || '',
+            li.scheduleNum != null ? String(li.scheduleNum) : '',
+            li.scheduleTag || li.description || '',
             c.manufacturer || '',
             c.model || '',
-            sizeA,
-            sizeB,
-            c.frameType || '',
-            c.color || '',
+            li.neckSize || sizeA,
+            li.faceSize || sizeB,
+            li.frameType || '',
+            li.color || '',
             sheetQty > 0 ? String(sheetQty) : '—',
             li.location || '',
             li.notes || '',
+            vendor,
             totalQty > 0 ? String(totalQty) : '—',
           ].forEach((val, i) => {
             const td = tr.insertCell();
             td.textContent = val;
-            if(i === 8) { td.className = 'ao-td-num'; if(sheetQty > 0) td.style.color = color; }
-            if(i === 11){ td.className = 'ao-td-num'; if(totalQty > 0) td.style.color = color; }
+            if(i === 8)  { td.className = 'ao-td-num'; if(sheetQty > 0) td.style.color = color; }
+            if(i === 12) { td.className = 'ao-td-num'; if(totalQty > 0) td.style.color = color; }
           });
 
-          // Col 13: delete button
+          // Col 14: Edit button
+          const tdEdit = tr.insertCell();
+          tdEdit.className = 'ao-td-action';
+          const editBtn = document.createElement('button');
+          editBtn.className = 'ao-edit-btn takeoff-row-edit';
+          editBtn.dataset.lineId = li.lineId;
+          editBtn.dataset.cat = rowCat;
+          editBtn.title = 'Edit row';
+          editBtn.textContent = '✎';
+          tdEdit.appendChild(editBtn);
+
+          // Col 15: Duplicate button
+          const tdDup = tr.insertCell();
+          tdDup.className = 'ao-td-action';
+          const dupBtn = document.createElement('button');
+          dupBtn.className = 'ao-dup-btn takeoff-row-dup';
+          dupBtn.dataset.lineId = li.lineId;
+          dupBtn.dataset.cat = rowCat;
+          dupBtn.title = 'Duplicate row';
+          dupBtn.textContent = '⧉';
+          tdDup.appendChild(dupBtn);
+
+          // Col 16: delete button
           const tdDel = tr.insertCell();
           tdDel.className = 'ao-td-del';
           const delBtn = document.createElement('button');
@@ -4357,19 +4406,61 @@ function renderTakeoffList(){
 function renderTakeoffTable(){ return ''; } // stub — no longer called directly
 
 function wireTakeoffRowEvents(){
+  // Delete row: remove lineItem + all its canvas tags across all sheets, then renumber
   document.querySelectorAll('.takeoff-row-del').forEach(btn => {
     btn.addEventListener('click', () => {
       const lineId = btn.dataset.lineId;
       const cat    = btn.dataset.cat;
       if(state.data.airTerminalTakeoff[cat]){
         state.data.airTerminalTakeoff[cat] = state.data.airTerminalTakeoff[cat].filter(x => x.lineId !== lineId);
+        // Remove all canvas airOutletTag markups with this lineId across every sheet
+        (state.data.sheets || []).forEach(sheet => {
+          sheet.markups = (sheet.markups || []).filter(m => !(m.type === 'airOutletTag' && m.lineId === lineId));
+        });
+        renumberTakeoffItems();
         markDirty();
-        renderTakeoffList();
         drawAllMarkups();
         renderNoteList();
+        renderTakeoffList();
       }
     });
   });
+
+  // Edit row: open pre-filled job details modal
+  document.querySelectorAll('.takeoff-row-edit').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const lineId = btn.dataset.lineId;
+      const cat    = btn.dataset.cat;
+      const li     = (state.data.airTerminalTakeoff[cat] || []).find(x => x.lineId === lineId);
+      if(!li) return;
+      await ensureCatalogLoaded();
+      const catalogItem = state.airTerminalCatalog.items.find(c => c.id === li.catalogId) || { id: li.catalogId, manufacturer: '', model: '' };
+      showTakeoffJobDetailsModal(catalogItem, li, cat);
+    });
+  });
+
+  // Duplicate row: new lineId + next scheduleNum, open pre-filled modal
+  document.querySelectorAll('.takeoff-row-dup').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const lineId = btn.dataset.lineId;
+      const cat    = btn.dataset.cat;
+      const items  = state.data.airTerminalTakeoff[cat] || [];
+      const src    = items.find(x => x.lineId === lineId);
+      if(!src) return;
+      await ensureCatalogLoaded();
+      const catalogItem = state.airTerminalCatalog.items.find(c => c.id === src.catalogId) || { id: src.catalogId, manufacturer: '', model: '' };
+      // Create a new lineItem as a copy
+      const newLi = Object.assign({}, src, { lineId: genId() });
+      state.data.airTerminalTakeoff[cat].push(newLi);
+      renumberTakeoffItems();
+      markDirty();
+      renderTakeoffList();
+      // Open modal to let user tweak the duplicate before confirming
+      showTakeoffJobDetailsModal(catalogItem, newLi, cat);
+    });
+  });
+
+  // Place tag button
   document.querySelectorAll('.takeoff-place-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const lineId = btn.dataset.lineId;
@@ -4381,10 +4472,16 @@ function wireTakeoffRowEvents(){
         showModal({ title:'No drawing open', sub:'Open a sheet with a floor plan first.', confirmLabel:'OK', onConfirm:()=>{} });
         return;
       }
-      state.airOutletRunItem = { lineId: li.lineId, catalogId: li.catalogId, description: li.description, category: cat };
+      state.airOutletRunItem = {
+        lineId: li.lineId, catalogId: li.catalogId,
+        scheduleNum: li.scheduleNum,
+        tagLabel: li.scheduleTag || li.description || '',
+        description: li.scheduleTag || li.description || '',
+        category: cat,
+      };
       switchToTool('airOutletTag');
       const bar = $('#actionBarDynamic');
-      bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(li.description || '')}</strong> — tap canvas to add, Done to finish</span>`;
+      bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(li.scheduleTag || li.description || '')}</strong> — tap canvas to add, Done to finish</span>`;
       showRunDoneBtn();
     });
   });
@@ -4604,7 +4701,7 @@ function showTakeoffSearchModal(){
     resultsDiv.innerHTML = matches.length ? matches.map(c => `
       <div class="takeoff-search-result" data-id="${c.id}" style="padding:8px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;cursor:pointer;">
         <strong>#${c.id} ${escapeHtml(c.manufacturer || '')} ${escapeHtml(c.model || '')}</strong><br>
-        <span style="font-size:11px;color:var(--muted);">${c.terminalStyle === 'LINEAR' ? `${escapeHtml(c.length || '')} L, ${escapeHtml(c.numSlots || '')} slots` : `${escapeHtml(c.neckSize || '')} neck, ${escapeHtml(c.faceSize || '')} face`} \u00b7 ${escapeHtml(c.frameType || '')} \u00b7 ${escapeHtml(c.color || '')}</span>
+        <span style="font-size:11px;color:var(--muted);">${c.terminalStyle === 'LINEAR' ? `Linear \u00b7 ${escapeHtml(c.length || '')} ${escapeHtml(c.numSlots ? c.numSlots + ' slots' : '')}` : 'Standard'}</span>
       </div>`).join('') : '<div style="color:var(--muted);font-size:13px;padding:8px;">No matches yet \u2014 add a new catalog item below.</div>';
     resultsDiv.querySelectorAll('.takeoff-search-result').forEach(el => {
       el.addEventListener('click', () => {
@@ -4650,12 +4747,6 @@ function showTakeoffNewCatalogItemModal(){
       <label style="display:flex;align-items:center;gap:5px;font-size:13px;"><input type="radio" name="tStyle" value="STANDARD" checked> Standard</label>
       <label style="display:flex;align-items:center;gap:5px;font-size:13px;"><input type="radio" name="tStyle" value="LINEAR"> Linear</label>
     </div>
-    <div id="tStandardFields">
-      <label class="modal-field-label">Neck Size</label>
-      <input type="text" id="tNeck">
-      <label class="modal-field-label">Face Size</label>
-      <input type="text" id="tFace">
-    </div>
     <div id="tLinearFields" style="display:none;">
       <label class="modal-field-label">Length</label>
       <input type="text" id="tLength">
@@ -4666,10 +4757,6 @@ function showTakeoffNewCatalogItemModal(){
       <label class="modal-field-label">Plenum</label>
       <input type="text" id="tPlenum">
     </div>
-    <label class="modal-field-label">Frame Type</label>
-    <input type="text" id="tFrame">
-    <label class="modal-field-label">Color</label>
-    <input type="text" id="tColor">
     <div class="modal-row">
       <button type="button" class="cancel">Back</button>
       <button type="button" class="save">Save &amp; continue</button>
@@ -4684,7 +4771,6 @@ function showTakeoffNewCatalogItemModal(){
   card.querySelectorAll('input[name=tStyle]').forEach(r => {
     r.addEventListener('change', () => {
       const isLinear = card.querySelector('input[name=tStyle]:checked').value === 'LINEAR';
-      card.querySelector('#tStandardFields').style.display = isLinear ? 'none' : 'block';
       card.querySelector('#tLinearFields').style.display = isLinear ? 'block' : 'none';
     });
   });
@@ -4697,18 +4783,12 @@ function showTakeoffNewCatalogItemModal(){
     if(!mfr || !model) return;
     const vendor = card.querySelector('#tVendor').value.trim().toUpperCase();
     const style = card.querySelector('input[name=tStyle]:checked').value;
-    const item = {
-      manufacturer: mfr, model, frameType: card.querySelector('#tFrame').value.trim().toUpperCase(),
-      color: card.querySelector('#tColor').value.trim().toUpperCase(), terminalStyle: style,
-    };
+    const item = { manufacturer: mfr, model, terminalStyle: style };
     if(style === 'LINEAR'){
-      item.length = card.querySelector('#tLength').value.trim().toUpperCase();
+      item.length   = card.querySelector('#tLength').value.trim().toUpperCase();
       item.numSlots = card.querySelector('#tSlots').value.trim().toUpperCase();
       item.slotWidth = card.querySelector('#tSlotWidth').value.trim().toUpperCase();
-      item.plenum = card.querySelector('#tPlenum').value.trim().toUpperCase();
-    } else {
-      item.neckSize = card.querySelector('#tNeck').value.trim().toUpperCase();
-      item.faceSize = card.querySelector('#tFace').value.trim().toUpperCase();
+      item.plenum   = card.querySelector('#tPlenum').value.trim().toUpperCase();
     }
     close();
     setStatus('loading', 'Saving to shared catalog\u2026');
@@ -4725,11 +4805,14 @@ function showTakeoffNewCatalogItemModal(){
   });
 }
 
-// Phase 3: job-specific details (Description/Quantity/Location/Notes) —
-// this is what actually lands in the job's takeoff list, never fed back
-// into the shared catalog.
-function showTakeoffJobDetailsModal(catalogItem){
-  const cat = state.takeoffCategory || 'supply';
+// Phase 3: job-specific details — Schedule Tag, spec fields (Neck/Face/Frame/Color),
+// Location, Notes. Pass existingLineItem + existingCat to open in edit mode.
+// onDoneCallback is optional; called after save (used by duplicate flow).
+function showTakeoffJobDetailsModal(catalogItem, existingLineItem, existingCat, onDoneCallback){
+  const isEdit   = !!existingLineItem;
+  const li       = existingLineItem || {};
+  const presets  = (state.airTerminalCatalog && state.airTerminalCatalog.presets) || {};
+  const cat      = isEdit ? existingCat : (state.takeoffCategory || 'supply');
   const catColor = AIR_OUTLET_COLORS[cat] || '#1A56DB';
   const catLabel = cat.charAt(0).toUpperCase() + cat.slice(1);
   const root = $('#modalRoot');
@@ -4744,37 +4827,98 @@ function showTakeoffJobDetailsModal(catalogItem){
       ${escapeHtml(catalogItem.manufacturer || '')} ${escapeHtml(catalogItem.model || '')}
     </div>
     <div class="modal-sub">${catLabel} \u2014 Catalog #${catalogItem.id}</div>
-    <label class="modal-field-label">Schedule Tag / Description</label>
-    <input type="text" id="tDesc" placeholder="e.g. CD-3">
+    <label class="modal-field-label">Schedule Tag</label>
+    <input type="text" id="tDesc" placeholder="e.g. CD-3" value="${isEdit ? escapeAttr(li.scheduleTag || li.description || '') : ''}">
+    <label class="modal-field-label">Neck Size</label>
+    <input type="text" id="tNeck" list="dlNeck" placeholder="e.g. 12X6" value="${isEdit ? escapeAttr(li.neckSize || '') : ''}">
+    <datalist id="dlNeck">${(presets.neckSize||[]).map(v=>`<option value="${escapeAttr(v)}">`).join('')}</datalist>
+    <label class="modal-field-label">Face Size</label>
+    <input type="text" id="tFace" list="dlFace" placeholder="e.g. 24X12" value="${isEdit ? escapeAttr(li.faceSize || '') : ''}">
+    <datalist id="dlFace">${(presets.faceSize||[]).map(v=>`<option value="${escapeAttr(v)}">`).join('')}</datalist>
+    <label class="modal-field-label">Frame Type</label>
+    <input type="text" id="tFrame" list="dlFrame" placeholder="e.g. T-BAR" value="${isEdit ? escapeAttr(li.frameType || '') : ''}">
+    <datalist id="dlFrame">${(presets.frameType||[]).map(v=>`<option value="${escapeAttr(v)}">`).join('')}</datalist>
+    <label class="modal-field-label">Color</label>
+    <input type="text" id="tColor" list="dlColor" placeholder="e.g. WHITE" value="${isEdit ? escapeAttr(li.color || '') : ''}">
+    <datalist id="dlColor">${(presets.color||[]).map(v=>`<option value="${escapeAttr(v)}">`).join('')}</datalist>
     <label class="modal-field-label">Location / Area</label>
-    <input type="text" id="tLoc">
+    <input type="text" id="tLoc" value="${isEdit ? escapeAttr(li.location || '') : ''}">
     <label class="modal-field-label">Notes</label>
-    <input type="text" id="tNotes">
+    <input type="text" id="tNotes" value="${isEdit ? escapeAttr(li.notes || '') : ''}">
     <p style="font-size:11px;color:#888;margin:4px 0 8px;">Qty is tracked automatically from tags placed on the drawing.</p>
     <div class="modal-row">
       <button type="button" class="cancel">Cancel</button>
-      <button type="button" class="save">Add to list</button>
+      <button type="button" class="save">${isEdit ? 'Save changes' : 'Add to list'}</button>
     </div>`;
   backdrop.appendChild(card);
   root.appendChild(backdrop);
-  forceUpperCaseInput(card.querySelector('#tDesc'));
-  forceUpperCaseInput(card.querySelector('#tLoc'));
-  forceUpperCaseInput(card.querySelector('#tNotes'));
+  card.querySelectorAll('input[type=text]').forEach(forceUpperCaseInput);
   card.querySelector('#tDesc').focus();
   function close(){ root.innerHTML = ''; }
   card.querySelector('.cancel').addEventListener('click', close);
   backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
-  card.querySelector('.save').addEventListener('click', () => {
-    const desc = card.querySelector('#tDesc').value.trim().toUpperCase();
-    const loc = card.querySelector('#tLoc').value.trim().toUpperCase();
-    const notes = card.querySelector('#tNotes').value.trim().toUpperCase();
+  card.querySelector('.save').addEventListener('click', async () => {
+    const scheduleTag = card.querySelector('#tDesc').value.trim().toUpperCase();
+    const neckSize    = card.querySelector('#tNeck').value.trim().toUpperCase();
+    const faceSize    = card.querySelector('#tFace').value.trim().toUpperCase();
+    const frameType   = card.querySelector('#tFrame').value.trim().toUpperCase();
+    const color       = card.querySelector('#tColor').value.trim().toUpperCase();
+    const location    = card.querySelector('#tLoc').value.trim().toUpperCase();
+    const notes       = card.querySelector('#tNotes').value.trim().toUpperCase();
     close();
-    const lineItem = { lineId: genId(), catalogId: catalogItem.id, description: desc, location: loc, notes };
-    if(!state.data.airTerminalTakeoff) state.data.airTerminalTakeoff = { supply: [], return: [], exhaust: [] };
-    state.data.airTerminalTakeoff[cat].push(lineItem);
+    if(isEdit){
+      existingLineItem.scheduleTag = scheduleTag;
+      existingLineItem.description = scheduleTag;
+      existingLineItem.neckSize    = neckSize;
+      existingLineItem.faceSize    = faceSize;
+      existingLineItem.frameType   = frameType;
+      existingLineItem.color       = color;
+      existingLineItem.location    = location;
+      existingLineItem.notes       = notes;
+      // Sync tagLabel on all matching canvas markups
+      (state.data.sheets || []).forEach(sheet => {
+        (sheet.markups || []).forEach(m => {
+          if(m.type === 'airOutletTag' && m.lineId === existingLineItem.lineId){
+            m.tagLabel = scheduleTag;
+          }
+        });
+      });
+      if(onDoneCallback) onDoneCallback();
+    } else {
+      const lineItem = {
+        lineId: genId(), catalogId: catalogItem.id,
+        scheduleTag, description: scheduleTag,
+        neckSize, faceSize, frameType, color, location, notes,
+      };
+      if(!state.data.airTerminalTakeoff) state.data.airTerminalTakeoff = { supply: [], return: [], exhaust: [] };
+      state.data.airTerminalTakeoff[cat].push(lineItem);
+      if(onDoneCallback) onDoneCallback();
+    }
+    renumberTakeoffItems();
     markDirty();
+    drawAllMarkups();
     renderTakeoffList();
+    // Async: save new preset values back to the shared catalog
+    saveTakeoffPresets({ neckSize, faceSize, frameType, color });
   });
+}
+
+// Saves newly-entered spec values back to air-terminal-catalog.json under a
+// "presets" key — these feed the <datalist> autocomplete on future adds/edits.
+async function saveTakeoffPresets(newVals){
+  try{
+    const latest = await AppCore.readJsonFile('air-terminal-catalog.json', { items: [], nextId: 1 });
+    const p = latest.data.presets || { neckSize: [], faceSize: [], frameType: [], color: [] };
+    let changed = false;
+    ['neckSize', 'faceSize', 'frameType', 'color'].forEach(key => {
+      const v = newVals[key];
+      if(v && !p[key].includes(v)){ p[key].push(v); changed = true; }
+    });
+    if(!changed) return;
+    latest.data.presets = p;
+    await AppCore.writeJsonFile('air-terminal-catalog.json', latest.data, latest.lastModified);
+    if(state.airTerminalCatalog) state.airTerminalCatalog.presets = p;
+  }catch(err){ console.error('Could not save takeoff presets', err); }
 }
 
 // Checkpoint-style undo: every markDirty() call snapshots the sheet's
@@ -4948,6 +5092,7 @@ document.addEventListener('keydown', (e) => {
   markDirty();
   drawAllMarkups();
   renderNoteList();
+  if(target.type === 'airOutletTag') renderTakeoffList();
   clearMarkupActionButtons();
 });
 
