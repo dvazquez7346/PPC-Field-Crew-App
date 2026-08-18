@@ -56,7 +56,7 @@ input,textarea{font-family:inherit;}
 .account-chip{color:#CBD8EA;font-size:12px;}
 
 /* ---- Sheet tabs ---- */
-.tabs-row{display:flex;align-items:center;gap:6px;background:var(--navy-2);padding:0 8px;overflow-x:auto;}
+.tabs-row{display:flex;align-items:center;gap:6px;background:var(--navy-2);padding:0 8px;overflow:visible;}
 /* Universal "ghost" button style for all tabs-row action buttons */
 .tabs-row-btn{color:#CBD8EA;font-weight:600;font-size:13px;border:1px solid #35496A;background:transparent;padding:6px 12px;border-radius:8px;cursor:pointer;flex-shrink:0;white-space:nowrap;}
 .tabs-row-btn:hover{background:#243A56;}
@@ -66,7 +66,7 @@ input,textarea{font-family:inherit;}
 .crew-directory-btn:hover{background:#243A56;}
 .crew-directory-btn .cd-text{max-width:0;opacity:0;overflow:hidden;display:inline-block;transition:max-width 0.2s ease, opacity 0.15s ease, margin-left 0.2s ease;}
 .crew-directory-btn:hover .cd-text{max-width:130px;opacity:1;margin-left:6px;}
-.sheet-tabs{display:flex;align-items:center;gap:4px;overflow-x:auto;flex-shrink:1;}
+.sheet-tabs{display:flex;align-items:center;gap:4px;overflow-x:auto;flex:1;min-width:0;}
 .sheet-tab{padding:9px 10px 9px 16px;font-size:12.5px;font-weight:600;color:#B9C7DC;border-bottom:2px solid transparent;border:1px solid transparent;border-radius:7px 7px 0 0;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:-1px;}
 .sheet-tab:hover{border-color:#35496A;color:#fff;}
 .sheet-tab.active{color:#fff;border-color:#35496A;border-bottom-color:var(--orange);background:#1B2A41;}
@@ -120,7 +120,7 @@ input,textarea{font-family:inherit;}
 .whiteout-lock-btn.unlocked-mode{background:var(--danger);color:#fff;border-color:var(--danger);}
 .whiteout-group{display:flex;flex-direction:column;align-items:center;gap:2px;}
 .whiteout-label{max-width:46px;text-align:center;line-height:1;font-size:7.5px;}
-.whiteout-buttons{display:flex;gap:2px;}
+.whiteout-buttons{display:flex;flex-direction:column;gap:2px;align-items:center;}
 .whiteout-buttons .tool-btn{width:44px;height:44px;}
 .tool-sep{width:32px;height:1px;background:var(--line);margin:6px 0;}
 .tool-label{font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;margin-top:-2px;text-align:center;}
@@ -193,7 +193,7 @@ input,textarea{font-family:inherit;}
 .save-btn:hover{background:var(--navy-2);}
 .save-btn:disabled{opacity:.5;cursor:default;}
 /* Toolbar color/thickness pickers rendered in the action bar (not toolrail) */
-.action-bar-pickers{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.action-bar-pickers{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:32px;}
 .action-bar-pickers .color-dot{width:18px;height:18px;}
 .action-bar-pickers .thickness-dot{width:28px;height:18px;}
 .action-bar-picker-sep{width:1px;height:18px;background:var(--line);margin:0 2px;}
@@ -266,6 +266,30 @@ input,textarea{font-family:inherit;}
   .job-browse-btn{font-size:12px;padding:6px 9px;}
   .account-chip{display:none;}
 }
+/* ── Takeoff panel — table mode ─────────────────────────── */
+.takeoff-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);}
+.takeoff-flow-filter{flex:1;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;background:var(--surface);color:var(--navy);cursor:pointer;}
+.takeoff-export-btn{padding:5px 10px;font-size:11.5px;font-weight:600;border:1px solid var(--line);border-radius:7px;background:transparent;color:var(--navy);cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.takeoff-export-btn:hover{background:var(--surface-2);}
+.takeoff-table-wrap{flex:1;overflow:auto;padding:0;}
+/* ao-table: wide table with sticky header */
+.ao-table{border-collapse:collapse;font-size:11.5px;white-space:nowrap;width:max-content;min-width:100%;}
+.ao-table thead th{position:sticky;top:0;z-index:2;background:var(--surface-2);text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);padding:5px 8px;border-bottom:2px solid var(--line);white-space:nowrap;}
+.ao-table tbody td{padding:5px 8px;border-bottom:1px solid var(--line);vertical-align:middle;max-width:160px;overflow:hidden;text-overflow:ellipsis;}
+.ao-table .ao-th-place,.ao-table .ao-td-place{width:30px;min-width:30px;padding:4px 6px;text-align:center;}
+.ao-table .ao-th-num,.ao-table .ao-td-num{text-align:center;font-weight:700;}
+.ao-table .ao-th-del,.ao-table .ao-td-del{width:28px;min-width:28px;padding:4px 4px;text-align:center;}
+/* Group header rows */
+.ao-group-style td{background:#1c2e46;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:5px 10px;}
+.ao-group-mfr td{background:var(--surface-2);color:var(--navy);font-size:11px;font-weight:700;padding:4px 12px;border-bottom:1px solid var(--line);}
+.ao-group-flow td{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:3px 16px;border-bottom:1px solid var(--line);}
+.ao-data-row:hover td{background:var(--surface-2);}
+/* Place tag button */
+.ao-place-btn{width:24px;height:24px;border-radius:6px;border:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;padding:0;flex-shrink:0;}
+.ao-place-btn:hover{opacity:0.8;}
+/* Delete button */
+.ao-del-btn{width:22px;height:22px;border-radius:5px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;padding:0;}
+.ao-del-btn:hover{background:#fee2e2;color:#dc2626;}
 </style>
 </head>
 <body>
@@ -451,19 +475,21 @@ input,textarea{font-family:inherit;}
           <div class="disp">Air Outlet Takeoff</div>
           <div class="count" id="takeoffCount">0 items</div>
         </div>
-        <button class="panel-close" id="takeoffCloseBtn">✕</button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="takeoff-export-btn" id="takeoffExportBtn" title="Export takeoff as PDF">⬇ Export PDF</button>
+          <button class="panel-close" id="takeoffCloseBtn">✕</button>
+        </div>
       </div>
-      <div class="takeoff-search-row">
-        <input type="text" id="takeoffFilterInput" placeholder="Filter by description, model…">
+      <div class="takeoff-toolbar">
+        <select id="takeoffFlowFilter" class="takeoff-flow-filter">
+          <option value="all">All</option>
+          <option value="supply">Supply</option>
+          <option value="return">Return</option>
+          <option value="exhaust">Exhaust</option>
+        </select>
+        <button class="takeoff-add-btn" id="takeoffAddBtn">+ Add Air Outlet</button>
       </div>
-      <div class="takeoff-cat-btns">
-        <button class="takeoff-cat-btn supply active" data-cat="supply">Supply</button>
-        <button class="takeoff-cat-btn return" data-cat="return">Return</button>
-        <button class="takeoff-cat-btn exhaust" data-cat="exhaust">Exhaust</button>
-        <button class="takeoff-cat-btn" data-cat="all" style="background:var(--surface-2);color:var(--muted);border-color:var(--line);font-size:11px;">All</button>
-      </div>
-      <button class="takeoff-add-btn" id="takeoffAddBtn">+ Add Air Outlet</button>
-      <div class="panel-list" id="takeoffList">
+      <div class="panel-list takeoff-table-wrap" id="takeoffList">
         <div class="panel-empty">No items yet.</div>
       </div>
     </div>
@@ -1639,19 +1665,12 @@ $('#takeoffCloseBtn').addEventListener('click', () => {
   $('#takeoffPanel').classList.add('panel-hidden');
   positionFloatingControls();
 });
-// Category filter buttons
-document.querySelectorAll('.takeoff-cat-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.takeoff-cat-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    state.takeoffCategoryFilter = btn.dataset.cat;
-    renderTakeoffList();
-  });
-});
-$('#takeoffFilterInput').addEventListener('input', (e) => {
-  state.takeoffFilterText = e.target.value;
+// Flow type filter dropdown
+$('#takeoffFlowFilter').addEventListener('change', (e) => {
+  state.takeoffCategoryFilter = e.target.value;
   renderTakeoffList();
 });
+$('#takeoffExportBtn').addEventListener('click', exportTakeoffPDF);
 $('#takeoffAddBtn').addEventListener('click', async () => {
   await ensureCatalogLoaded();
   showTakeoffCategoryPickerModal();
@@ -4156,109 +4175,197 @@ function countTagsForLineAllSheets(lineId){
 }
 
 function renderTakeoffList(){
-  const list = $('#takeoffList');
-  const filterText = (state.takeoffFilterText || '').trim().toLowerCase();
-  const catFilter = state.takeoffCategoryFilter || 'supply';
+  const container = $('#takeoffList');
+  const flowFilter = state.takeoffCategoryFilter || 'all';
   const takeoff = state.data.airTerminalTakeoff || { supply: [], return: [], exhaust: [] };
-  const cats = catFilter === 'all' ? ['supply', 'return', 'exhaust'] : [catFilter];
   const catColors = { supply:'#1A56DB', return:'#C026D3', exhaust:'#16a34a' };
-  const catLabels = { supply:'Supply', return:'Return', exhaust:'Exhaust' };
+  const catLabels  = { supply:'Supply',  return:'Return',  exhaust:'Exhaust' };
+  const FLOW_TYPES = ['supply', 'return', 'exhaust'];
 
-  let totalItems = 0;
-  cats.forEach(c => { totalItems += (takeoff[c] || []).length; });
+  // Update count badge (always total, regardless of filter)
+  const totalItems = FLOW_TYPES.reduce((s, c) => s + (takeoff[c] || []).length, 0);
   $('#takeoffCount').textContent = totalItems + ' item' + (totalItems === 1 ? '' : 's');
 
-  list.innerHTML = '';
-
-  let anyRendered = false;
-  cats.forEach(cat => {
-    const catItems = (takeoff[cat] || []).filter(li => {
-      if(!filterText) return true;
+  // Gather rows filtered by flow type
+  const allRows = [];
+  FLOW_TYPES.forEach(cat => {
+    if(flowFilter !== 'all' && flowFilter !== cat) return;
+    (takeoff[cat] || []).forEach(li => {
       const c = state.airTerminalCatalog.items.find(x => x.id === li.catalogId) || {};
-      const hay = [li.description, c.manufacturer, c.model, li.location, li.notes].filter(Boolean).join(' ').toLowerCase();
-      return hay.includes(filterText);
+      allRows.push({ li, c, cat });
     });
-    if(catItems.length === 0) return;
-    anyRendered = true;
-
-    // Category header
-    const catHead = document.createElement('div');
-    catHead.className = 'takeoff-cat-section-head';
-    catHead.innerHTML = `<span class="takeoff-cat-dot ${cat}"></span><span style="color:${catColors[cat]};font-weight:700;">${catLabels[cat]}</span>`;
-    list.appendChild(catHead);
-
-    const standardItems = catItems.filter(li => {
-      const c = state.airTerminalCatalog.items.find(x => x.id === li.catalogId);
-      return !c || c.terminalStyle !== 'LINEAR';
-    });
-    const linearItems = catItems.filter(li => {
-      const c = state.airTerminalCatalog.items.find(x => x.id === li.catalogId);
-      return c && c.terminalStyle === 'LINEAR';
-    });
-
-    function appendSubSection(items, isLinear){
-      if(items.length === 0) return;
-      const subHead = document.createElement('div');
-      subHead.className = 'takeoff-section-title';
-      subHead.textContent = isLinear ? 'Linear' : 'Standard';
-      list.appendChild(subHead);
-      items.forEach(li => {
-        const c = state.airTerminalCatalog.items.find(x => x.id === li.catalogId) || {};
-        const sheetQty = countTagsForLine(li.lineId);
-        const totalQty = countTagsForLineAllSheets(li.lineId);
-        const card = document.createElement('div');
-        card.dataset.lineId = li.lineId;
-        card.dataset.cat = cat;
-        card.style.cssText = `border:1px solid ${catColors[cat]}40;border-radius:8px;padding:8px 10px;margin:4px 10px;font-size:12px;`;
-        const specStr = isLinear
-          ? [c.length ? c.length + ' L' : '', c.numSlots ? c.numSlots + ' slots' : ''].filter(Boolean).join(', ')
-          : [c.neckSize ? 'Neck ' + c.neckSize : '', c.faceSize ? 'Face ' + c.faceSize : ''].filter(Boolean).join(', ');
-        card.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">
-            <div>
-              <strong style="font-size:13px;">${escapeHtml(li.description || '(no desc)')}</strong>
-              <span style="font-size:10px;color:var(--muted);margin-left:4px;">#${c.id != null ? c.id : '?'}</span>
-            </div>
-            <div style="text-align:right;flex-shrink:0;">
-              <div style="font-size:15px;font-weight:700;color:${catColors[cat]};">${sheetQty}</div>
-              <div style="font-size:10px;color:var(--muted);">this sheet</div>
-              <div style="font-size:10px;color:var(--muted);">${totalQty} total</div>
-            </div>
-          </div>
-          <div style="color:var(--muted);font-size:11px;margin-top:2px;">${escapeHtml(c.manufacturer || '')} ${escapeHtml(c.model || '')}${specStr ? ' · ' + escapeHtml(specStr) : ''}</div>
-          <div style="display:flex;gap:6px;margin-top:6px;align-items:center;">
-            <button class="takeoff-place-btn" data-line-id="${escapeAttr(li.lineId)}" data-cat="${cat}"
-              style="background:${catColors[cat]};color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">
-              📍 Place tag
-            </button>
-            <button class="takeoff-row-del" data-line-id="${escapeAttr(li.lineId)}" data-cat="${cat}" title="Delete" style="margin-left:auto;">✕</button>
-          </div>`;
-        list.appendChild(card);
-      });
-    }
-    appendSubSection(standardItems, false);
-    appendSubSection(linearItems, true);
   });
 
-  if(!anyRendered){
-    list.innerHTML = '<div class="panel-empty">No items' + (filterText ? ' match that filter.' : ' yet.') + '</div>';
-  } else {
-    wireTakeoffRowEvents();
+  if(allRows.length === 0){
+    container.innerHTML = '<div class="panel-empty">' + (flowFilter !== 'all' ? 'No ' + catLabels[flowFilter] + ' items yet.' : 'No items yet.') + '</div>';
+    return;
   }
+
+  // Build groups: style → manufacturer → flow → items
+  const groups = {};
+  allRows.forEach(row => {
+    const style = row.c.terminalStyle || 'STANDARD';
+    const mfr   = row.c.manufacturer  || '(Unknown)';
+    if(!groups[style])       groups[style] = {};
+    if(!groups[style][mfr])  groups[style][mfr] = {};
+    if(!groups[style][mfr][row.cat]) groups[style][mfr][row.cat] = [];
+    groups[style][mfr][row.cat].push(row);
+  });
+
+  const NCOLS = 14; // Place | ID | Sched Tag | Mfr | Model | SizeA | SizeB | Frame | Color | Sheet Qty | Loc | Notes | Total | Del
+  const table = document.createElement('table');
+  table.className = 'ao-table';
+
+  // Sticky column header
+  const thead = table.createTHead();
+  const hdr = thead.insertRow();
+  [
+    { label:'',           cls:'ao-th-place' },
+    { label:'ID',         cls:'ao-th-id' },
+    { label:'Schedule Tag' },
+    { label:'Manufacturer' },
+    { label:'Model' },
+    { label:'Neck Size',  id:'aoThSizeA' },
+    { label:'Face Size',  id:'aoThSizeB' },
+    { label:'Frame Type' },
+    { label:'Color' },
+    { label:'Sheet Qty',  cls:'ao-th-num' },
+    { label:'Location' },
+    { label:'Notes' },
+    { label:'Total Qty',  cls:'ao-th-num' },
+    { label:'',           cls:'ao-th-del' },
+  ].forEach(h => {
+    const th = document.createElement('th');
+    th.textContent = h.label || '';
+    if(h.cls) th.className = h.cls;
+    if(h.id)  th.id = h.id;
+    hdr.appendChild(th);
+  });
+
+  const tbody = table.createTBody();
+
+  // Ordered style rendering: Standard first, then Linear, then any others
+  const styleOrder = ['STANDARD', 'LINEAR'];
+  const allStyles  = Object.keys(groups);
+  const orderedStyles = styleOrder.filter(s => allStyles.includes(s))
+                      .concat(allStyles.filter(s => !styleOrder.includes(s)));
+
+  orderedStyles.forEach(style => {
+    const isLinear = style === 'LINEAR';
+    const styleLabel = isLinear ? 'Linear' : 'Standard';
+
+    // Style group header
+    const styleRow = tbody.insertRow();
+    styleRow.className = 'ao-group-style';
+    const styleTd = styleRow.insertCell();
+    styleTd.colSpan = NCOLS;
+    styleTd.textContent = styleLabel;
+
+    // Update Size column headers based on current style
+    const thA = document.getElementById('aoThSizeA');
+    const thB = document.getElementById('aoThSizeB');
+    if(thA) thA.textContent = isLinear ? 'Length' : 'Neck Size';
+    if(thB) thB.textContent = isLinear ? 'Slots'  : 'Face Size';
+
+    const mfrMap = groups[style];
+    Object.keys(mfrMap).sort().forEach(mfr => {
+      // Manufacturer header
+      const mfrRow = tbody.insertRow();
+      mfrRow.className = 'ao-group-mfr';
+      const mfrTd = mfrRow.insertCell();
+      mfrTd.colSpan = NCOLS;
+      mfrTd.textContent = mfr;
+
+      FLOW_TYPES.forEach(cat => {
+        const items = mfrMap[mfr][cat];
+        if(!items || items.length === 0) return;
+
+        // Flow sub-header
+        const flowRow = tbody.insertRow();
+        flowRow.className = 'ao-group-flow';
+        const flowTd = flowRow.insertCell();
+        flowTd.colSpan = NCOLS;
+        flowTd.style.color = catColors[cat];
+        flowTd.innerHTML = `<span class="takeoff-cat-dot ${cat}" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${catColors[cat]};margin-right:5px;vertical-align:middle;"></span>${catLabels[cat]}`;
+
+        // Data rows
+        items.forEach(({ li, c, cat: rowCat }) => {
+          const sheetQty = countTagsForLine(li.lineId);
+          const totalQty = countTagsForLineAllSheets(li.lineId);
+          const sizeA = isLinear ? (c.length  || '') : (c.neckSize || '');
+          const sizeB = isLinear ? (c.numSlots ? c.numSlots + ' slots' : '') : (c.faceSize || '');
+          const color = catColors[rowCat];
+
+          const tr = tbody.insertRow();
+          tr.className = 'ao-data-row';
+          tr.dataset.lineId = li.lineId;
+          tr.dataset.cat = rowCat;
+
+          // Col 0: Place tag button
+          const tdPlace = tr.insertCell();
+          tdPlace.className = 'ao-td-place';
+          const placeBtn = document.createElement('button');
+          placeBtn.className = 'ao-place-btn takeoff-place-btn';
+          placeBtn.dataset.lineId = li.lineId;
+          placeBtn.dataset.cat = rowCat;
+          placeBtn.title = 'Place tag on drawing';
+          placeBtn.style.background = color;
+          placeBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
+          tdPlace.appendChild(placeBtn);
+
+          // Cols 1–12: data
+          [
+            c.id != null ? String(c.id) : '',
+            li.description || '',
+            c.manufacturer || '',
+            c.model || '',
+            sizeA,
+            sizeB,
+            c.frameType || '',
+            c.color || '',
+            sheetQty > 0 ? String(sheetQty) : '—',
+            li.location || '',
+            li.notes || '',
+            totalQty > 0 ? String(totalQty) : '—',
+          ].forEach((val, i) => {
+            const td = tr.insertCell();
+            td.textContent = val;
+            if(i === 8) { td.className = 'ao-td-num'; if(sheetQty > 0) td.style.color = color; }
+            if(i === 11){ td.className = 'ao-td-num'; if(totalQty > 0) td.style.color = color; }
+          });
+
+          // Col 13: delete button
+          const tdDel = tr.insertCell();
+          tdDel.className = 'ao-td-del';
+          const delBtn = document.createElement('button');
+          delBtn.className = 'ao-del-btn takeoff-row-del';
+          delBtn.dataset.lineId = li.lineId;
+          delBtn.dataset.cat = rowCat;
+          delBtn.title = 'Delete row';
+          delBtn.textContent = '✕';
+          tdDel.appendChild(delBtn);
+        });
+      });
+    });
+  });
+
+  container.innerHTML = '';
+  container.appendChild(table);
+  wireTakeoffRowEvents();
 }
-// renderTakeoffTable is no longer used (replaced by the card-based renderTakeoffList above)
-// Kept as a stub to avoid any lingering references.
-function renderTakeoffTable(){ return ''; }
+
+function renderTakeoffTable(){ return ''; } // stub — no longer called directly
+
 function wireTakeoffRowEvents(){
   document.querySelectorAll('.takeoff-row-del').forEach(btn => {
     btn.addEventListener('click', () => {
       const lineId = btn.dataset.lineId;
-      const cat = btn.dataset.cat;
+      const cat    = btn.dataset.cat;
       if(state.data.airTerminalTakeoff[cat]){
         state.data.airTerminalTakeoff[cat] = state.data.airTerminalTakeoff[cat].filter(x => x.lineId !== lineId);
         markDirty();
         renderTakeoffList();
-        drawAllMarkups(); // re-render to remove stale tag counts
+        drawAllMarkups();
         renderNoteList();
       }
     });
@@ -4266,16 +4373,14 @@ function wireTakeoffRowEvents(){
   document.querySelectorAll('.takeoff-place-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const lineId = btn.dataset.lineId;
-      const cat = btn.dataset.cat;
-      const items = state.data.airTerminalTakeoff[cat] || [];
-      const li = items.find(x => x.lineId === lineId);
+      const cat    = btn.dataset.cat;
+      const items  = state.data.airTerminalTakeoff[cat] || [];
+      const li     = items.find(x => x.lineId === lineId);
       if(!li) return;
-      // Make sure we have a PDF loaded
       if(!state.naturalWidth){
-        showModal({ title: 'No drawing open', sub: 'Open a sheet with a floor plan first.', confirmLabel: 'OK', onConfirm: () => {} });
+        showModal({ title:'No drawing open', sub:'Open a sheet with a floor plan first.', confirmLabel:'OK', onConfirm:()=>{} });
         return;
       }
-      // Switch to tag placement tool and set the active run item
       state.airOutletRunItem = { lineId: li.lineId, catalogId: li.catalogId, description: li.description, category: cat };
       switchToTool('airOutletTag');
       const bar = $('#actionBarDynamic');
@@ -4283,6 +4388,154 @@ function wireTakeoffRowEvents(){
       showRunDoneBtn();
     });
   });
+}
+
+// ── Takeoff PDF Export ───────────────────────────────────────────────────────
+function exportTakeoffPDF(){
+  const jobName   = state.jobName  || 'Unknown Job';
+  const sheetName = (activeSheet() && activeSheet().name) || 'Unknown Sheet';
+  const takeoff   = state.data.airTerminalTakeoff || { supply: [], return: [], exhaust: [] };
+  const catColors = { supply:'#1A56DB', return:'#C026D3', exhaust:'#16a34a' };
+  const catLabels = { supply:'Supply',  return:'Return',  exhaust:'Exhaust' };
+  const FLOW_TYPES = ['supply','return','exhaust'];
+
+  // Gather all rows with qty >= 1
+  const allRows = [];
+  FLOW_TYPES.forEach(cat => {
+    (takeoff[cat] || []).forEach(li => {
+      const c = state.airTerminalCatalog.items.find(x => x.id === li.catalogId) || {};
+      const qty = countTagsForLine(li.lineId);
+      if(qty >= 1) allRows.push({ li, c, cat, qty, totalQty: countTagsForLineAllSheets(li.lineId) });
+    });
+  });
+
+  if(allRows.length === 0){
+    showModal({ title:'Nothing to export', sub:'No items have tags placed on this sheet yet.', confirmLabel:'OK', onConfirm:()=>{} });
+    return;
+  }
+
+  // Group: style → mfr → flow
+  const groups = {};
+  allRows.forEach(row => {
+    const style = row.c.terminalStyle || 'STANDARD';
+    const mfr   = row.c.manufacturer  || '(Unknown)';
+    if(!groups[style])       groups[style] = {};
+    if(!groups[style][mfr])  groups[style][mfr] = {};
+    if(!groups[style][mfr][row.cat]) groups[style][mfr][row.cat] = [];
+    groups[style][mfr][row.cat].push(row);
+  });
+
+  function buildTableRows(){
+    const styleOrder = ['STANDARD','LINEAR'];
+    const orderedStyles = styleOrder.filter(s => groups[s])
+                        .concat(Object.keys(groups).filter(s => !styleOrder.includes(s)));
+    let html = '';
+    orderedStyles.forEach(style => {
+      const isLinear   = style === 'LINEAR';
+      const styleLabel = isLinear ? 'Linear' : 'Standard';
+      const sizeALabel = isLinear ? 'Length'   : 'Neck Size';
+      const sizeBLabel = isLinear ? 'Slots'    : 'Face Size';
+
+      html += `<tr class="group-style"><td colspan="12">${styleLabel}</td></tr>`;
+      html += `<tr class="col-header">
+        <td>ID</td><td>Schedule Tag</td><td>Manufacturer</td><td>Model</td>
+        <td>${sizeALabel}</td><td>${sizeBLabel}</td><td>Frame Type</td><td>Color</td>
+        <td class="num">Sheet Qty</td><td>Location</td><td>Notes</td><td class="num">Total Qty</td>
+      </tr>`;
+
+      Object.keys(groups[style]).sort().forEach(mfr => {
+        html += `<tr class="group-mfr"><td colspan="12">${mfr}</td></tr>`;
+        FLOW_TYPES.forEach(cat => {
+          const items = groups[style][mfr][cat];
+          if(!items || items.length === 0) return;
+          const col = catColors[cat];
+          html += `<tr class="group-flow" style="color:${col};border-left:3px solid ${col}">
+            <td colspan="12">&#9679; ${catLabels[cat]}</td></tr>`;
+          items.forEach(({ li, c, qty, totalQty }) => {
+            const isL  = c.terminalStyle === 'LINEAR';
+            const sizeA = isL ? (c.length  || '') : (c.neckSize || '');
+            const sizeB = isL ? (c.numSlots ? c.numSlots + ' slots' : '') : (c.faceSize || '');
+            html += `<tr class="data-row">
+              <td>${c.id != null ? c.id : ''}</td>
+              <td>${escapeHtml(li.description || '')}</td>
+              <td>${escapeHtml(c.manufacturer || '')}</td>
+              <td>${escapeHtml(c.model || '')}</td>
+              <td>${escapeHtml(sizeA)}</td>
+              <td>${escapeHtml(sizeB)}</td>
+              <td>${escapeHtml(c.frameType || '')}</td>
+              <td>${escapeHtml(c.color || '')}</td>
+              <td class="num" style="color:${col};font-weight:700;">${qty}</td>
+              <td>${escapeHtml(li.location || '')}</td>
+              <td>${escapeHtml(li.notes || '')}</td>
+              <td class="num" style="color:${col};font-weight:700;">${totalQty}</td>
+            </tr>`;
+          });
+        });
+      });
+    });
+    return html;
+  }
+
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Air Outlet Takeoff — ${escapeHtml(jobName)}</title>
+<style>
+  @page { size: landscape; margin: 0.6in; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 10pt; color: #1e293b; margin: 0; }
+  .pdf-header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 2px solid #1e293b; padding-bottom: 10px; margin-bottom: 14px; }
+  .pdf-logo-box { width: 56px; height: 56px; border: 2px solid #cbd5e1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 8pt; color: #94a3b8; text-align: center; line-height: 1.2; padding: 4px; box-sizing: border-box; }
+  .pdf-company { font-size: 18pt; font-weight: 800; letter-spacing: 0.02em; color: #1e3a5f; font-family: 'Barlow Condensed', 'Impact', sans-serif; }
+  .pdf-meta { font-size: 9pt; color: #475569; margin-top: 2px; }
+  .pdf-title { font-size: 14pt; font-weight: 700; text-align: right; margin-top: 4px; }
+  .pdf-date { font-size: 8.5pt; color: #64748b; text-align: right; margin-top: 2px; }
+  table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+  .group-style td { background: #1e3a5f; color: #fff; font-weight: 700; font-size: 9pt; padding: 4px 8px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .group-mfr td { background: #f1f5f9; color: #334155; font-weight: 700; font-size: 8.5pt; padding: 3px 10px; border-bottom: 1px solid #e2e8f0; }
+  .group-flow td { font-weight: 700; font-size: 8pt; padding: 2px 14px; border-bottom: 1px solid #e2e8f0; }
+  .col-header td { background: #e2e8f0; font-weight: 700; font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.04em; color: #475569; padding: 4px 6px; border-bottom: 2px solid #cbd5e1; }
+  .data-row td { padding: 4px 6px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  .data-row:nth-child(even) td { background: #f8fafc; }
+  .num { text-align: center; }
+  .pdf-footer { margin-top: 16px; font-size: 7.5pt; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 6px; display:flex; justify-content:space-between; }
+</style>
+</head>
+<body>
+<div class="pdf-header">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="pdf-logo-box">Logo<br>Here</div>
+    <div>
+      <div class="pdf-company">PPC Inc.</div>
+      <div class="pdf-meta">Job: <strong>${escapeHtml(jobName)}</strong></div>
+      <div class="pdf-meta">Sheet: <strong>${escapeHtml(sheetName)}</strong></div>
+    </div>
+  </div>
+  <div>
+    <div class="pdf-title">Air Outlet Takeoff</div>
+    <div class="pdf-date">${dateStr}</div>
+  </div>
+</div>
+<table>
+  <tbody>
+    ${buildTableRows()}
+  </tbody>
+</table>
+<div class="pdf-footer">
+  <span>PPC Inc. — Air Outlet Takeoff</span>
+  <span>${escapeHtml(jobName)} / ${escapeHtml(sheetName)} — ${dateStr}</span>
+</div>
+<script>window.onload = function(){ window.print(); }<\/script>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  if(!win){ showModal({ title:'Popup blocked', sub:'Allow popups for this site to export the PDF.', confirmLabel:'OK', onConfirm:()=>{} }); return; }
+  win.document.write(html);
+  win.document.close();
 }
 
 // Phase 0: pick Supply / Return / Exhaust before searching the catalog
