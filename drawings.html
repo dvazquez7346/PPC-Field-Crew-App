@@ -2206,6 +2206,7 @@ function hideRunDoneBtn(){
   $('#runDoneBtn').classList.add('hidden');
   // If we were in an airOutletTag placement run, end it and clear all ghost state
   if(state.airOutletRunItem){
+    clearAirOutletSessionTimer();
     clearAirOutletPending();
     state.ghostAirOutletPos = null;
     state.airOutletRunItem = null;
@@ -2451,6 +2452,7 @@ function confirmAirOutletPlacement(){
   renderNoteList();
   renderTakeoffList();
   drawAllMarkups();
+  startAirOutletSessionTimer(); // reset the 10s idle timeout after each placement
   // Restore placement hint in action bar
   const bar = $('#actionBarDynamic');
   bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(run.tagLabel || run.description || '')}</strong> — tap to aim, tap again to confirm</span>`;
@@ -2459,6 +2461,25 @@ function confirmAirOutletPlacement(){
 function clearAirOutletPending(){
   if(state.airOutletPendingTimer){ clearTimeout(state.airOutletPendingTimer); state.airOutletPendingTimer = null; }
   state.airOutletPendingAnchor = null;
+}
+
+// 10-second session timeout — if no tag is confirmed, exit placement mode
+// entirely and return to select. Already-placed tags are kept.
+function startAirOutletSessionTimer(){
+  clearAirOutletSessionTimer();
+  state.airOutletSessionTimer = setTimeout(() => {
+    if(!state.airOutletRunItem) return;
+    clearAirOutletPending();
+    state.ghostAirOutletPos = null;
+    state.airOutletRunItem = null;
+    hideRunDoneBtn();
+    switchToTool('select');
+    clearMarkupActionButtons();
+    drawAllMarkups();
+  }, 10000);
+}
+function clearAirOutletSessionTimer(){
+  if(state.airOutletSessionTimer){ clearTimeout(state.airOutletSessionTimer); state.airOutletSessionTimer = null; }
 }
 
 function startAirOutletPendingTimer(){
@@ -2476,9 +2497,9 @@ function startAirOutletPendingTimer(){
 
 function showAirOutletConfirmBar(){
   $('#actionBarDynamic').innerHTML = `
-    <button id="aoConfirmBtn" style="background:#16a34a;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;">&#10003; Place here</button>
-    <button id="aoCancelBtn" style="background:none;border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;margin-left:6px;flex-shrink:0;">&#10005; Cancel</button>
-    <span style="font-size:11px;color:var(--muted);margin-left:10px;">Tap near the tag to confirm &bull; auto-cancels in 4s</span>`;
+    <button id="aoConfirmBtn" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:2px 10px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;line-height:20px;">&#10003; Place here</button>
+    <button id="aoCancelBtn" style="background:none;border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;flex-shrink:0;line-height:20px;">&#10005; Cancel</button>
+    <span style="font-size:10px;color:var(--muted);margin-left:8px;">Tap near tag to confirm &bull; auto-cancels in 4s</span>`;
   document.getElementById('aoConfirmBtn').addEventListener('click', (e) => {
     e.stopPropagation();
     confirmAirOutletPlacement();
@@ -4620,6 +4641,7 @@ function wireTakeoffRowEvents(){
       };
       state.ghostAirOutletPos = null;
       clearAirOutletPending();
+      startAirOutletSessionTimer();
       switchToTool('airOutletTag');
       const bar = $('#actionBarDynamic');
       bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(li.scheduleTag || li.description || '')}</strong> — tap to aim, tap again to confirm</span>`;
