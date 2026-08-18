@@ -256,6 +256,7 @@ input,textarea{font-family:inherit;}
       <span class="cd-arrow">←</span><span class="cd-text">Crew Directory</span>
     </a>
     <div class="sheet-tabs" id="sheetTabs"></div>
+    <button class="mobile-panel-toggle" id="takeoffToggle" style="background:#7A3E9D;">Takeoff</button>
     <button class="mobile-panel-toggle" id="mobilePanelToggle">Notes</button>
   </div>
   <div class="action-bar" id="actionBar">
@@ -272,6 +273,8 @@ input,textarea{font-family:inherit;}
       <div class="tool-label">Pan</div>
       <button class="tool-btn" data-tool="select" title="Select / move / edit / delete a markup"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M6 3l3 17 2.5-6.5L18 12z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
       <div class="tool-label">Select</div>
+      <button class="tool-btn" data-tool="mselect" title="Multi-select: tap multiple items or drag a box, then move/delete/color/group them together"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2.5"/><circle cx="8" cy="8" r="1.8" fill="currentColor"/><circle cx="16" cy="16" r="1.8" fill="currentColor"/></svg></button>
+      <div class="tool-label">M-Sel</div>
       <div class="tool-sep"></div>
       <button class="tool-btn" data-tool="draw" title="Freehand draw">✎</button>
       <div class="tool-label">Draw</div>
@@ -444,6 +447,8 @@ const state = {
   activePointers: new Map(), pinchState: null,
   undoStacks: {}, // { [sheetId]: [markups-snapshot, ...] } — runtime only, never saved
   noteFilterText: '', hiddenTypes: new Set(),
+  multiSelectedIds: new Set(), marqueeStart: null, marqueeCurrent: null,
+  mDragActive: false, mDragStart: null, mDragOrigins: null, dragGroupOrigins: null,
   whiteoutsUnlocked: false,
 };
 
@@ -452,6 +457,11 @@ const ANGLE_STEP = 15; // degrees — snap increment for Line/Run tools
 // two Arrows are intentionally excluded — free aspect and free length/angle
 // are the whole point of those.
 const LOCKED_SHAPES = ['circle', 'square', 'triangle', 'diamond', 'hexagon'];
+// Only these types can be grouped — Line/Route/Shape/Symbol are things you'd
+// naturally want to treat as one rigid unit (a symbol + the line it sits on,
+// several shapes marking one area); leader-based types (Callout, Note, etc.)
+// have their own mechanics that don't benefit from rigid grouping.
+const GROUPABLE_TYPES = ['line', 'multiline', 'shape', 'symbol'];
 const AXIS_SNAP_THRESHOLD = 6; // degrees — Dimension tool snaps only near horizontal/vertical, else free angle
 const JOINT_RADIUS = 15; // fixed fillet radius for multi-segment corners (diagrammatic, not exact)
 const PALETTE = ['#FF0000', '#00FF00', '#0000FF', '#FF8000', '#FF00FF', '#000000'];
@@ -1394,6 +1404,12 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     state.selectedMarkupId = null;
     if(state.tool !== 'shape') $('#shapeRow').classList.add('hidden');
     if(state.tool !== 'symbol') $('#symbolRow').classList.add('hidden');
+    if(state.tool !== 'mselect'){
+      state.multiSelectedIds.clear();
+      state.marqueeStart = null;
+      state.marqueeCurrent = null;
+      state.mDragActive = false;
+    }
     $('#canvasArea').classList.remove('panning');
     clearMarkupActionButtons();
     hideRunDoneBtn();
@@ -1604,10 +1620,43 @@ function axisSnap(from, to){
   return to;
 }
 
+function groupMemberIds(m){
+  if(!m.groupId) return [m.id];
+  const sheet = activeSheet();
+  return sheet.markups.filter(x => x.groupId === m.groupId).map(x => x.id);
+}
+
 function onPointerDown(e){
   state.activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if(!state.pageViewport || twoFingersActive()) return;
   const p = canvasPoint(e);
+
+  if(state.tool === 'mselect'){
+    const hit = hitTestMarkup(p);
+    if(hit){
+      const ids = groupMemberIds(hit.markup);
+      const alreadySelected = ids.every(id => state.multiSelectedIds.has(id));
+      if(!alreadySelected) ids.forEach(id => state.multiSelectedIds.add(id));
+      state.mDragActive = true;
+      state.mDragStart = p;
+      state.mDragWasAlreadySelected = alreadySelected;
+      state.mDragHitIds = ids;
+      const sheet = activeSheet();
+      state.mDragOrigins = {};
+      state.multiSelectedIds.forEach(id => {
+        const m = sheet.markups.find(x => x.id === id);
+        if(m) state.mDragOrigins[id] = cloneMarkupPoints(m);
+      });
+      try{ mCanvas.setPointerCapture(e.pointerId); }catch(err){}
+      drawAllMarkups();
+      updateMSelectActionBar();
+      return;
+    }
+    state.marqueeStart = p;
+    state.marqueeCurrent = p;
+    drawAllMarkups();
+    return;
+  }
 
   if(state.tool === 'select'){
     const hit = hitTestHandle(p) || hitTestMarkup(p);
@@ -1622,6 +1671,17 @@ function onPointerDown(e){
       // AFTER that shift settles, so the drag's reference point matches the
       // canvas's new on-screen position instead of its pre-shift one.
       state.dragHandle = { markupId: hit.markup.id, key: hit.key, startPoint: canvasPoint(e), origins: cloneMarkupPoints(hit.markup) };
+      if(hit.markup.groupId){
+        const sheet = activeSheet();
+        state.dragGroupOrigins = {};
+        sheet.markups.forEach(gm => {
+          if(gm.groupId === hit.markup.groupId && gm.id !== hit.markup.id){
+            state.dragGroupOrigins[gm.id] = cloneMarkupPoints(gm);
+          }
+        });
+      } else {
+        state.dragGroupOrigins = null;
+      }
       return;
     }
     state.selectedMarkupId = null;
@@ -1704,6 +1764,22 @@ function onPointerMove(e){
   if(twoFingersActive()) return;
   const p = canvasPoint(e);
 
+  if(state.tool === 'mselect' && state.marqueeStart){
+    state.marqueeCurrent = p;
+    drawAllMarkups();
+    return;
+  }
+  if(state.tool === 'mselect' && state.mDragActive){
+    const dx = p.x - state.mDragStart.x, dy = p.y - state.mDragStart.y;
+    const sheet = activeSheet();
+    state.multiSelectedIds.forEach(id => {
+      const m = sheet.markups.find(x => x.id === id);
+      const origin = state.mDragOrigins[id];
+      if(m && origin) translateMarkup(m, origin, dx, dy);
+    });
+    drawAllMarkups();
+    return;
+  }
   if(state.tool === 'select' && state.dragHandle){
     applyDragHandle(state.dragHandle, p);
     drawAllMarkups();
@@ -1774,6 +1850,43 @@ function checkDoubleTap(e){
 }
 
 function onPointerUp(e){
+  if(state.tool === 'mselect' && state.marqueeStart){
+    const x0 = Math.min(state.marqueeStart.x, state.marqueeCurrent.x);
+    const x1 = Math.max(state.marqueeStart.x, state.marqueeCurrent.x);
+    const y0 = Math.min(state.marqueeStart.y, state.marqueeCurrent.y);
+    const y1 = Math.max(state.marqueeStart.y, state.marqueeCurrent.y);
+    const dragDist = Math.hypot(state.marqueeCurrent.x - state.marqueeStart.x, state.marqueeCurrent.y - state.marqueeStart.y);
+    if(dragDist > 6){
+      const sheet = activeSheet();
+      sheet.markups.forEach(m => {
+        if(!isMarkupInteractable(m)) return;
+        const c = markupCenterPoint(m);
+        if(c.x >= x0 && c.x <= x1 && c.y >= y0 && c.y <= y1){
+          groupMemberIds(m).forEach(id => state.multiSelectedIds.add(id));
+        }
+      });
+    }
+    state.marqueeStart = null;
+    state.marqueeCurrent = null;
+    drawAllMarkups();
+    updateMSelectActionBar();
+    return;
+  }
+  if(state.tool === 'mselect' && state.mDragActive){
+    const p = canvasPoint(e);
+    const dist = Math.hypot(p.x - state.mDragStart.x, p.y - state.mDragStart.y);
+    state.mDragActive = false;
+    if(dist < 6 && state.mDragWasAlreadySelected){
+      // A tap (not a drag) on something already selected — toggle it off.
+      state.mDragHitIds.forEach(id => state.multiSelectedIds.delete(id));
+    }
+    if(dist >= 6) markDirty();
+    state.mDragOrigins = null;
+    try{ mCanvas.releasePointerCapture(e.pointerId); }catch(err){}
+    drawAllMarkups();
+    updateMSelectActionBar();
+    return;
+  }
   if((state.tool === 'multiline' || state.tool === 'hatchline') && state.routeDragging){
     state.routeDragging = false;
     const p = canvasPoint(e);
@@ -2185,6 +2298,13 @@ function applyDragHandle(drag, p){
   if(drag.key === 'whole' || drag.key === 'move'){
     const dx = p.x - drag.startPoint.x, dy = p.y - drag.startPoint.y;
     translateMarkup(m, drag.origins, dx, dy);
+    if(state.dragGroupOrigins){
+      const sheet = activeSheet();
+      Object.keys(state.dragGroupOrigins).forEach(id => {
+        const gm = sheet.markups.find(x => x.id === id);
+        if(gm) translateMarkup(gm, state.dragGroupOrigins[id], dx, dy);
+      });
+    }
     return;
   }
   if(drag.key === 'rotate' && (m.type === 'shape' || m.type === 'photo' || m.type === 'symbol')){
@@ -2500,8 +2620,12 @@ function showMarkupActionButtons(markupId){
   delBtn.textContent = 'Delete';
   delBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    const idx = sheet.markups.findIndex(x => x.id === markupId);
-    if(idx > -1) sheet.markups.splice(idx, 1);
+    if(m.groupId){
+      sheet.markups = sheet.markups.filter(x => x.groupId !== m.groupId);
+    } else {
+      const idx = sheet.markups.findIndex(x => x.id === markupId);
+      if(idx > -1) sheet.markups.splice(idx, 1);
+    }
     state.selectedMarkupId = null;
     markDirty(); drawAllMarkups(); renderNoteList(); clearMarkupActionButtons();
   });
@@ -2543,6 +2667,9 @@ function showMarkupActionButtons(markupId){
     dot.addEventListener('click', (e) => {
       e.stopPropagation();
       m.color = c;
+      if(m.groupId){
+        sheet.markups.forEach(gm => { if(gm.groupId === m.groupId) gm.color = c; });
+      }
       markDirty();
       drawAllMarkups();
       renderNoteList();
@@ -2553,6 +2680,99 @@ function showMarkupActionButtons(markupId){
   group.appendChild(colorRow);
   }
   positionFloatingControls();
+}
+
+// Builds the batch-action bar for M-Select — color/group/ungroup/clear/delete
+// applied to every currently multi-selected markup at once.
+function updateMSelectActionBar(){
+  const bar = $('#actionBarDynamic');
+  const sheet = activeSheet();
+  if(!sheet || state.multiSelectedIds.size === 0){
+    bar.innerHTML = '';
+    return;
+  }
+  const selected = sheet.markups.filter(m => state.multiSelectedIds.has(m.id));
+  bar.innerHTML = '';
+
+  const countLabel = document.createElement('span');
+  countLabel.className = 'action-bar-hint';
+  countLabel.style.color = 'var(--navy)';
+  countLabel.textContent = `${selected.length} selected`;
+  bar.appendChild(countLabel);
+
+  const colorRow = document.createElement('div');
+  colorRow.className = 'markup-action-row';
+  PALETTE.forEach(c => {
+    const dot = document.createElement('button');
+    dot.className = 'markup-color-dot';
+    dot.style.background = c;
+    dot.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selected.forEach(m => { if(m.type !== 'whiteoutRect' && m.type !== 'whiteoutFreeform') m.color = c; });
+      markDirty();
+      drawAllMarkups();
+      renderNoteList();
+    });
+    colorRow.appendChild(dot);
+  });
+  bar.appendChild(colorRow);
+
+  const btnRow = document.createElement('div');
+  btnRow.className = 'markup-action-row';
+
+  const allGroupable = selected.length >= 2 && selected.every(m => GROUPABLE_TYPES.includes(m.type));
+  if(allGroupable){
+    const groupBtn = document.createElement('button');
+    groupBtn.textContent = 'Group';
+    groupBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const gid = genId();
+      selected.forEach(m => { m.groupId = gid; });
+      markDirty();
+      drawAllMarkups();
+      updateMSelectActionBar();
+    });
+    btnRow.appendChild(groupBtn);
+  }
+  if(selected.some(m => m.groupId)){
+    const ungroupBtn = document.createElement('button');
+    ungroupBtn.textContent = 'Ungroup';
+    ungroupBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selected.forEach(m => { delete m.groupId; });
+      markDirty();
+      drawAllMarkups();
+      updateMSelectActionBar();
+    });
+    btnRow.appendChild(ungroupBtn);
+  }
+
+  const clearBtn = document.createElement('button');
+  clearBtn.textContent = 'Clear selection';
+  clearBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    state.multiSelectedIds.clear();
+    drawAllMarkups();
+    updateMSelectActionBar();
+  });
+  btnRow.appendChild(clearBtn);
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'delete-btn';
+  delBtn.textContent = `Delete (${selected.length})`;
+  delBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const idsToDelete = new Set(state.multiSelectedIds);
+    sheet.markups = sheet.markups.filter(m => !idsToDelete.has(m.id));
+    state.multiSelectedIds.clear();
+    markDirty();
+    drawAllMarkups();
+    renderNoteList();
+    updateMSelectActionBar();
+  });
+  btnRow.appendChild(delBtn);
+
+  bar.appendChild(btnRow);
 }
 
 /* ============================================================
@@ -2605,6 +2825,36 @@ function drawAllMarkups(){
   if(state.selectedMarkupId){
     const m = sheet.markups.find(x => x.id === state.selectedMarkupId);
     if(m) drawHandles(m);
+  }
+  if(state.tool === 'mselect'){
+    if(state.multiSelectedIds.size > 0){
+      ctx.save();
+      ctx.strokeStyle = '#0000FF';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      sheet.markups.forEach(m => {
+        if(!state.multiSelectedIds.has(m.id)) return;
+        const c = markupCenterPoint(m);
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, 18, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+    if(state.marqueeStart && state.marqueeCurrent){
+      ctx.save();
+      const x0 = Math.min(state.marqueeStart.x, state.marqueeCurrent.x);
+      const y0 = Math.min(state.marqueeStart.y, state.marqueeCurrent.y);
+      const w = Math.abs(state.marqueeCurrent.x - state.marqueeStart.x);
+      const h = Math.abs(state.marqueeCurrent.y - state.marqueeStart.y);
+      ctx.fillStyle = 'rgba(0,0,255,0.08)';
+      ctx.strokeStyle = '#0000FF';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 4]);
+      ctx.fillRect(x0, y0, w, h);
+      ctx.strokeRect(x0, y0, w, h);
+      ctx.restore();
+    }
   }
 }
 
@@ -3616,7 +3866,12 @@ document.addEventListener('keydown', (e) => {
   const idx = sheet.markups.findIndex(x => x.id === state.selectedMarkupId);
   if(idx === -1) return;
   e.preventDefault();
-  sheet.markups.splice(idx, 1);
+  const target = sheet.markups[idx];
+  if(target.groupId){
+    sheet.markups = sheet.markups.filter(x => x.groupId !== target.groupId);
+  } else {
+    sheet.markups.splice(idx, 1);
+  }
   state.selectedMarkupId = null;
   markDirty();
   drawAllMarkups();
