@@ -35,11 +35,11 @@ input,textarea{font-family:inherit;}
 .topbar .brand{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;letter-spacing:0.02em;white-space:nowrap;}
 .topbar .brand .sub{color:#9FB0C8;font-weight:500;font-size:12px;display:block;letter-spacing:0.06em;text-transform:uppercase;}
 .job-select{display:flex;align-items:center;gap:8px;margin-left:8px;position:relative;flex-wrap:wrap;}
-.job-select input{background:#243A56;border:1px solid #35496A;color:#fff;border-radius:8px;padding:7px 10px;font-size:13px;width:130px;}
+.job-select input{background:#243A56;border:1px solid #35496A;color:#fff;border-radius:8px;padding:7px 10px;font-size:13px;width:72px;text-align:center;font-family:'JetBrains Mono',monospace;letter-spacing:0.04em;}
 .job-select input::placeholder{color:#7E93B0;}
-.job-select button{background:var(--orange);border:none;color:#fff;font-weight:600;font-size:13px;padding:7px 14px;border-radius:8px;}
-.job-select button:hover{background:var(--orange-dark);}
-.job-browse-btn{background:transparent;border:1px solid #35496A;color:#CBD8EA;font-weight:600;font-size:13px;padding:7px 12px;border-radius:8px;}
+.job-select button{color:#CBD8EA;font-weight:600;font-size:13px;padding:6px 10px;border-radius:8px;border:1px solid #35496A;background:transparent;}
+.job-select button:hover{background:#243A56;}
+.job-browse-btn{background:transparent;border:1px solid #35496A;color:#CBD8EA;font-weight:600;font-size:13px;padding:6px 10px;border-radius:8px;}
 .job-browse-btn:hover{background:#243A56;}
 .job-name-chip{color:#fff;font-weight:600;font-size:13px;background:#243A56;border:1px solid #35496A;border-radius:8px;padding:6px 10px;cursor:pointer;}
 .job-dropdown{position:absolute;top:calc(100% + 8px);left:0;width:280px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);z-index:80;max-height:320px;overflow-y:auto;}
@@ -56,14 +56,20 @@ input,textarea{font-family:inherit;}
 .account-chip{color:#CBD8EA;font-size:12px;}
 
 /* ---- Sheet tabs ---- */
-.tabs-row{display:flex;align-items:center;gap:8px;background:var(--navy-2);padding:0 8px;overflow-x:auto;}
-.crew-directory-btn{color:#CBD8EA;text-decoration:none;font-weight:600;font-size:13px;border:1px solid #35496A;padding:6px 10px;border-radius:8px;display:flex;align-items:center;flex-shrink:0;white-space:nowrap;}
+.tabs-row{display:flex;align-items:center;gap:6px;background:var(--navy-2);padding:0 8px;overflow-x:auto;}
+/* Universal "ghost" button style for all tabs-row action buttons */
+.tabs-row-btn{color:#CBD8EA;font-weight:600;font-size:13px;border:1px solid #35496A;background:transparent;padding:6px 12px;border-radius:8px;cursor:pointer;flex-shrink:0;white-space:nowrap;}
+.tabs-row-btn:hover{background:#243A56;}
+.tabs-row-btn:disabled{opacity:0.4;cursor:default;}
+.tabs-row-sep{width:1px;height:22px;background:#35496A;flex-shrink:0;margin:0 2px;}
+.crew-directory-btn{color:#CBD8EA;text-decoration:none;font-weight:600;font-size:13px;border:1px solid #35496A;padding:6px 10px;border-radius:8px;display:flex;align-items:center;flex-shrink:0;white-space:nowrap;background:transparent;}
 .crew-directory-btn:hover{background:#243A56;}
 .crew-directory-btn .cd-text{max-width:0;opacity:0;overflow:hidden;display:inline-block;transition:max-width 0.2s ease, opacity 0.15s ease, margin-left 0.2s ease;}
 .crew-directory-btn:hover .cd-text{max-width:130px;opacity:1;margin-left:6px;}
 .sheet-tabs{display:flex;align-items:center;gap:4px;overflow-x:auto;flex-shrink:1;}
-.sheet-tab{padding:9px 10px 9px 16px;font-size:12.5px;font-weight:600;color:#B9C7DC;border-bottom:2px solid transparent;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:6px;}
-.sheet-tab.active{color:#fff;border-bottom-color:var(--orange);}
+.sheet-tab{padding:9px 10px 9px 16px;font-size:12.5px;font-weight:600;color:#B9C7DC;border-bottom:2px solid transparent;border:1px solid transparent;border-radius:7px 7px 0 0;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:-1px;}
+.sheet-tab:hover{border-color:#35496A;color:#fff;}
+.sheet-tab.active{color:#fff;border-color:#35496A;border-bottom-color:var(--orange);background:#1B2A41;}
 .sheet-tab .rename-ic{opacity:0.6;font-size:11px;padding:2px;}
 .sheet-tab .rename-ic:hover{opacity:1;}
 .sheet-tab-add{padding:9px 12px;font-size:16px;color:#9FB0C8;cursor:pointer;}
@@ -112,9 +118,10 @@ input,textarea{font-family:inherit;}
 .whiteout-lock-btn{width:44px;height:44px;border-radius:10px;border:1px solid var(--line);background:transparent;display:flex;align-items:center;justify-content:center;color:var(--navy);cursor:pointer;}
 .whiteout-lock-btn:hover{background:var(--surface-2);}
 .whiteout-lock-btn.unlocked-mode{background:var(--danger);color:#fff;border-color:var(--danger);}
-.whiteout-group{display:flex;flex-direction:column;align-items:center;gap:1px;}
-.whiteout-label{max-width:46px;text-align:center;line-height:1;}
-.whiteout-buttons{display:flex;flex-direction:column;gap:2px;}
+.whiteout-group{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.whiteout-label{max-width:46px;text-align:center;line-height:1;font-size:7.5px;}
+.whiteout-buttons{display:flex;gap:2px;}
+.whiteout-buttons .tool-btn{width:44px;height:44px;}
 .tool-sep{width:32px;height:1px;background:var(--line);margin:6px 0;}
 .tool-label{font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;margin-top:-2px;text-align:center;}
 .color-row,.thickness-row,.shape-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:0 6px;}
@@ -128,14 +135,33 @@ input,textarea{font-family:inherit;}
 .shape-btn.active{border-color:var(--navy);background:var(--surface-2);}
 
 /* ---- Right panel: notes list ---- */
-.panel{width:var(--panel-w);background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;}
+/* Panel resize handle — left edge drag to widen/narrow (desktop only) */
+.panel-resize-handle{position:absolute;left:0;top:0;bottom:0;width:5px;cursor:col-resize;z-index:10;background:transparent;}
+.panel-resize-handle:hover{background:rgba(0,0,0,0.08);}
+.panel{background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;position:relative;}
 .panel.panel-hidden{display:none;}
 .panel-head{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
 .panel-filter-row{display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid var(--line);}
-.takeoff-tabs{display:flex;border-bottom:1px solid var(--line);}
-.takeoff-tab{flex:1;padding:10px 4px;background:transparent;border:none;border-bottom:2px solid transparent;font-weight:600;font-size:13px;color:var(--muted);}
-.takeoff-tab.active{color:#7A3E9D;border-bottom-color:#7A3E9D;}
-.takeoff-add-btn{margin:10px 16px;background:#7A3E9D;color:#fff;border:none;border-radius:8px;padding:9px;font-weight:600;font-size:13px;}
+/* Takeoff panel – category buttons (Supply/Return/Exhaust) */
+.takeoff-cat-btns{display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid var(--line);}
+.takeoff-cat-btn{flex:1;padding:7px 4px;border-radius:8px;border:2px solid transparent;font-weight:700;font-size:12px;cursor:pointer;transition:opacity 0.12s;}
+.takeoff-cat-btn.supply{background:#1A56DB22;color:#1A56DB;border-color:#1A56DB55;}
+.takeoff-cat-btn.supply.active{background:#1A56DB;color:#fff;border-color:#1A56DB;}
+.takeoff-cat-btn.return{background:#C026D322;color:#C026D3;border-color:#C026D355;}
+.takeoff-cat-btn.return.active{background:#C026D3;color:#fff;border-color:#C026D3;}
+.takeoff-cat-btn.exhaust{background:#16a34a22;color:#16a34a;border-color:#16a34a55;}
+.takeoff-cat-btn.exhaust.active{background:#16a34a;color:#fff;border-color:#16a34a;}
+.takeoff-search-row{display:flex;gap:6px;padding:8px 16px 6px;border-bottom:1px solid var(--line);}
+.takeoff-search-row input{flex:1;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;}
+.takeoff-add-btn{margin:8px 16px;background:#7A3E9D;color:#fff;border:none;border-radius:8px;padding:8px;font-weight:600;font-size:13px;}
+/* Takeoff table section */
+.takeoff-cat-section-head{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:6px 16px 2px;display:flex;align-items:center;gap:6px;}
+.takeoff-cat-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
+.takeoff-cat-dot.supply{background:#1A56DB;}
+.takeoff-cat-dot.return{background:#C026D3;}
+.takeoff-cat-dot.exhaust{background:#16a34a;}
+/* Air outlet tag pill — canvas placed badge */
+.air-outlet-run-hint{font-size:11px;color:var(--muted);padding:4px 8px;text-align:center;background:var(--surface-2);border-radius:6px;}
 .takeoff-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted);padding:10px 16px 4px;}
 .takeoff-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px;}
 .takeoff-table th{text-align:left;font-size:10px;text-transform:uppercase;color:var(--muted);padding:4px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
@@ -166,12 +192,17 @@ input,textarea{font-family:inherit;}
 .save-btn{background:var(--navy);color:#fff;border:none;font-weight:600;font-size:13px;padding:8px 16px;border-radius:8px;}
 .save-btn:hover{background:var(--navy-2);}
 .save-btn:disabled{opacity:.5;cursor:default;}
+/* Toolbar color/thickness pickers rendered in the action bar (not toolrail) */
+.action-bar-pickers{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.action-bar-pickers .color-dot{width:18px;height:18px;}
+.action-bar-pickers .thickness-dot{width:28px;height:18px;}
+.action-bar-picker-sep{width:1px;height:18px;background:var(--line);margin:0 2px;}
 .status-dot{width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0;}
 .status-dot.dirty{background:var(--warn);}
 .action-bar-status-wrap{display:flex;align-items:center;gap:6px;flex-shrink:0;}
 .action-bar-status{font-size:12px;color:var(--muted);}
 .action-bar-dynamic{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex:1;justify-content:center;}
-.mobile-panel-toggle{display:inline-block;background:#2E8B57;color:#fff;border:none;font-weight:700;font-size:12px;padding:6px 14px;border-radius:7px;flex-shrink:0;margin-left:auto;}
+.mobile-panel-toggle{display:inline-block;background:#2E8B57;color:#fff;border:none;font-weight:700;font-size:12px;padding:6px 14px;border-radius:7px;flex-shrink:0;}
 
 /* ---- Selection handles + floating edit button on canvas ---- */
 
@@ -261,20 +292,35 @@ input,textarea{font-family:inherit;}
   </div>
 
   <div class="tabs-row">
-    <button class="save-btn" id="undoBtn" disabled title="Undo (last 5 steps, this sheet)" style="margin-left:0;background:var(--surface-2);color:var(--navy);">Undo</button>
-    <button class="save-btn" id="exportBtn" title="Export this sheet as a flattened PNG image" style="margin-left:0;background:var(--surface-2);color:var(--navy);">Export</button>
-    <button class="save-btn" id="saveBtn" disabled style="margin-left:0;">Save</button>
+    <button class="tabs-row-btn" id="saveBtn" disabled title="Save to SharePoint">Save</button>
+    <button class="tabs-row-btn" id="exportBtn" title="Export this sheet as a flattened PNG image">Export</button>
+    <button class="tabs-row-btn" id="undoBtn" disabled title="Undo (last 5 steps, this sheet)">Undo</button>
+    <div class="tabs-row-sep"></div>
+    <button class="tabs-row-btn" id="takeoffToggle" style="border-color:#7A3E9D;color:#C084FC;">Takeoff</button>
+    <div class="tabs-row-sep"></div>
     <a class="crew-directory-btn" href="index.html" title="Crew Directory">
       <span class="cd-arrow">←</span><span class="cd-text">Crew Directory</span>
     </a>
     <div class="sheet-tabs" id="sheetTabs"></div>
-    <button class="mobile-panel-toggle" id="takeoffToggle" style="background:#7A3E9D;">Takeoff</button>
-    <button class="mobile-panel-toggle" id="mobilePanelToggle">Notes</button>
+    <button class="mobile-panel-toggle" id="mobilePanelToggle" style="margin-left:auto;">Notes</button>
   </div>
   <div class="action-bar" id="actionBar">
     <div class="action-bar-status-wrap">
       <span class="status-dot" id="statusDot"></span>
       <span id="statusText" class="action-bar-status">No job open</span>
+    </div>
+    <!-- Color + thickness pickers — shown here when no markup selected and tool uses them -->
+    <div class="action-bar-pickers hidden" id="actionBarPickers">
+      <div class="color-dot active" data-color="#FF0000" style="background:#FF0000"></div>
+      <div class="color-dot" data-color="#00FF00" style="background:#00FF00"></div>
+      <div class="color-dot" data-color="#0000FF" style="background:#0000FF"></div>
+      <div class="color-dot" data-color="#FF8000" style="background:#FF8000"></div>
+      <div class="color-dot" data-color="#FF00FF" style="background:#FF00FF"></div>
+      <div class="color-dot" data-color="#000000" style="background:#000000"></div>
+      <div class="action-bar-picker-sep"></div>
+      <div class="thickness-dot active" data-thickness="2"><span style="width:14px;height:2px;"></span></div>
+      <div class="thickness-dot" data-thickness="4"><span style="width:14px;height:4px;"></span></div>
+      <div class="thickness-dot" data-thickness="7"><span style="width:14px;height:7px;"></span></div>
     </div>
     <div class="action-bar-dynamic" id="actionBarDynamic"></div>
   </div>
@@ -288,6 +334,8 @@ input,textarea{font-family:inherit;}
       <button class="tool-btn" data-tool="mselect" title="Multi-select: tap multiple items or drag a box, then move/delete/color/group them together"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2.5"/><circle cx="8" cy="8" r="1.8" fill="currentColor"/><circle cx="16" cy="16" r="1.8" fill="currentColor"/></svg></button>
       <div class="tool-label">M-Sel</div>
       <div class="tool-sep"></div>
+      <button class="tool-btn" data-tool="photo" title="Photo marker with direction cone"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13.5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
+      <div class="tool-label">Photo</div>
       <button class="tool-btn" data-tool="draw" title="Freehand draw">✎</button>
       <div class="tool-label">Draw</div>
       <button class="tool-btn" data-tool="multiline" title="Route: multi-segment run, snapped, rounded joints"><svg width="20" height="20" viewBox="0 0 24 24"><polyline points="3,18 8,18 8,6 20,6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="3" cy="18" r="1.8" fill="currentColor"/><circle cx="20" cy="6" r="1.8" fill="currentColor"/></svg></button>
@@ -310,38 +358,24 @@ input,textarea{font-family:inherit;}
       <div class="tool-label">Note</div>
       <button class="tool-btn" data-tool="elevation" title="Elevation callout with leader (divided pill)"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="2" y="3" width="12" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.3"/><line x1="14" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.6"/><line x1="18" y1="8" x2="21" y2="17" stroke="currentColor" stroke-width="1.6"/><circle cx="21" cy="17" r="1.6" fill="currentColor"/></svg></button>
       <div class="tool-label">Elev</div>
-      <button class="tool-btn" data-tool="photo" title="Photo marker with direction cone"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13.5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
-      <div class="tool-label">Photo</div>
       <button class="tool-btn" data-tool="equipment" title="Equipment tag with leader (hexagon, type/number)"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 4h7l3 4-3 4H4L1 8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="1" y1="8" x2="10" y2="8" stroke="currentColor" stroke-width="1.2"/><line x1="14" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.6"/><line x1="18" y1="8" x2="21" y2="17" stroke="currentColor" stroke-width="1.6"/><circle cx="21" cy="17" r="1.6" fill="currentColor"/></svg></button>
       <div class="tool-label">Equip</div>
+      <div class="tool-sep"></div>
+      <button class="tool-btn" data-tool="airOutletTag" title="Air Outlet Tag — place a supply/return/exhaust tag on the drawing"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="7" cy="12" r="2" fill="currentColor" opacity="0.5"/><line x1="10" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1.3"/></svg></button>
+      <div class="tool-label">A/O Tag</div>
       <div class="tool-sep"></div>
       <button class="tool-btn" data-tool="erase" title="Erase a markup"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M2 4 L2 2 L14 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M22 22 L22 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L2 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><g transform="rotate(-45 12 12)"><rect x="4" y="8.5" width="16" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="12" y1="8.5" x2="12" y2="15.5" stroke="currentColor" stroke-width="1.8"/></g></svg></button>
       <div class="tool-label">Erase</div>
       <div class="tool-sep"></div>
       <div class="whiteout-group">
-        <div class="tool-label whiteout-label">WHITE-<br>OUT</div>
+        <div class="tool-label whiteout-label">WHTOUT</div>
         <div class="whiteout-buttons">
-          <button class="tool-btn" data-tool="whiteoutRect" title="Whiteout (rectangle) — covers PDF content, not destructive"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2"/></svg></button>
-          <button class="tool-btn" data-tool="whiteoutFreeform" title="Whiteout (freeform) — covers PDF content, not destructive"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M4 6 L11 3 L16 7 L21 6 L20 13 L22 18 L16 21 L11 18 L6 21 L3 15 L7 11 Z" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2" stroke-linejoin="round"/></svg></button>
+          <button class="tool-btn" data-tool="whiteoutRect" title="Whiteout (rectangle)"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2"/></svg></button>
+          <button class="tool-btn" data-tool="whiteoutFreeform" title="Whiteout (freeform)"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M4 6 L11 3 L16 7 L21 6 L20 13 L22 18 L16 21 L11 18 L6 21 L3 15 L7 11 Z" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2" stroke-linejoin="round"/></svg></button>
         </div>
       </div>
       <button class="whiteout-lock-btn" id="whiteoutLockBtn" title="Unlock whiteouts to edit them (locks out every other tool until you lock again)"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></button>
       <div class="tool-label" id="whiteoutLockLabel">Unlock</div>
-      <div class="tool-sep"></div>
-      <div class="color-row">
-        <div class="color-dot active" data-color="#FF0000" style="background:#FF0000"></div>
-        <div class="color-dot" data-color="#00FF00" style="background:#00FF00"></div>
-        <div class="color-dot" data-color="#0000FF" style="background:#0000FF"></div>
-        <div class="color-dot" data-color="#FF8000" style="background:#FF8000"></div>
-        <div class="color-dot" data-color="#FF00FF" style="background:#FF00FF"></div>
-        <div class="color-dot" data-color="#000000" style="background:#000000"></div>
-      </div>
-      <div class="tool-sep"></div>
-      <div class="thickness-row">
-        <div class="thickness-dot active" data-thickness="2"><span style="width:14px;height:2px;"></span></div>
-        <div class="thickness-dot" data-thickness="4"><span style="width:14px;height:4px;"></span></div>
-        <div class="thickness-dot" data-thickness="7"><span style="width:14px;height:7px;"></span></div>
-      </div>
       <div class="tool-flyout hidden" id="shapeRow">
         <button class="shape-btn active" data-shape="circle" title="Circle"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
         <button class="shape-btn" data-shape="square" title="Square"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
@@ -392,6 +426,7 @@ input,textarea{font-family:inherit;}
     </div>
 
     <div class="panel panel-hidden" id="panel">
+      <div class="panel-resize-handle" id="panelResizeHandle"></div>
       <div class="panel-head">
         <div>
           <div class="disp">Notes on this sheet</div>
@@ -410,19 +445,24 @@ input,textarea{font-family:inherit;}
     </div>
 
     <div class="panel panel-hidden" id="takeoffPanel">
+      <div class="panel-resize-handle" id="takeoffResizeHandle"></div>
       <div class="panel-head">
         <div>
-          <div class="disp">Air Terminal Takeoff</div>
+          <div class="disp">Air Outlet Takeoff</div>
           <div class="count" id="takeoffCount">0 items</div>
         </div>
         <button class="panel-close" id="takeoffCloseBtn">✕</button>
       </div>
-      <div class="takeoff-tabs">
-        <button class="takeoff-tab active" data-cat="supply">Supply</button>
-        <button class="takeoff-tab" data-cat="return">Return</button>
-        <button class="takeoff-tab" data-cat="exhaust">Exhaust</button>
+      <div class="takeoff-search-row">
+        <input type="text" id="takeoffFilterInput" placeholder="Filter by description, model…">
       </div>
-      <button class="takeoff-add-btn" id="takeoffAddBtn">+ Add item</button>
+      <div class="takeoff-cat-btns">
+        <button class="takeoff-cat-btn supply active" data-cat="supply">Supply</button>
+        <button class="takeoff-cat-btn return" data-cat="return">Return</button>
+        <button class="takeoff-cat-btn exhaust" data-cat="exhaust">Exhaust</button>
+        <button class="takeoff-cat-btn" data-cat="all" style="background:var(--surface-2);color:var(--muted);border-color:var(--line);font-size:11px;">All</button>
+      </div>
+      <button class="takeoff-add-btn" id="takeoffAddBtn">+ Add Air Outlet</button>
       <div class="panel-list" id="takeoffList">
         <div class="panel-empty">No items yet.</div>
       </div>
@@ -484,8 +524,11 @@ const state = {
   mDragActive: false, mDragStart: null, mDragOrigins: null, dragGroupOrigins: null,
   airTerminalCatalog: { items: [], nextId: 1 }, catalogModified: null,
   manufacturerDirectory: { manufacturers: [] }, manufacturerDirModified: null,
-  catalogLoaded: false, takeoffCategory: 'supply', mLastActionPoint: null,
+  catalogLoaded: false, takeoffCategory: 'supply', takeoffFilterText: '',
+  takeoffCategoryFilter: 'supply', // 'supply'|'return'|'exhaust'|'all'
+  mLastActionPoint: null,
   whiteoutsUnlocked: false,
+  airOutletRunItem: null, // { lineId, catalogId, description, category } — active placement run
 };
 
 const ANGLE_STEP = 15; // degrees — snap increment for Line/Run tools
@@ -501,6 +544,7 @@ const GROUPABLE_TYPES = ['line', 'multiline', 'shape', 'symbol'];
 const AXIS_SNAP_THRESHOLD = 6; // degrees — Dimension tool snaps only near horizontal/vertical, else free angle
 const JOINT_RADIUS = 15; // fixed fillet radius for multi-segment corners (diagrammatic, not exact)
 const PALETTE = ['#FF0000', '#00FF00', '#0000FF', '#FF8000', '#FF00FF', '#000000'];
+const AIR_OUTLET_COLORS = { supply: '#1A56DB', return: '#C026D3', exhaust: '#16a34a' };
 const ANNOTATION_COLOR = '#0000FF'; // vivid blue — used by Callout and Dimension
 const DEFAULT_LABEL_COLOR = '#0000FF'; // Callout — blue
 const DEFAULT_NOTE_COLOR = '#FF0000'; // Note — red
@@ -986,6 +1030,7 @@ async function openJobById(jobId){
     }
     migrateOldMarkupData(state.data);
     state.loadedSnapshot = JSON.parse(JSON.stringify(state.data.sheets)); // baseline for save-conflict auto-merge
+    state.loadedTakeoffSnapshot = JSON.parse(JSON.stringify(state.data.airTerminalTakeoff || {}));
     updateJobNameChip();
     renderSheetTabs();
     await renderActiveSheet();
@@ -1355,7 +1400,7 @@ $('#canvasArea').addEventListener('wheel', (e) => {
 function positionFloatingControls(){
   const rect = $('#canvasArea').getBoundingClientRect();
   const zc = $('#zoomControls');
-  zc.style.left = (rect.right - 54) + 'px';
+  zc.style.left = (rect.left + 10) + 'px';
   zc.style.top = (rect.top + 16) + 'px';
   positionRunDoneBtn();
 }
@@ -1454,6 +1499,7 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     $('#canvasArea').classList.remove('panning');
     clearMarkupActionButtons();
     hideRunDoneBtn();
+    updatePickersVisibility();
     drawAllMarkups();
   });
 });
@@ -1492,20 +1538,28 @@ $('#whiteoutLockBtn').addEventListener('click', () => {
   hideRunDoneBtn();
   drawAllMarkups();
 });
-document.querySelectorAll('.color-dot').forEach(dot => {
+// Color and thickness pickers live in the action bar; wire them up
+document.querySelectorAll('#actionBarPickers .color-dot').forEach(dot => {
   dot.addEventListener('click', () => {
-    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+    document.querySelectorAll('#actionBarPickers .color-dot').forEach(d => d.classList.remove('active'));
     dot.classList.add('active');
     state.color = dot.dataset.color;
   });
 });
-document.querySelectorAll('.thickness-dot').forEach(dot => {
+document.querySelectorAll('#actionBarPickers .thickness-dot').forEach(dot => {
   dot.addEventListener('click', () => {
-    document.querySelectorAll('.thickness-dot').forEach(d => d.classList.remove('active'));
+    document.querySelectorAll('#actionBarPickers .thickness-dot').forEach(d => d.classList.remove('active'));
     dot.classList.add('active');
     state.thickness = parseInt(dot.dataset.thickness, 10);
   });
 });
+
+// Which tools show color + thickness pickers in the action bar when nothing is selected
+const TOOLS_WITH_PICKERS = new Set(['draw','multiline','shape','symbol','label','note','hatchline','hatcharea','line']);
+function updatePickersVisibility(){
+  const show = TOOLS_WITH_PICKERS.has(state.tool) && !state.selectedMarkupId && state.multiSelectedIds.size === 0;
+  $('#actionBarPickers').classList.toggle('hidden', !show);
+}
 document.querySelectorAll('#shapeRow .shape-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('#shapeRow .shape-btn').forEach(b => b.classList.remove('active'));
@@ -1564,28 +1618,43 @@ document.addEventListener('click', (e) => {
 /* ============================================================
    MOBILE PANEL TOGGLE
    ============================================================ */
-$('#mobilePanelToggle').addEventListener('click', () => $('#panel').classList.toggle('panel-hidden'));
-$('#panelCloseBtn').addEventListener('click', () => $('#panel').classList.add('panel-hidden'));
+$('#mobilePanelToggle').addEventListener('click', () => {
+  $('#panel').classList.toggle('panel-hidden');
+  positionFloatingControls();
+});
+$('#panelCloseBtn').addEventListener('click', () => {
+  $('#panel').classList.add('panel-hidden');
+  positionFloatingControls();
+});
 $('#takeoffToggle').addEventListener('click', async () => {
   const willShow = $('#takeoffPanel').classList.contains('panel-hidden');
   $('#takeoffPanel').classList.toggle('panel-hidden');
+  positionFloatingControls();
   if(willShow){
     await ensureCatalogLoaded();
     renderTakeoffList();
   }
 });
-$('#takeoffCloseBtn').addEventListener('click', () => $('#takeoffPanel').classList.add('panel-hidden'));
-document.querySelectorAll('.takeoff-tab').forEach(btn => {
+$('#takeoffCloseBtn').addEventListener('click', () => {
+  $('#takeoffPanel').classList.add('panel-hidden');
+  positionFloatingControls();
+});
+// Category filter buttons
+document.querySelectorAll('.takeoff-cat-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.takeoff-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.takeoff-cat-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    state.takeoffCategory = btn.dataset.cat;
+    state.takeoffCategoryFilter = btn.dataset.cat;
     renderTakeoffList();
   });
 });
+$('#takeoffFilterInput').addEventListener('input', (e) => {
+  state.takeoffFilterText = e.target.value;
+  renderTakeoffList();
+});
 $('#takeoffAddBtn').addEventListener('click', async () => {
   await ensureCatalogLoaded();
-  showTakeoffSearchModal();
+  showTakeoffCategoryPickerModal();
 });
 $('#noteFilterInput').addEventListener('input', (e) => {
   state.noteFilterText = e.target.value;
@@ -1625,6 +1694,42 @@ document.addEventListener('click', (e) => {
     flyout.classList.add('hidden');
   }
 });
+
+/* ============================================================
+   PANEL RESIZE HANDLES — drag to widen/narrow (desktop, min 300px)
+   ============================================================ */
+(function setupPanelResize(){
+  function addResizeHandle(handleId, panelId){
+    const handle = document.getElementById(handleId);
+    const panel = document.getElementById(panelId);
+    if(!handle || !panel) return;
+    let dragging = false, startX = 0, startW = 0;
+    handle.addEventListener('mousedown', (e) => {
+      if(window.matchMedia('(max-width:900px)').matches) return; // desktop only
+      e.preventDefault();
+      dragging = true;
+      startX = e.clientX;
+      startW = panel.offsetWidth;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    });
+    document.addEventListener('mousemove', (e) => {
+      if(!dragging) return;
+      const delta = startX - e.clientX; // dragging handle leftward = wider
+      const newW = Math.max(300, Math.min(700, startW + delta));
+      panel.style.width = newW + 'px';
+      positionFloatingControls();
+    });
+    document.addEventListener('mouseup', () => {
+      if(!dragging) return;
+      dragging = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+  }
+  addResizeHandle('panelResizeHandle', 'panel');
+  addResizeHandle('takeoffResizeHandle', 'takeoffPanel');
+})();
 
 /* ============================================================
    POINTER HANDLING
@@ -1809,6 +1914,8 @@ function onPointerDown(e){
     placeEquipmentMarkup(p);
   } else if(state.tool === 'symbol'){
     placeSymbolMarker(p);
+  } else if(state.tool === 'airOutletTag'){
+    placeAirOutletTag(p);
   } else if(state.tool === 'erase'){
     eraseNear(p);
   }
@@ -2067,7 +2174,14 @@ function onPointerUp(e){
 /* ---- Run tool "Done" button — also used to finish a freeform hatch area,
    since both are the same "tap points, then finish" interaction pattern. ---- */
 function showRunDoneBtn(){ $('#runDoneBtn').classList.remove('hidden'); positionRunDoneBtn(); }
-function hideRunDoneBtn(){ $('#runDoneBtn').classList.add('hidden'); }
+function hideRunDoneBtn(){
+  $('#runDoneBtn').classList.add('hidden');
+  // If we were in an airOutletTag placement run, end it
+  if(state.airOutletRunItem){
+    state.airOutletRunItem = null;
+    clearMarkupActionButtons();
+  }
+}
 function finishMultiline(){
   let createdId = null;
   if(state.multiPoints && state.multiPoints.length > 1){
@@ -2104,7 +2218,17 @@ function finishMultiline(){
   if(createdId) switchToSelectAndSelect(createdId);
   else drawAllMarkups();
 }
-$('#runDoneBtn').addEventListener('click', finishMultiline);
+$('#runDoneBtn').addEventListener('click', () => {
+  if(state.airOutletRunItem){
+    // End air outlet placement run
+    state.airOutletRunItem = null;
+    hideRunDoneBtn();
+    clearMarkupActionButtons();
+    switchToTool('select');
+  } else {
+    finishMultiline();
+  }
+});
 
 function onDblClick(e){
   if((state.tool === 'multiline' || state.tool === 'hatcharea' || state.tool === 'whiteoutFreeform' || state.tool === 'hatchline') && state.multiPoints && state.multiPoints.length > 1){
@@ -2231,6 +2355,86 @@ function placeSymbolMarker(anchor){
   switchToSelectAndSelect(markup.id);
 }
 
+// Place an Air Outlet Tag on the canvas at the given point.
+// If airOutletRunItem is set we're in rapid-fire placement for a known item;
+// otherwise we ask the user to pick an item from the takeoff list first.
+function placeAirOutletTag(anchor){
+  if(!state.airOutletRunItem){
+    // No active run — open the takeoff panel and start an add flow
+    const sheet = activeSheet();
+    const items = state.data.airTerminalTakeoff;
+    const allItems = [...(items.supply||[]).map(li=>({...li,cat:'supply'})),
+                     ...(items.return||[]).map(li=>({...li,cat:'return'})),
+                     ...(items.exhaust||[]).map(li=>({...li,cat:'exhaust'}))];
+    if(allItems.length === 0){
+      showModal({ title: 'No outlet items yet', sub: 'Add items to the Takeoff list first, then use "Place tag" to place them on the drawing.', confirmLabel: 'OK', onConfirm: () => {} });
+      switchToTool('select');
+      return;
+    }
+    // Prompt user to pick from the takeoff list
+    showAirOutletTagPickerModal();
+    return;
+  }
+  const run = state.airOutletRunItem;
+  const cat = run.category;
+  const color = AIR_OUTLET_COLORS[cat] || '#555';
+  const markup = {
+    id: genId(), type: 'airOutletTag',
+    catalogId: run.catalogId, lineId: run.lineId,
+    description: run.description, category: cat,
+    color, anchor, note: '', createdAt: Date.now(),
+  };
+  activeSheet().markups.push(markup);
+  markDirty();
+  renderNoteList();
+  renderTakeoffList();
+  drawAllMarkups();
+  // Show Done button to exit placement run
+  showRunDoneBtn();
+  // Update action bar to show "placing X" hint
+  const bar = $('#actionBarDynamic');
+  bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(run.description)}</strong> — tap to add more, or click Done</span>`;
+}
+
+function showAirOutletTagPickerModal(){
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  const items = state.data.airTerminalTakeoff;
+  const allItems = [...(items.supply||[]).map(li=>({...li,cat:'supply'})),
+                   ...(items.return||[]).map(li=>({...li,cat:'return'})),
+                   ...(items.exhaust||[]).map(li=>({...li,cat:'exhaust'}))];
+  const catColors = { supply:'#1A56DB', return:'#C026D3', exhaust:'#16a34a' };
+  card.innerHTML = `
+    <div class="disp">Pick outlet item to place</div>
+    <div class="modal-sub">Tap a row to start placing tags for that outlet.</div>
+    <div id="aoPickerList" style="max-height:280px;overflow-y:auto;margin-top:8px;"></div>
+    <div class="modal-row"><button type="button" class="cancel">Cancel</button></div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+  const list = card.querySelector('#aoPickerList');
+  allItems.forEach(li => {
+    const col = catColors[li.cat] || '#555';
+    const row = document.createElement('div');
+    row.style.cssText = `padding:8px 10px;border:2px solid ${col}30;border-radius:8px;margin-bottom:6px;cursor:pointer;display:flex;align-items:center;gap:10px;`;
+    row.innerHTML = `<span style="width:10px;height:10px;border-radius:50%;background:${col};flex-shrink:0;"></span>
+      <span><strong>${escapeHtml(li.description || '(no description)')}</strong> <span style="font-size:11px;color:var(--muted);">${li.cat}</span></span>`;
+    row.addEventListener('click', () => {
+      root.innerHTML = '';
+      state.airOutletRunItem = { lineId: li.lineId, catalogId: li.catalogId, description: li.description, category: li.cat };
+      const bar = $('#actionBarDynamic');
+      bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(li.description || '')}</strong> — tap canvas to add, Done to finish</span>`;
+      showRunDoneBtn();
+    });
+    list.appendChild(row);
+  });
+  card.querySelector('.cancel').addEventListener('click', () => { root.innerHTML = ''; switchToTool('select'); });
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop){ root.innerHTML = ''; switchToTool('select'); } });
+}
+
 // After placing a Callout, Note, or Dimension, the natural next action is
 // almost always adjusting it — so switch straight to the Select tool with
 // the new markup already selected, instead of leaving the person on the
@@ -2285,7 +2489,7 @@ function markupCenterPoint(m){
     const xs = m.points.map(pt => pt.x), ys = m.points.map(pt => pt.y);
     return { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 };
   }
-  if(m.type === 'photo' || m.type === 'symbol') return m.anchor;
+  if(m.type === 'photo' || m.type === 'symbol' || m.type === 'airOutletTag') return m.anchor;
   return { x: 0, y: 0 };
 }
 // Re-centers the visible canvas on a markup without changing the current
@@ -2341,6 +2545,7 @@ function markupContainsPoint(m, p){
   if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment') return Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 40 || Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
   if(m.type === 'photo') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
   if(m.type === 'symbol') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 22;
+  if(m.type === 'airOutletTag') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 40;
   return false;
 }
 function pointInPolygon(p, points){
@@ -2456,7 +2661,7 @@ function translateMarkup(m, origin, dx, dy){
     m.anchor = { x: origin.anchor.x + dx, y: origin.anchor.y + dy };
     m.bend = { x: origin.bend.x + dx, y: origin.bend.y + dy };
     m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
-  } else if(m.type === 'photo' || m.type === 'symbol'){
+  } else if(m.type === 'photo' || m.type === 'symbol' || m.type === 'airOutletTag'){
     m.anchor = { x: origin.anchor.x + dx, y: origin.anchor.y + dy };
   }
 }
@@ -2507,11 +2712,13 @@ function clearMarkupActionButtons(){
   bar.innerHTML = state.whiteoutsUnlocked
     ? '<span class="action-bar-hint">Select a whiteout to move, resize, or delete it. Click Lock in the tool menu to exit.</span>'
     : '';
+  updatePickersVisibility();
   positionFloatingControls();
 }
 function showMarkupActionButtons(markupId){
   const bar = $('#actionBarDynamic');
   bar.innerHTML = '';
+  $('#actionBarPickers').classList.add('hidden'); // hide pickers while selection is active
   const sheet = activeSheet();
   const m = sheet && sheet.markups.find(x => x.id === markupId);
   if(!m) return;
@@ -2672,6 +2879,22 @@ function showMarkupActionButtons(markupId){
     });
     buttonRow.appendChild(hatchBtn);
   }
+  if(m.type === 'airOutletTag'){
+    const editDescBtn = document.createElement('button');
+    editDescBtn.textContent = 'Edit tag';
+    editDescBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showModal({
+        title: 'Edit Air Outlet Tag', value: m.tagLabel || '', placeholder: 'e.g. CD-3', confirmLabel: 'Save',
+        onConfirm: (val) => {
+          if(!val) return;
+          m.tagLabel = val.toUpperCase();
+          markDirty(); drawAllMarkups(); renderNoteList(); renderTakeoffList();
+        }
+      });
+    });
+    buttonRow.appendChild(editDescBtn);
+  }
   const dupBtn = document.createElement('button');
   dupBtn.textContent = 'Duplicate';
   dupBtn.addEventListener('click', (e) => {
@@ -2695,7 +2918,7 @@ function showMarkupActionButtons(markupId){
       if(idx > -1) sheet.markups.splice(idx, 1);
     }
     state.selectedMarkupId = null;
-    markDirty(); drawAllMarkups(); renderNoteList(); clearMarkupActionButtons();
+    markDirty(); drawAllMarkups(); renderNoteList(); renderTakeoffList(); clearMarkupActionButtons();
   });
   buttonRow.appendChild(delBtn);
   group.appendChild(buttonRow);
@@ -2722,10 +2945,9 @@ function showMarkupActionButtons(markupId){
     group.appendChild(thicknessRow);
   }
 
-  // Color control — available for every markup type except Whiteouts, which
-  // are always plain fill. This only changes the one selected markup; it
-  // never changes what color new markups default to.
-  if(m.type !== 'whiteoutRect' && m.type !== 'whiteoutFreeform'){
+  // Color control — available for every markup type except Whiteouts (always
+  // plain fill) and airOutletTag (color is driven by category, not palette).
+  if(m.type !== 'whiteoutRect' && m.type !== 'whiteoutFreeform' && m.type !== 'airOutletTag'){
   const colorRow = document.createElement('div');
   colorRow.className = 'markup-action-row';
   PALETTE.forEach(c => {
@@ -2908,6 +3130,7 @@ function drawAllMarkups(){
     else if(m.type === 'dimension') drawDimension(m);
     else if(m.type === 'hatchline') drawHatchLine(m);
     else if(m.type === 'hatcharea') drawHatchArea(m);
+    else if(m.type === 'airOutletTag') drawAirOutletTag(m);
   });
   if(state.selectedMarkupId){
     const m = sheet.markups.find(x => x.id === state.selectedMarkupId);
@@ -3719,6 +3942,42 @@ function renderHatchAreaPolygon(ctx, points, color, closed){
   ctx.restore();
 }
 
+/* Air Outlet Tag — pill badge: colored dot + "#ID / Description" */
+function drawAirOutletTag(m){
+  const ctx = mCanvas.getContext('2d');
+  const { anchor, color, description, catalogId } = m;
+  const label = `#${catalogId != null ? catalogId : '?'} / ${description || ''}`;
+  const font = 'bold 13px Inter, sans-serif';
+  ctx.font = font;
+  const textW = ctx.measureText(label).width;
+  const pillH = 22, pillR = 11;
+  const dotR = 5, dotGap = 8;
+  const paddingX = 10;
+  const pillW = paddingX + dotR * 2 + dotGap + textW + paddingX;
+  const x = anchor.x - pillW / 2;
+  const y = anchor.y - pillH / 2;
+  ctx.save();
+  // Pill background
+  ctx.fillStyle = '#fff';
+  roundRect(ctx, x, y, pillW, pillH, pillR);
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  roundRect(ctx, x, y, pillW, pillH, pillR);
+  ctx.stroke();
+  // Color dot
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x + paddingX + dotR, anchor.y, dotR, 0, Math.PI * 2);
+  ctx.fill();
+  // Label text
+  ctx.fillStyle = '#16202C';
+  ctx.font = font;
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, x + paddingX + dotR * 2 + dotGap, anchor.y);
+  ctx.restore();
+}
+
 function roundRect(ctx, x, y, w, h, r){
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -3765,6 +4024,7 @@ function renderNoteList(){
       : (m.type === 'shape') ? m.shape
       : (m.type === 'whiteoutRect') ? 'whiteout (rect)' + (m.locked ? ' \u2014 locked' : ' \u2014 unlocked')
       : (m.type === 'whiteoutFreeform') ? 'whiteout (freeform)' + (m.locked ? ' \u2014 locked' : ' \u2014 unlocked')
+      : (m.type === 'airOutletTag') ? `#${m.catalogId} / ${m.description || ''} (${m.category || ''})`
       : (m.type === 'line' && m.hatched) ? 'Line (hatched)'
       : (m.type === 'multiline' && m.hatched) ? 'Route (hatched)'
       : null; // generic types with no distinguishing content — title line gets skipped below
@@ -3774,9 +4034,10 @@ function renderNoteList(){
       <div class="nc-top"><span class="nc-type">${escapeHtml(markupTypeDisplayName(m))}</span><span class="nc-time">${time}</span></div>
       <div class="nc-text">${isGeneric ? '' : `<strong>${escapeHtml(label)}</strong><br>`}${noteText}</div>`;
     card.addEventListener('click', () => {
-      // Select it on the canvas too, not just open the note editor — so
-      // clicking an item in this list actually takes you to it.
+      // Select it on the canvas too and scroll it into view, not just open the note editor —
+      // so clicking an item in this list actually takes you to it.
       switchToSelectAndSelect(m.id);
+      centerViewOnMarkup(m);
       showModal({
         title: 'Note', value: m.note || '', placeholder: 'Add a note about this markup', confirmLabel: 'Save',
         onConfirm: (text) => { m.note = text; markDirty(); renderNoteList(); }
@@ -3796,6 +4057,7 @@ function markupTypeDisplayName(m){
     equipment: 'Equipment', photo: 'Photo', shape: 'Shape', symbol: 'Symbol',
     multiline: 'Route', hatchline: 'Demo Line', hatcharea: 'Hatch',
     whiteoutRect: 'Whiteout', whiteoutFreeform: 'Whiteout', line: 'Line', freehand: 'Draw',
+    airOutletTag: 'Air Outlet Tag',
   };
   let name = map[m.type] || m.type;
   if((m.type === 'line' || m.type === 'multiline') && m.hatched) name += ' (hatched)';
@@ -3879,84 +4141,184 @@ function forceUpperCaseInput(input){
   });
 }
 
+// Returns how many airOutletTag markups on the CURRENT sheet belong to a given lineId
+function countTagsForLine(lineId){
+  const sheet = activeSheet();
+  if(!sheet) return 0;
+  return sheet.markups.filter(m => m.type === 'airOutletTag' && m.lineId === lineId).length;
+}
+
+// Returns cumulative count of airOutletTag markups for a lineId ACROSS ALL sheets
+function countTagsForLineAllSheets(lineId){
+  return (state.data.sheets || []).reduce((sum, sheet) => {
+    return sum + (sheet.markups || []).filter(m => m.type === 'airOutletTag' && m.lineId === lineId).length;
+  }, 0);
+}
+
 function renderTakeoffList(){
   const list = $('#takeoffList');
-  const cat = state.takeoffCategory;
-  const items = (state.data.airTerminalTakeoff && state.data.airTerminalTakeoff[cat]) || [];
-  $('#takeoffCount').textContent = items.length + ' item' + (items.length === 1 ? '' : 's');
-  if(items.length === 0){
-    list.innerHTML = '<div class="panel-empty">No items yet.</div>';
-    return;
-  }
-  const standardItems = items.filter(li => {
-    const c = state.airTerminalCatalog.items.find(x => x.id === li.catalogId);
-    return c && c.terminalStyle !== 'LINEAR';
-  });
-  const linearItems = items.filter(li => {
-    const c = state.airTerminalCatalog.items.find(x => x.id === li.catalogId);
-    return c && c.terminalStyle === 'LINEAR';
-  });
-  let html = '';
-  if(standardItems.length) html += renderTakeoffTable('Standard', standardItems, false);
-  if(linearItems.length) html += renderTakeoffTable('Linear', linearItems, true);
-  list.innerHTML = html || '<div class="panel-empty">No items yet.</div>';
-  wireTakeoffRowEvents();
-}
-function renderTakeoffTable(title, lineItems, isLinear){
-  const cols = isLinear
-    ? ['I.D.', 'Desc', 'Mfr', 'Model', 'Length', 'Slots', 'Slot W', 'Frame', 'Color', 'Qty', 'Location', 'Notes', '']
-    : ['I.D.', 'Desc', 'Mfr', 'Model', 'Neck', 'Face', 'Frame', 'Color', 'Qty', 'Location', 'Notes', ''];
-  let totalQty = 0;
-  const rows = lineItems.map(li => {
-    const c = state.airTerminalCatalog.items.find(x => x.id === li.catalogId) || {};
-    totalQty += (parseInt(li.quantity, 10) || 0);
-    const specCols = isLinear
-      ? `<td>${escapeHtml(c.length || '')}</td><td>${escapeHtml(c.numSlots || '')}</td><td>${escapeHtml(c.slotWidth || '')}</td>`
-      : `<td>${escapeHtml(c.neckSize || '')}</td><td>${escapeHtml(c.faceSize || '')}</td>`;
-    return `<tr data-line-id="${escapeAttr(li.lineId)}">
-      <td>#${c.id != null ? c.id : ''}</td>
-      <td>${escapeHtml(li.description || '')}</td>
-      <td>${escapeHtml(c.manufacturer || '')}</td>
-      <td>${escapeHtml(c.model || '')}</td>
-      ${specCols}
-      <td>${escapeHtml(c.frameType || '')}</td>
-      <td>${escapeHtml(c.color || '')}</td>
-      <td><input type="number" class="takeoff-qty-input" data-field="quantity" value="${li.quantity || 0}" min="0"></td>
-      <td><input type="text" class="takeoff-text-input" data-field="location" value="${escapeAttr(li.location || '')}"></td>
-      <td><input type="text" class="takeoff-text-input" data-field="notes" value="${escapeAttr(li.notes || '')}"></td>
-      <td><button class="takeoff-row-del" data-line-id="${escapeAttr(li.lineId)}" title="Delete">✕</button></td>
-    </tr>`;
-  }).join('');
-  return `<div class="takeoff-section-title">${escapeHtml(title)}</div>
-  <table class="takeoff-table"><thead><tr>${cols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
-  <tbody>${rows}</tbody>
-  <tfoot><tr><td colspan="${cols.length - 2}">Total Qty</td><td>${totalQty}</td><td></td></tr></tfoot>
-  </table>`;
-}
-function wireTakeoffRowEvents(){
-  document.querySelectorAll('#takeoffList input[data-field]').forEach(input => {
-    if(input.dataset.field !== 'quantity') forceUpperCaseInput(input);
-    input.addEventListener('change', () => {
-      const tr = input.closest('tr');
-      const lineId = tr.dataset.lineId;
-      const cat = state.takeoffCategory;
-      const li = state.data.airTerminalTakeoff[cat].find(x => x.lineId === lineId);
-      if(!li) return;
-      if(input.dataset.field === 'quantity') li.quantity = parseInt(input.value, 10) || 0;
-      else li[input.dataset.field] = input.value;
-      markDirty();
-      renderTakeoffList();
+  const filterText = (state.takeoffFilterText || '').trim().toLowerCase();
+  const catFilter = state.takeoffCategoryFilter || 'supply';
+  const takeoff = state.data.airTerminalTakeoff || { supply: [], return: [], exhaust: [] };
+  const cats = catFilter === 'all' ? ['supply', 'return', 'exhaust'] : [catFilter];
+  const catColors = { supply:'#1A56DB', return:'#C026D3', exhaust:'#16a34a' };
+  const catLabels = { supply:'Supply', return:'Return', exhaust:'Exhaust' };
+
+  let totalItems = 0;
+  cats.forEach(c => { totalItems += (takeoff[c] || []).length; });
+  $('#takeoffCount').textContent = totalItems + ' item' + (totalItems === 1 ? '' : 's');
+
+  list.innerHTML = '';
+
+  let anyRendered = false;
+  cats.forEach(cat => {
+    const catItems = (takeoff[cat] || []).filter(li => {
+      if(!filterText) return true;
+      const c = state.airTerminalCatalog.items.find(x => x.id === li.catalogId) || {};
+      const hay = [li.description, c.manufacturer, c.model, li.location, li.notes].filter(Boolean).join(' ').toLowerCase();
+      return hay.includes(filterText);
     });
+    if(catItems.length === 0) return;
+    anyRendered = true;
+
+    // Category header
+    const catHead = document.createElement('div');
+    catHead.className = 'takeoff-cat-section-head';
+    catHead.innerHTML = `<span class="takeoff-cat-dot ${cat}"></span><span style="color:${catColors[cat]};font-weight:700;">${catLabels[cat]}</span>`;
+    list.appendChild(catHead);
+
+    const standardItems = catItems.filter(li => {
+      const c = state.airTerminalCatalog.items.find(x => x.id === li.catalogId);
+      return !c || c.terminalStyle !== 'LINEAR';
+    });
+    const linearItems = catItems.filter(li => {
+      const c = state.airTerminalCatalog.items.find(x => x.id === li.catalogId);
+      return c && c.terminalStyle === 'LINEAR';
+    });
+
+    function appendSubSection(items, isLinear){
+      if(items.length === 0) return;
+      const subHead = document.createElement('div');
+      subHead.className = 'takeoff-section-title';
+      subHead.textContent = isLinear ? 'Linear' : 'Standard';
+      list.appendChild(subHead);
+      items.forEach(li => {
+        const c = state.airTerminalCatalog.items.find(x => x.id === li.catalogId) || {};
+        const sheetQty = countTagsForLine(li.lineId);
+        const totalQty = countTagsForLineAllSheets(li.lineId);
+        const card = document.createElement('div');
+        card.dataset.lineId = li.lineId;
+        card.dataset.cat = cat;
+        card.style.cssText = `border:1px solid ${catColors[cat]}40;border-radius:8px;padding:8px 10px;margin:4px 10px;font-size:12px;`;
+        const specStr = isLinear
+          ? [c.length ? c.length + ' L' : '', c.numSlots ? c.numSlots + ' slots' : ''].filter(Boolean).join(', ')
+          : [c.neckSize ? 'Neck ' + c.neckSize : '', c.faceSize ? 'Face ' + c.faceSize : ''].filter(Boolean).join(', ');
+        card.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px;">
+            <div>
+              <strong style="font-size:13px;">${escapeHtml(li.description || '(no desc)')}</strong>
+              <span style="font-size:10px;color:var(--muted);margin-left:4px;">#${c.id != null ? c.id : '?'}</span>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:15px;font-weight:700;color:${catColors[cat]};">${sheetQty}</div>
+              <div style="font-size:10px;color:var(--muted);">this sheet</div>
+              <div style="font-size:10px;color:var(--muted);">${totalQty} total</div>
+            </div>
+          </div>
+          <div style="color:var(--muted);font-size:11px;margin-top:2px;">${escapeHtml(c.manufacturer || '')} ${escapeHtml(c.model || '')}${specStr ? ' · ' + escapeHtml(specStr) : ''}</div>
+          <div style="display:flex;gap:6px;margin-top:6px;align-items:center;">
+            <button class="takeoff-place-btn" data-line-id="${escapeAttr(li.lineId)}" data-cat="${cat}"
+              style="background:${catColors[cat]};color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">
+              📍 Place tag
+            </button>
+            <button class="takeoff-row-del" data-line-id="${escapeAttr(li.lineId)}" data-cat="${cat}" title="Delete" style="margin-left:auto;">✕</button>
+          </div>`;
+        list.appendChild(card);
+      });
+    }
+    appendSubSection(standardItems, false);
+    appendSubSection(linearItems, true);
   });
+
+  if(!anyRendered){
+    list.innerHTML = '<div class="panel-empty">No items' + (filterText ? ' match that filter.' : ' yet.') + '</div>';
+  } else {
+    wireTakeoffRowEvents();
+  }
+}
+// renderTakeoffTable is no longer used (replaced by the card-based renderTakeoffList above)
+// Kept as a stub to avoid any lingering references.
+function renderTakeoffTable(){ return ''; }
+function wireTakeoffRowEvents(){
   document.querySelectorAll('.takeoff-row-del').forEach(btn => {
     btn.addEventListener('click', () => {
       const lineId = btn.dataset.lineId;
-      const cat = state.takeoffCategory;
-      state.data.airTerminalTakeoff[cat] = state.data.airTerminalTakeoff[cat].filter(x => x.lineId !== lineId);
-      markDirty();
-      renderTakeoffList();
+      const cat = btn.dataset.cat;
+      if(state.data.airTerminalTakeoff[cat]){
+        state.data.airTerminalTakeoff[cat] = state.data.airTerminalTakeoff[cat].filter(x => x.lineId !== lineId);
+        markDirty();
+        renderTakeoffList();
+        drawAllMarkups(); // re-render to remove stale tag counts
+        renderNoteList();
+      }
     });
   });
+  document.querySelectorAll('.takeoff-place-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const lineId = btn.dataset.lineId;
+      const cat = btn.dataset.cat;
+      const items = state.data.airTerminalTakeoff[cat] || [];
+      const li = items.find(x => x.lineId === lineId);
+      if(!li) return;
+      // Make sure we have a PDF loaded
+      if(!state.naturalWidth){
+        showModal({ title: 'No drawing open', sub: 'Open a sheet with a floor plan first.', confirmLabel: 'OK', onConfirm: () => {} });
+        return;
+      }
+      // Switch to tag placement tool and set the active run item
+      state.airOutletRunItem = { lineId: li.lineId, catalogId: li.catalogId, description: li.description, category: cat };
+      switchToTool('airOutletTag');
+      const bar = $('#actionBarDynamic');
+      bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(li.description || '')}</strong> — tap canvas to add, Done to finish</span>`;
+      showRunDoneBtn();
+    });
+  });
+}
+
+// Phase 0: pick Supply / Return / Exhaust before searching the catalog
+function showTakeoffCategoryPickerModal(){
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  const catDefs = [
+    { cat:'supply', label:'Supply', color:'#1A56DB', icon:'↑' },
+    { cat:'return', label:'Return', color:'#C026D3', icon:'↓' },
+    { cat:'exhaust', label:'Exhaust', color:'#16a34a', icon:'⟲' },
+  ];
+  card.innerHTML = `
+    <div class="disp">Add Air Outlet</div>
+    <div class="modal-sub">Choose the air flow type for this item.</div>
+    <div style="display:flex;gap:10px;margin:16px 0;">
+      ${catDefs.map(d => `<button type="button" class="ao-cat-pick-btn" data-cat="${d.cat}"
+        style="flex:1;padding:14px 4px;border-radius:10px;border:2px solid ${d.color}40;background:${d.color}15;color:${d.color};font-weight:700;font-size:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <span style="font-size:20px;">${d.icon}</span>${d.label}
+      </button>`).join('')}
+    </div>
+    <div class="modal-row"><button type="button" class="cancel">Cancel</button></div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+  card.querySelectorAll('.ao-cat-pick-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.takeoffCategory = btn.dataset.cat;
+      root.innerHTML = '';
+      showTakeoffSearchModal();
+    });
+  });
+  card.querySelector('.cancel').addEventListener('click', () => root.innerHTML = '');
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) root.innerHTML = ''; });
 }
 
 // Phase 1: search the shared catalog by Manufacturer/Model (the only two
@@ -4114,6 +4476,9 @@ function showTakeoffNewCatalogItemModal(){
 // this is what actually lands in the job's takeoff list, never fed back
 // into the shared catalog.
 function showTakeoffJobDetailsModal(catalogItem){
+  const cat = state.takeoffCategory || 'supply';
+  const catColor = AIR_OUTLET_COLORS[cat] || '#1A56DB';
+  const catLabel = cat.charAt(0).toUpperCase() + cat.slice(1);
   const root = $('#modalRoot');
   root.innerHTML = '';
   const backdrop = document.createElement('div');
@@ -4121,16 +4486,18 @@ function showTakeoffJobDetailsModal(catalogItem){
   const card = document.createElement('div');
   card.className = 'modal-card';
   card.innerHTML = `
-    <div class="disp">${escapeHtml(catalogItem.manufacturer || '')} ${escapeHtml(catalogItem.model || '')} \u2014 this job</div>
-    <div class="modal-sub">Catalog #${catalogItem.id}</div>
-    <label class="modal-field-label">Description (this job's schedule tag)</label>
+    <div class="disp" style="display:flex;align-items:center;gap:8px;">
+      <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${catColor};flex-shrink:0;"></span>
+      ${escapeHtml(catalogItem.manufacturer || '')} ${escapeHtml(catalogItem.model || '')}
+    </div>
+    <div class="modal-sub">${catLabel} \u2014 Catalog #${catalogItem.id}</div>
+    <label class="modal-field-label">Schedule Tag / Description</label>
     <input type="text" id="tDesc" placeholder="e.g. CD-3">
-    <label class="modal-field-label">Quantity</label>
-    <input type="number" id="tQty" value="1" min="0">
     <label class="modal-field-label">Location / Area</label>
     <input type="text" id="tLoc">
     <label class="modal-field-label">Notes</label>
     <input type="text" id="tNotes">
+    <p style="font-size:11px;color:#888;margin:4px 0 8px;">Qty is tracked automatically from tags placed on the drawing.</p>
     <div class="modal-row">
       <button type="button" class="cancel">Cancel</button>
       <button type="button" class="save">Add to list</button>
@@ -4146,13 +4513,12 @@ function showTakeoffJobDetailsModal(catalogItem){
   backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
   card.querySelector('.save').addEventListener('click', () => {
     const desc = card.querySelector('#tDesc').value.trim().toUpperCase();
-    const qty = parseInt(card.querySelector('#tQty').value, 10) || 0;
     const loc = card.querySelector('#tLoc').value.trim().toUpperCase();
     const notes = card.querySelector('#tNotes').value.trim().toUpperCase();
     close();
-    const lineItem = { lineId: genId(), catalogId: catalogItem.id, description: desc, quantity: qty, location: loc, notes };
+    const lineItem = { lineId: genId(), catalogId: catalogItem.id, description: desc, location: loc, notes };
     if(!state.data.airTerminalTakeoff) state.data.airTerminalTakeoff = { supply: [], return: [], exhaust: [] };
-    state.data.airTerminalTakeoff[state.takeoffCategory].push(lineItem);
+    state.data.airTerminalTakeoff[cat].push(lineItem);
     markDirty();
     renderTakeoffList();
   });
@@ -4207,6 +4573,31 @@ $('#saveBtn').addEventListener('click', saveJob);
 // item I deleted stays deleted (it's absent from my local array AND was
 // present in the load-time baseline, so it's never re-added); anything the
 // server has that I never had is someone else's addition, and gets kept.
+// Merges airTerminalTakeoff at the line-item level: add items the server has
+// that we didn't have when we loaded (i.e. someone else added them), keep
+// items we added locally, and preserve local edits over the original version.
+function mergeAirTerminalTakeoff(local, server, original){
+  const empty = { supply: [], return: [], exhaust: [] };
+  local = local || empty;
+  server = server || empty;
+  original = original || empty;
+  const result = {};
+  ['supply', 'return', 'exhaust'].forEach(cat => {
+    const localItems = local[cat] || [];
+    const serverItems = server[cat] || [];
+    const originalIds = new Set((original[cat] || []).map(x => x.lineId));
+    const localIds = new Set(localItems.map(x => x.lineId));
+    const merged = localItems.slice();
+    serverItems.forEach(si => {
+      if(!localIds.has(si.lineId) && !originalIds.has(si.lineId)){
+        merged.push(si); // someone else added this line item while we were working
+      }
+    });
+    result[cat] = merged;
+  });
+  return result;
+}
+
 function mergeSheetsData(localSheets, serverSheets, originalSnapshot){
   const originalSheetIds = new Set((originalSnapshot || []).map(s => s.id));
   const originalMarkupIdsBySheet = {};
@@ -4244,6 +4635,7 @@ async function saveJob(){
     state.lastModified = result.lastModified;
     state.dirty = false;
     state.loadedSnapshot = JSON.parse(JSON.stringify(state.data.sheets));
+    state.loadedTakeoffSnapshot = JSON.parse(JSON.stringify(state.data.airTerminalTakeoff || {}));
     setStatus('saved', 'All changes saved');
     upsertJobsIndex(state.jobId, state.jobName);
     clearLocalDraft(state.jobId);
@@ -4253,12 +4645,18 @@ async function saveJob(){
       try{
         const latest = await AppCore.readJsonFile(state.fileName, { jobId: state.jobId, jobName: state.jobName, sheets: [] });
         state.data.sheets = mergeSheetsData(state.data.sheets, latest.data.sheets, state.loadedSnapshot);
+        state.data.airTerminalTakeoff = mergeAirTerminalTakeoff(
+          state.data.airTerminalTakeoff,
+          latest.data.airTerminalTakeoff,
+          state.loadedTakeoffSnapshot
+        );
         const retryResult = await AppCore.writeJsonFile(state.fileName, state.data, latest.lastModified);
         state.lastModified = retryResult.lastModified;
         state.loadedSnapshot = JSON.parse(JSON.stringify(state.data.sheets));
+        state.loadedTakeoffSnapshot = JSON.parse(JSON.stringify(state.data.airTerminalTakeoff || {}));
         state.dirty = false;
         await renderActiveSheet();
-        renderNoteList();
+        renderNoteList(); renderTakeoffList();
         setStatus('saved', 'All changes saved (merged with other changes)');
         upsertJobsIndex(state.jobId, state.jobName);
         clearLocalDraft(state.jobId);
