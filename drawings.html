@@ -387,6 +387,8 @@ input,textarea{font-family:inherit;}
         <button id="zoomOutBtn" title="Zoom out">−</button>
       </div>
       <button class="run-done-btn hidden" id="runDoneBtn">Done ✓</button>
+      <button class="run-done-btn hidden" id="mSelectGroupBtn">Group</button>
+      <button class="run-done-btn hidden" id="mSelectUngroupBtn">Ungroup</button>
     </div>
 
     <div class="panel panel-hidden" id="panel">
@@ -482,7 +484,7 @@ const state = {
   mDragActive: false, mDragStart: null, mDragOrigins: null, dragGroupOrigins: null,
   airTerminalCatalog: { items: [], nextId: 1 }, catalogModified: null,
   manufacturerDirectory: { manufacturers: [] }, manufacturerDirModified: null,
-  catalogLoaded: false, takeoffCategory: 'supply',
+  catalogLoaded: false, takeoffCategory: 'supply', mLastActionPoint: null,
   whiteoutsUnlocked: false,
 };
 
@@ -1446,6 +1448,8 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
       state.marqueeStart = null;
       state.marqueeCurrent = null;
       state.mDragActive = false;
+      $('#mSelectGroupBtn').classList.add('hidden');
+      $('#mSelectUngroupBtn').classList.add('hidden');
     }
     $('#canvasArea').classList.remove('panning');
     clearMarkupActionButtons();
@@ -1706,8 +1710,10 @@ function onPointerDown(e){
         if(m) state.mDragOrigins[id] = cloneMarkupPoints(m);
       });
       try{ mCanvas.setPointerCapture(e.pointerId); }catch(err){}
+      state.mLastActionPoint = p;
       drawAllMarkups();
       updateMSelectActionBar();
+      positionMSelectButtons();
       return;
     }
     state.marqueeStart = p;
@@ -1926,8 +1932,10 @@ function onPointerUp(e){
     }
     state.marqueeStart = null;
     state.marqueeCurrent = null;
+    state.mLastActionPoint = { x: (x0 + x1) / 2, y: (y0 + y1) / 2 };
     drawAllMarkups();
     updateMSelectActionBar();
+    positionMSelectButtons();
     return;
   }
   if(state.tool === 'mselect' && state.mDragActive){
@@ -1940,9 +1948,11 @@ function onPointerUp(e){
     }
     if(dist >= 6) markDirty();
     state.mDragOrigins = null;
+    state.mLastActionPoint = p;
     try{ mCanvas.releasePointerCapture(e.pointerId); }catch(err){}
     drawAllMarkups();
     updateMSelectActionBar();
+    positionMSelectButtons();
     return;
   }
   if((state.tool === 'multiline' || state.tool === 'hatchline') && state.routeDragging){
@@ -2778,33 +2788,6 @@ function updateMSelectActionBar(){
   const btnRow = document.createElement('div');
   btnRow.className = 'markup-action-row';
 
-  const allGroupable = selected.length >= 2 && selected.every(m => GROUPABLE_TYPES.includes(m.type));
-  if(allGroupable){
-    const groupBtn = document.createElement('button');
-    groupBtn.textContent = 'Group';
-    groupBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const gid = genId();
-      selected.forEach(m => { m.groupId = gid; });
-      markDirty();
-      drawAllMarkups();
-      updateMSelectActionBar();
-    });
-    btnRow.appendChild(groupBtn);
-  }
-  if(selected.some(m => m.groupId)){
-    const ungroupBtn = document.createElement('button');
-    ungroupBtn.textContent = 'Ungroup';
-    ungroupBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      selected.forEach(m => { delete m.groupId; });
-      markDirty();
-      drawAllMarkups();
-      updateMSelectActionBar();
-    });
-    btnRow.appendChild(ungroupBtn);
-  }
-
   const clearBtn = document.createElement('button');
   clearBtn.textContent = 'Clear selection';
   clearBtn.addEventListener('click', (e) => {
@@ -2812,6 +2795,7 @@ function updateMSelectActionBar(){
     state.multiSelectedIds.clear();
     drawAllMarkups();
     updateMSelectActionBar();
+    positionMSelectButtons();
   });
   btnRow.appendChild(clearBtn);
 
@@ -2827,11 +2811,56 @@ function updateMSelectActionBar(){
     drawAllMarkups();
     renderNoteList();
     updateMSelectActionBar();
+    positionMSelectButtons();
   });
   btnRow.appendChild(delBtn);
 
   bar.appendChild(btnRow);
 }
+
+// Group/Ungroup float near wherever you just tapped, marqueed, or dragged —
+// same pattern as the Route/Hatch Area Done button — instead of being buried
+// in the action bar where they were easy to miss entirely.
+function positionMSelectButtons(){
+  const groupBtn = $('#mSelectGroupBtn');
+  const ungroupBtn = $('#mSelectUngroupBtn');
+  const sheet = activeSheet();
+  const selected = (sheet && state.tool === 'mselect') ? sheet.markups.filter(m => state.multiSelectedIds.has(m.id)) : [];
+  const allGroupable = selected.length >= 2 && selected.every(m => GROUPABLE_TYPES.includes(m.type));
+  const anyGrouped = selected.some(m => m.groupId);
+  groupBtn.classList.toggle('hidden', !allGroupable);
+  ungroupBtn.classList.toggle('hidden', !anyGrouped);
+  if(!allGroupable && !anyGrouped) return;
+  if(!state.mLastActionPoint || !mCanvas) return;
+  const rect = mCanvas.getBoundingClientRect();
+  const scaleX = rect.width / mCanvas.width, scaleY = rect.height / mCanvas.height;
+  const left = rect.left + state.mLastActionPoint.x * scaleX - 30;
+  const topGroup = rect.top + state.mLastActionPoint.y * scaleY - 70;
+  const topUngroup = rect.top + state.mLastActionPoint.y * scaleY - (allGroupable ? 116 : 70);
+  if(allGroupable){ groupBtn.style.left = left + 'px'; groupBtn.style.top = topGroup + 'px'; }
+  if(anyGrouped){ ungroupBtn.style.left = left + 'px'; ungroupBtn.style.top = topUngroup + 'px'; }
+}
+$('#mSelectGroupBtn').addEventListener('click', () => {
+  const sheet = activeSheet();
+  if(!sheet) return;
+  const selected = sheet.markups.filter(m => state.multiSelectedIds.has(m.id));
+  const gid = genId();
+  selected.forEach(m => { m.groupId = gid; });
+  markDirty();
+  drawAllMarkups();
+  updateMSelectActionBar();
+  positionMSelectButtons();
+});
+$('#mSelectUngroupBtn').addEventListener('click', () => {
+  const sheet = activeSheet();
+  if(!sheet) return;
+  const selected = sheet.markups.filter(m => state.multiSelectedIds.has(m.id));
+  selected.forEach(m => { delete m.groupId; });
+  markDirty();
+  drawAllMarkups();
+  updateMSelectActionBar();
+  positionMSelectButtons();
+});
 
 /* ============================================================
    RENDERING
