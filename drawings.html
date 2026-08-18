@@ -132,6 +132,18 @@ input,textarea{font-family:inherit;}
 .panel.panel-hidden{display:none;}
 .panel-head{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
 .panel-filter-row{display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid var(--line);}
+.takeoff-tabs{display:flex;border-bottom:1px solid var(--line);}
+.takeoff-tab{flex:1;padding:10px 4px;background:transparent;border:none;border-bottom:2px solid transparent;font-weight:600;font-size:13px;color:var(--muted);}
+.takeoff-tab.active{color:#7A3E9D;border-bottom-color:#7A3E9D;}
+.takeoff-add-btn{margin:10px 16px;background:#7A3E9D;color:#fff;border:none;border-radius:8px;padding:9px;font-weight:600;font-size:13px;}
+.takeoff-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted);padding:10px 16px 4px;}
+.takeoff-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px;}
+.takeoff-table th{text-align:left;font-size:10px;text-transform:uppercase;color:var(--muted);padding:4px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
+.takeoff-table td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top;}
+.takeoff-table tfoot td{font-weight:700;border-bottom:none;padding-top:6px;}
+.takeoff-row-del{background:none;border:none;color:var(--danger);font-weight:700;cursor:pointer;padding:2px 6px;}
+.takeoff-qty-input{width:44px;border:1px solid var(--line);border-radius:5px;padding:2px 4px;font-size:12px;text-align:center;}
+.takeoff-text-input{width:100%;min-width:70px;border:1px solid var(--line);border-radius:5px;padding:2px 4px;font-size:12px;}
 .panel-filter-row input{flex:1;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;}
 .panel-filter-row button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);font-size:15px;flex-shrink:0;}
 .type-visibility-flyout{position:fixed;z-index:60;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px;box-shadow:var(--shadow);max-height:280px;overflow-y:auto;}
@@ -394,6 +406,25 @@ input,textarea{font-family:inherit;}
         <div class="panel-empty">No markups yet.</div>
       </div>
     </div>
+
+    <div class="panel panel-hidden" id="takeoffPanel">
+      <div class="panel-head">
+        <div>
+          <div class="disp">Air Terminal Takeoff</div>
+          <div class="count" id="takeoffCount">0 items</div>
+        </div>
+        <button class="panel-close" id="takeoffCloseBtn">✕</button>
+      </div>
+      <div class="takeoff-tabs">
+        <button class="takeoff-tab active" data-cat="supply">Supply</button>
+        <button class="takeoff-tab" data-cat="return">Return</button>
+        <button class="takeoff-tab" data-cat="exhaust">Exhaust</button>
+      </div>
+      <button class="takeoff-add-btn" id="takeoffAddBtn">+ Add item</button>
+      <div class="panel-list" id="takeoffList">
+        <div class="panel-empty">No items yet.</div>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -449,6 +480,9 @@ const state = {
   noteFilterText: '', hiddenTypes: new Set(),
   multiSelectedIds: new Set(), marqueeStart: null, marqueeCurrent: null,
   mDragActive: false, mDragStart: null, mDragOrigins: null, dragGroupOrigins: null,
+  airTerminalCatalog: { items: [], nextId: 1 }, catalogModified: null,
+  manufacturerDirectory: { manufacturers: [] }, manufacturerDirModified: null,
+  catalogLoaded: false, takeoffCategory: 'supply',
   whiteoutsUnlocked: false,
 };
 
@@ -944,6 +978,9 @@ async function openJobById(jobId){
     state.dirty = false;
     if(!state.data.sheets || state.data.sheets.length === 0){
       state.data.sheets = [{ id: genId(), name: 'Sheet 1', pdfPath: null, markups: [] }];
+    }
+    if(!state.data.airTerminalTakeoff){
+      state.data.airTerminalTakeoff = { supply: [], return: [], exhaust: [] };
     }
     migrateOldMarkupData(state.data);
     state.loadedSnapshot = JSON.parse(JSON.stringify(state.data.sheets)); // baseline for save-conflict auto-merge
@@ -1525,6 +1562,27 @@ document.addEventListener('click', (e) => {
    ============================================================ */
 $('#mobilePanelToggle').addEventListener('click', () => $('#panel').classList.toggle('panel-hidden'));
 $('#panelCloseBtn').addEventListener('click', () => $('#panel').classList.add('panel-hidden'));
+$('#takeoffToggle').addEventListener('click', async () => {
+  const willShow = $('#takeoffPanel').classList.contains('panel-hidden');
+  $('#takeoffPanel').classList.toggle('panel-hidden');
+  if(willShow){
+    await ensureCatalogLoaded();
+    renderTakeoffList();
+  }
+});
+$('#takeoffCloseBtn').addEventListener('click', () => $('#takeoffPanel').classList.add('panel-hidden'));
+document.querySelectorAll('.takeoff-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.takeoff-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.takeoffCategory = btn.dataset.cat;
+    renderTakeoffList();
+  });
+});
+$('#takeoffAddBtn').addEventListener('click', async () => {
+  await ensureCatalogLoaded();
+  showTakeoffSearchModal();
+});
 $('#noteFilterInput').addEventListener('input', (e) => {
   state.noteFilterText = e.target.value;
   renderNoteList();
@@ -3737,6 +3795,340 @@ function saveDraftToLocalStorage(){
 function clearLocalDraft(jobId){
   try{ localStorage.removeItem(`ppc_draft_${jobId}`); }catch(err){}
 }
+
+/* ============================================================
+   AIR TERMINAL TAKEOFF — shared catalog + manufacturer directory
+   ============================================================ */
+async function ensureCatalogLoaded(){
+  if(state.catalogLoaded) return;
+  try{
+    const catResult = await AppCore.readJsonFile('air-terminal-catalog.json', { items: [], nextId: 1 });
+    state.airTerminalCatalog = catResult.data;
+    state.catalogModified = catResult.lastModified;
+    const dirResult = await AppCore.readJsonFile('manufacturer-directory.json', { manufacturers: [] });
+    state.manufacturerDirectory = dirResult.data;
+    state.manufacturerDirModified = dirResult.lastModified;
+    state.catalogLoaded = true;
+  }catch(err){
+    console.error('Failed to load takeoff catalog', err);
+    showModal({ title: 'Could not load catalog', sub: err.message || 'Unknown error', confirmLabel: 'OK', onConfirm: () => {} });
+  }
+}
+// Catalog items are only ever appended, never edited in place here, so a safe
+// add-flow is: refetch the latest first, append on top of that, then write —
+// this keeps the race window for a real conflict very small without needing
+// full per-item merge logic like the job markup data has.
+async function addCatalogItem(item){
+  const latest = await AppCore.readJsonFile('air-terminal-catalog.json', { items: [], nextId: 1 });
+  const newItem = Object.assign({}, item, { id: latest.data.nextId });
+  latest.data.items.push(newItem);
+  latest.data.nextId = latest.data.nextId + 1;
+  const result = await AppCore.writeJsonFile('air-terminal-catalog.json', latest.data, latest.lastModified);
+  state.airTerminalCatalog = latest.data;
+  state.catalogModified = result.lastModified;
+  return newItem;
+}
+async function addManufacturer(name, vendor){
+  const latest = await AppCore.readJsonFile('manufacturer-directory.json', { manufacturers: [] });
+  const existing = latest.data.manufacturers.find(m => m.name === name);
+  if(existing){ state.manufacturerDirectory = latest.data; return existing; }
+  const newEntry = { name, vendor };
+  latest.data.manufacturers.push(newEntry);
+  const result = await AppCore.writeJsonFile('manufacturer-directory.json', latest.data, latest.lastModified);
+  state.manufacturerDirectory = latest.data;
+  state.manufacturerDirModified = result.lastModified;
+  return newEntry;
+}
+// Forces a text input to always read back in ALL CAPS, regardless of how it
+// was typed — keeps the shared catalog and every job's list uniform so the
+// same item never ends up split across differently-cased duplicate entries.
+function forceUpperCaseInput(input){
+  input.addEventListener('input', () => {
+    const pos = input.selectionStart;
+    input.value = input.value.toUpperCase();
+    input.setSelectionRange(pos, pos);
+  });
+}
+
+function renderTakeoffList(){
+  const list = $('#takeoffList');
+  const cat = state.takeoffCategory;
+  const items = (state.data.airTerminalTakeoff && state.data.airTerminalTakeoff[cat]) || [];
+  $('#takeoffCount').textContent = items.length + ' item' + (items.length === 1 ? '' : 's');
+  if(items.length === 0){
+    list.innerHTML = '<div class="panel-empty">No items yet.</div>';
+    return;
+  }
+  const standardItems = items.filter(li => {
+    const c = state.airTerminalCatalog.items.find(x => x.id === li.catalogId);
+    return c && c.terminalStyle !== 'LINEAR';
+  });
+  const linearItems = items.filter(li => {
+    const c = state.airTerminalCatalog.items.find(x => x.id === li.catalogId);
+    return c && c.terminalStyle === 'LINEAR';
+  });
+  let html = '';
+  if(standardItems.length) html += renderTakeoffTable('Standard', standardItems, false);
+  if(linearItems.length) html += renderTakeoffTable('Linear', linearItems, true);
+  list.innerHTML = html || '<div class="panel-empty">No items yet.</div>';
+  wireTakeoffRowEvents();
+}
+function renderTakeoffTable(title, lineItems, isLinear){
+  const cols = isLinear
+    ? ['I.D.', 'Desc', 'Mfr', 'Model', 'Length', 'Slots', 'Slot W', 'Frame', 'Color', 'Qty', 'Location', 'Notes', '']
+    : ['I.D.', 'Desc', 'Mfr', 'Model', 'Neck', 'Face', 'Frame', 'Color', 'Qty', 'Location', 'Notes', ''];
+  let totalQty = 0;
+  const rows = lineItems.map(li => {
+    const c = state.airTerminalCatalog.items.find(x => x.id === li.catalogId) || {};
+    totalQty += (parseInt(li.quantity, 10) || 0);
+    const specCols = isLinear
+      ? `<td>${escapeHtml(c.length || '')}</td><td>${escapeHtml(c.numSlots || '')}</td><td>${escapeHtml(c.slotWidth || '')}</td>`
+      : `<td>${escapeHtml(c.neckSize || '')}</td><td>${escapeHtml(c.faceSize || '')}</td>`;
+    return `<tr data-line-id="${escapeAttr(li.lineId)}">
+      <td>#${c.id != null ? c.id : ''}</td>
+      <td>${escapeHtml(li.description || '')}</td>
+      <td>${escapeHtml(c.manufacturer || '')}</td>
+      <td>${escapeHtml(c.model || '')}</td>
+      ${specCols}
+      <td>${escapeHtml(c.frameType || '')}</td>
+      <td>${escapeHtml(c.color || '')}</td>
+      <td><input type="number" class="takeoff-qty-input" data-field="quantity" value="${li.quantity || 0}" min="0"></td>
+      <td><input type="text" class="takeoff-text-input" data-field="location" value="${escapeAttr(li.location || '')}"></td>
+      <td><input type="text" class="takeoff-text-input" data-field="notes" value="${escapeAttr(li.notes || '')}"></td>
+      <td><button class="takeoff-row-del" data-line-id="${escapeAttr(li.lineId)}" title="Delete">✕</button></td>
+    </tr>`;
+  }).join('');
+  return `<div class="takeoff-section-title">${escapeHtml(title)}</div>
+  <table class="takeoff-table"><thead><tr>${cols.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
+  <tbody>${rows}</tbody>
+  <tfoot><tr><td colspan="${cols.length - 2}">Total Qty</td><td>${totalQty}</td><td></td></tr></tfoot>
+  </table>`;
+}
+function wireTakeoffRowEvents(){
+  document.querySelectorAll('#takeoffList input[data-field]').forEach(input => {
+    if(input.dataset.field !== 'quantity') forceUpperCaseInput(input);
+    input.addEventListener('change', () => {
+      const tr = input.closest('tr');
+      const lineId = tr.dataset.lineId;
+      const cat = state.takeoffCategory;
+      const li = state.data.airTerminalTakeoff[cat].find(x => x.lineId === lineId);
+      if(!li) return;
+      if(input.dataset.field === 'quantity') li.quantity = parseInt(input.value, 10) || 0;
+      else li[input.dataset.field] = input.value;
+      markDirty();
+      renderTakeoffList();
+    });
+  });
+  document.querySelectorAll('.takeoff-row-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lineId = btn.dataset.lineId;
+      const cat = state.takeoffCategory;
+      state.data.airTerminalTakeoff[cat] = state.data.airTerminalTakeoff[cat].filter(x => x.lineId !== lineId);
+      markDirty();
+      renderTakeoffList();
+    });
+  });
+}
+
+// Phase 1: search the shared catalog by Manufacturer/Model (the only two
+// things stable across jobs), or jump into creating a new catalog item.
+function showTakeoffSearchModal(){
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  card.innerHTML = `
+    <div class="disp">Add ${escapeHtml(state.takeoffCategory)} item</div>
+    <div class="modal-sub">Search by manufacturer or model, or add a new catalog item.</div>
+    <input type="text" id="takeoffSearchInput" placeholder="e.g. PRICE or PDF" style="width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:14px;box-sizing:border-box;">
+    <div id="takeoffSearchResults" style="max-height:220px;overflow-y:auto;margin-top:8px;"></div>
+    <div class="modal-row">
+      <button type="button" class="cancel">Cancel</button>
+      <button type="button" class="save" id="takeoffNewItemBtn">+ New catalog item</button>
+    </div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+  const searchInput = card.querySelector('#takeoffSearchInput');
+  const resultsDiv = card.querySelector('#takeoffSearchResults');
+  function renderResults(){
+    const q = searchInput.value.trim().toUpperCase();
+    const matches = q
+      ? state.airTerminalCatalog.items.filter(c => (c.manufacturer || '').includes(q) || (c.model || '').includes(q))
+      : state.airTerminalCatalog.items.slice(-10).reverse();
+    resultsDiv.innerHTML = matches.length ? matches.map(c => `
+      <div class="takeoff-search-result" data-id="${c.id}" style="padding:8px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;cursor:pointer;">
+        <strong>#${c.id} ${escapeHtml(c.manufacturer || '')} ${escapeHtml(c.model || '')}</strong><br>
+        <span style="font-size:11px;color:var(--muted);">${c.terminalStyle === 'LINEAR' ? `${escapeHtml(c.length || '')} L, ${escapeHtml(c.numSlots || '')} slots` : `${escapeHtml(c.neckSize || '')} neck, ${escapeHtml(c.faceSize || '')} face`} \u00b7 ${escapeHtml(c.frameType || '')} \u00b7 ${escapeHtml(c.color || '')}</span>
+      </div>`).join('') : '<div style="color:var(--muted);font-size:13px;padding:8px;">No matches yet \u2014 add a new catalog item below.</div>';
+    resultsDiv.querySelectorAll('.takeoff-search-result').forEach(el => {
+      el.addEventListener('click', () => {
+        const catalogItem = state.airTerminalCatalog.items.find(c => c.id === parseInt(el.dataset.id, 10));
+        root.innerHTML = '';
+        showTakeoffJobDetailsModal(catalogItem);
+      });
+    });
+  }
+  searchInput.addEventListener('input', renderResults);
+  renderResults();
+  searchInput.focus();
+  function close(){ root.innerHTML = ''; }
+  card.querySelector('.cancel').addEventListener('click', close);
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
+  card.querySelector('#takeoffNewItemBtn').addEventListener('click', () => {
+    root.innerHTML = '';
+    showTakeoffNewCatalogItemModal();
+  });
+}
+
+// Phase 2: full new catalog item form — saved to the shared catalog for the
+// whole team, with conditional fields based on Standard vs Linear style.
+function showTakeoffNewCatalogItemModal(){
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  card.innerHTML = `
+    <div class="disp">New catalog item</div>
+    <div class="modal-sub">This gets saved to the shared catalog for the whole team.</div>
+    <label class="modal-field-label">Manufacturer</label>
+    <input type="text" id="tMfr" list="mfrList">
+    <datalist id="mfrList">${state.manufacturerDirectory.manufacturers.map(m => `<option value="${escapeAttr(m.name)}">`).join('')}</datalist>
+    <label class="modal-field-label">Vendor (only needed if this manufacturer is new)</label>
+    <input type="text" id="tVendor">
+    <label class="modal-field-label">Model #</label>
+    <input type="text" id="tModel">
+    <label class="modal-field-label">Terminal Style</label>
+    <div style="display:flex;gap:14px;margin:4px 0 8px;">
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;"><input type="radio" name="tStyle" value="STANDARD" checked> Standard</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:13px;"><input type="radio" name="tStyle" value="LINEAR"> Linear</label>
+    </div>
+    <div id="tStandardFields">
+      <label class="modal-field-label">Neck Size</label>
+      <input type="text" id="tNeck">
+      <label class="modal-field-label">Face Size</label>
+      <input type="text" id="tFace">
+    </div>
+    <div id="tLinearFields" style="display:none;">
+      <label class="modal-field-label">Length</label>
+      <input type="text" id="tLength">
+      <label class="modal-field-label"># of Slots</label>
+      <input type="text" id="tSlots">
+      <label class="modal-field-label">Slot Width</label>
+      <input type="text" id="tSlotWidth">
+      <label class="modal-field-label">Plenum</label>
+      <input type="text" id="tPlenum">
+    </div>
+    <label class="modal-field-label">Frame Type</label>
+    <input type="text" id="tFrame">
+    <label class="modal-field-label">Color</label>
+    <input type="text" id="tColor">
+    <div class="modal-row">
+      <button type="button" class="cancel">Back</button>
+      <button type="button" class="save">Save &amp; continue</button>
+    </div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+  card.querySelectorAll('input[type=text]').forEach(forceUpperCaseInput);
+  card.querySelector('#tMfr').addEventListener('change', () => {
+    const existing = state.manufacturerDirectory.manufacturers.find(m => m.name === card.querySelector('#tMfr').value.trim().toUpperCase());
+    if(existing) card.querySelector('#tVendor').value = existing.vendor;
+  });
+  card.querySelectorAll('input[name=tStyle]').forEach(r => {
+    r.addEventListener('change', () => {
+      const isLinear = card.querySelector('input[name=tStyle]:checked').value === 'LINEAR';
+      card.querySelector('#tStandardFields').style.display = isLinear ? 'none' : 'block';
+      card.querySelector('#tLinearFields').style.display = isLinear ? 'block' : 'none';
+    });
+  });
+  function close(){ root.innerHTML = ''; }
+  card.querySelector('.cancel').addEventListener('click', () => { root.innerHTML = ''; showTakeoffSearchModal(); });
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
+  card.querySelector('.save').addEventListener('click', async () => {
+    const mfr = card.querySelector('#tMfr').value.trim().toUpperCase();
+    const model = card.querySelector('#tModel').value.trim().toUpperCase();
+    if(!mfr || !model) return;
+    const vendor = card.querySelector('#tVendor').value.trim().toUpperCase();
+    const style = card.querySelector('input[name=tStyle]:checked').value;
+    const item = {
+      manufacturer: mfr, model, frameType: card.querySelector('#tFrame').value.trim().toUpperCase(),
+      color: card.querySelector('#tColor').value.trim().toUpperCase(), terminalStyle: style,
+    };
+    if(style === 'LINEAR'){
+      item.length = card.querySelector('#tLength').value.trim().toUpperCase();
+      item.numSlots = card.querySelector('#tSlots').value.trim().toUpperCase();
+      item.slotWidth = card.querySelector('#tSlotWidth').value.trim().toUpperCase();
+      item.plenum = card.querySelector('#tPlenum').value.trim().toUpperCase();
+    } else {
+      item.neckSize = card.querySelector('#tNeck').value.trim().toUpperCase();
+      item.faceSize = card.querySelector('#tFace').value.trim().toUpperCase();
+    }
+    close();
+    setStatus('loading', 'Saving to shared catalog\u2026');
+    try{
+      if(vendor) await addManufacturer(mfr, vendor);
+      const newItem = await addCatalogItem(item);
+      setStatus(state.dirty ? 'dirty' : 'saved', state.dirty ? 'Unsaved changes' : 'All changes saved');
+      showTakeoffJobDetailsModal(newItem);
+    }catch(err){
+      console.error(err);
+      setStatus(state.dirty ? 'dirty' : 'saved', state.dirty ? 'Unsaved changes' : 'All changes saved');
+      showModal({ title: 'Could not save catalog item', sub: err.message || 'Unknown error', confirmLabel: 'OK', onConfirm: () => {} });
+    }
+  });
+}
+
+// Phase 3: job-specific details (Description/Quantity/Location/Notes) —
+// this is what actually lands in the job's takeoff list, never fed back
+// into the shared catalog.
+function showTakeoffJobDetailsModal(catalogItem){
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  card.innerHTML = `
+    <div class="disp">${escapeHtml(catalogItem.manufacturer || '')} ${escapeHtml(catalogItem.model || '')} \u2014 this job</div>
+    <div class="modal-sub">Catalog #${catalogItem.id}</div>
+    <label class="modal-field-label">Description (this job's schedule tag)</label>
+    <input type="text" id="tDesc" placeholder="e.g. CD-3">
+    <label class="modal-field-label">Quantity</label>
+    <input type="number" id="tQty" value="1" min="0">
+    <label class="modal-field-label">Location / Area</label>
+    <input type="text" id="tLoc">
+    <label class="modal-field-label">Notes</label>
+    <input type="text" id="tNotes">
+    <div class="modal-row">
+      <button type="button" class="cancel">Cancel</button>
+      <button type="button" class="save">Add to list</button>
+    </div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+  forceUpperCaseInput(card.querySelector('#tDesc'));
+  forceUpperCaseInput(card.querySelector('#tLoc'));
+  forceUpperCaseInput(card.querySelector('#tNotes'));
+  card.querySelector('#tDesc').focus();
+  function close(){ root.innerHTML = ''; }
+  card.querySelector('.cancel').addEventListener('click', close);
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
+  card.querySelector('.save').addEventListener('click', () => {
+    const desc = card.querySelector('#tDesc').value.trim().toUpperCase();
+    const qty = parseInt(card.querySelector('#tQty').value, 10) || 0;
+    const loc = card.querySelector('#tLoc').value.trim().toUpperCase();
+    const notes = card.querySelector('#tNotes').value.trim().toUpperCase();
+    close();
+    const lineItem = { lineId: genId(), catalogId: catalogItem.id, description: desc, quantity: qty, location: loc, notes };
+    if(!state.data.airTerminalTakeoff) state.data.airTerminalTakeoff = { supply: [], return: [], exhaust: [] };
+    state.data.airTerminalTakeoff[state.takeoffCategory].push(lineItem);
+    markDirty();
+    renderTakeoffList();
+  });
+}
+
 // Checkpoint-style undo: every markDirty() call snapshots the sheet's
 // current (post-mutation) markups, keeping only the last 5 per sheet.
 // Undo discards the current checkpoint and restores the one before it —
