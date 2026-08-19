@@ -90,15 +90,20 @@ input,textarea{font-family:inherit;}
 .run-done-btn:hover{background:#256e46;}
 .action-bar{background:var(--surface);border-bottom:1px solid var(--line);padding:0 10px;display:flex;align-items:center;justify-content:flex-start;gap:6px;flex-shrink:0;height:42px;overflow:hidden;flex-wrap:nowrap;}
 .action-bar-hint{font-size:12px;color:var(--danger);font-weight:600;}
-.action-bar-divider{width:1px;height:28px;background:var(--line);flex-shrink:0;}
-.markup-action-row{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;}
-.markup-action-row + .markup-action-row{border-left:none;padding-left:0;}
-.markup-action-row button,.markup-action-group button,.action-bar button{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:6px;border:1px solid #DDE1E6;background:transparent;color:#16202C;cursor:pointer;height:30px;white-space:nowrap;flex-shrink:0;}
+.action-bar-divider{width:1px;height:28px;background:var(--line);flex-shrink:0;margin:0 2px;}
+/* Single-row markup action layout: edits | div | colors | div | stroke | div | delete */
+.markup-action-row{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;flex:1;}
+.markup-action-row button,.markup-action-group button,.action-bar button{font-family:inherit;font-size:11.5px;font-weight:600;padding:0 10px;border-radius:6px;border:1px solid #DDE1E6;background:transparent;color:#16202C;cursor:pointer;height:30px;white-space:nowrap;flex-shrink:0;line-height:30px;}
 .markup-action-row button:hover,.markup-action-group button:hover,.action-bar button:hover{background:rgba(0,0,0,0.04);}
 .markup-action-row button.delete-btn,.action-bar .delete-btn,.markup-action-row .delete-btn{border-color:#DC2626;color:#DC2626;margin-left:auto;}
 .markup-action-row button.delete-btn:hover,.action-bar .delete-btn:hover{background:rgba(220,38,38,0.07);}
-.markup-color-dot{width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);padding:0;}
+/* Color dots in action bar — sized to match button height */
+.markup-color-dot{width:22px;height:30px;border-radius:6px;border:2px solid transparent;box-shadow:0 0 0 1px var(--line);padding:0;cursor:pointer;flex-shrink:0;position:relative;}
+.markup-color-dot::after{content:'';position:absolute;inset:3px;border-radius:3px;background:inherit;}
 .markup-color-dot.active{box-shadow:0 0 0 2px var(--navy);}
+/* Stroke pickers in action bar */
+.action-bar-stroke-btn{font-family:inherit;font-size:11px;font-weight:600;padding:0 8px;border-radius:6px;border:1px solid #DDE1E6;background:transparent;color:#16202C;cursor:pointer;height:30px;white-space:nowrap;flex-shrink:0;line-height:30px;}
+.action-bar-stroke-btn.active,.action-bar-stroke-btn:hover{background:rgba(0,0,0,0.06);}
 .markup-action-group button.delete-btn{border-color:#DC2626;color:#DC2626;background:transparent;}
 .markup-action-group button.delete-btn:hover{background:rgba(220,38,38,0.07);}
 .canvas-stack canvas{display:block;}
@@ -195,10 +200,11 @@ input,textarea{font-family:inherit;}
 .save-btn:hover{background:var(--navy-2);}
 .save-btn:disabled{opacity:.5;cursor:default;}
 /* Toolbar color/thickness pickers rendered in the action bar (not toolrail) */
-.action-bar-pickers{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:32px;}
-.action-bar-pickers .color-dot{width:18px;height:18px;}
-.action-bar-pickers .thickness-dot{width:28px;height:18px;}
-.action-bar-picker-sep{width:1px;height:18px;background:var(--line);margin:0 2px;}
+.action-bar-pickers{display:flex;align-items:center;gap:6px;flex:1;justify-content:center;}
+.action-bar-pickers .color-dot{width:24px;height:30px;border-radius:6px;}
+.action-bar-pickers .thickness-dot{width:36px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;border:1px solid #DDE1E6;background:transparent;cursor:pointer;}
+.action-bar-pickers .thickness-dot.active{background:rgba(0,0,0,0.07);}
+.action-bar-picker-sep{width:1px;height:28px;background:var(--line);margin:0 4px;flex-shrink:0;}
 .status-dot{width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0;}
 .status-dot.dirty{background:var(--warn);}
 .action-bar-status-wrap{display:flex;align-items:center;gap:6px;flex-shrink:0;}
@@ -469,7 +475,7 @@ input,textarea{font-family:inherit;}
         <button id="zoomOutBtn" title="Zoom out">−</button>
       </div>
       <button class="run-done-btn hidden" id="runDoneBtn">Done ✓</button>
-      <button class="run-done-btn hidden" id="multilineUndoBtn" style="background:transparent;border:1px solid #7A3E9D;color:#C084FC;margin-left:6px;">↩ Undo Point</button>
+      <button class="run-done-btn hidden" id="multilineUndoBtn" style="background:transparent;border:1px solid #7A3E9D;color:#C084FC;">↩ Undo</button>
       <button class="run-done-btn hidden" id="mSelectGroupBtn" style="display:none!important;"></button>
       <button class="run-done-btn hidden" id="mSelectUngroupBtn" style="display:none!important;"></button>
     </div>
@@ -1008,7 +1014,7 @@ $('#fileExit').addEventListener('click', () => {
       cancelLabel: 'Cancel',
       extraLabel: 'Save & Exit',
       onConfirm: () => exitToBlankCanvas(),
-      onExtra: () => { saveSession && saveSession(); exitToBlankCanvas(); },
+      onExtra: () => { saveJob().then(() => exitToBlankCanvas()).catch(() => exitToBlankCanvas()); },
       onCancel: () => {}
     });
   } else {
@@ -1725,19 +1731,27 @@ async function renderActiveSheet(){
     const ctx = canvas.getContext('2d');
     await page.render({ canvasContext: ctx, viewport }).promise;
 
-    // Grayscale detection
+    // Grayscale detection — sample a grid across the full canvas so color
+    // in the drawing body isn't missed by a title-block-only sample area.
     (function detectGrayscale(){
-      function isCanvasGrayscale(cv){
+      function hasColor(cv){
         const c = cv.getContext('2d');
-        const d = c.getImageData(0,0,Math.min(cv.width,200),Math.min(cv.height,200)).data;
-        for(let i=0;i<d.length;i+=4){
-          const a=d[i+3]; if(a<10) continue;
-          if(Math.abs(d[i]-d[i+1])>10||Math.abs(d[i+1]-d[i+2])>10||Math.abs(d[i]-d[i+2])>10) return false;
+        const W = cv.width, H = cv.height;
+        // Sample ~400 evenly-spaced pixels across the whole canvas
+        const step = Math.max(1, Math.floor(Math.sqrt((W * H) / 400)));
+        for(let y = 0; y < H; y += step){
+          const row = c.getImageData(0, y, W, 1).data;
+          for(let x = 0; x < W; x += step){
+            const i = x * 4;
+            const a = row[i+3]; if(a < 30) continue; // skip transparent/near-transparent
+            const r = row[i], g = row[i+1], b = row[i+2];
+            if(Math.abs(r-g) > 15 || Math.abs(g-b) > 15 || Math.abs(r-b) > 15) return true;
+          }
         }
-        return true;
+        return false;
       }
-      const pdfCv = document.getElementById('pdfCanvas');
-      if(pdfCv && !isCanvasGrayscale(pdfCv)){
+      const pdfCv = canvas; // use the local canvas var (same as #pdfCanvas)
+      if(pdfCv && hasColor(pdfCv)){
         showConfirmModal({ title:'Color Detected', sub:'This PDF appears to have color. Render as grayscale?', confirmLabel:'Yes, Grayscale', cancelLabel:'Keep Color',
           onConfirm:()=>{
             const ctx2=pdfCv.getContext('2d');
@@ -1846,16 +1860,25 @@ window.addEventListener('orientationchange', () => setTimeout(positionFloatingCo
 // tapped instead of off in a fixed corner of the screen.
 function positionRunDoneBtn(){
   const rb = $('#runDoneBtn');
+  const ub = $('#multilineUndoBtn');
   const rect = $('#canvasArea').getBoundingClientRect();
+  let rbLeft, rbTop;
   if(state.multiPoints && state.multiPoints.length > 0 && state.pageViewport){
     const last = state.multiPoints[state.multiPoints.length - 1];
     const mRect = mCanvas.getBoundingClientRect();
     const scaleX = mRect.width / mCanvas.width, scaleY = mRect.height / mCanvas.height;
-    rb.style.left = (mRect.left + last.x * scaleX - 20) + 'px';
-    rb.style.top = (mRect.top + last.y * scaleY - 80) + 'px';
+    rbLeft = mRect.left + last.x * scaleX - 20;
+    rbTop = mRect.top + last.y * scaleY - 80;
   } else {
-    rb.style.left = (rect.right - 116) + 'px';
-    rb.style.top = (rect.top + 16) + 'px';
+    rbLeft = rect.right - 116;
+    rbTop = rect.top + 16;
+  }
+  rb.style.left = rbLeft + 'px';
+  rb.style.top = rbTop + 'px';
+  // Position Undo button immediately to the right of Done
+  if(ub && !ub.classList.contains('hidden')){
+    ub.style.top = rbTop + 'px';
+    ub.style.left = (rbLeft + rb.offsetWidth + 6) + 'px';
   }
 }
 
@@ -2085,7 +2108,7 @@ $('#takeoffFlowFilter').addEventListener('change', (e) => {
   renderTakeoffList();
 });
 $('#takeoffExportBtn').addEventListener('click', exportTakeoffPDF);
-$('#takeoffRefreshBtn').addEventListener('click', () => { ensureCatalogLoaded().then(() => renderTakeoffList()); });
+$('#takeoffRefreshBtn').addEventListener('click', () => { ensureCatalogLoaded().then(() => { renderTakeoffList(); drawAllMarkups(); }); });
 $('#takeoffAddBtn').addEventListener('click', async () => {
   await ensureCatalogLoaded();
   showTakeoffCategoryPickerModal();
@@ -2342,19 +2365,6 @@ function onPointerDown(e){
     state.drawing = true;
     state.currentStroke = { id: genId(), type: 'shape', shape: state.shapeType, color: state.color, thickness: state.thickness, rotation: 0, p0: p, p1: p, note: '' };
   } else if(state.tool === 'dimension'){
-    // First-use: if no scale calibration set, prompt user to set one
-    if(!state._dimensionScalePrompted){
-      state._dimensionScalePrompted = true;
-      const sheet = activeSheet();
-      if(!sheet || !sheet.scaleCalibration){
-        showConfirmModal({
-          title: 'Set Scale Reference',
-          sub: 'No scale is set for this sheet. Draw a dimension line, then use "Set as scale ref" to calibrate. Would you like a reminder after placing your first dimension?',
-          confirmLabel: 'OK, Got It', cancelLabel: 'Dismiss',
-          onConfirm: () => {}, onCancel: () => {}
-        });
-      }
-    }
     state.drawing = true;
     const dp = canvasPointClearFingertip(e);
     state.currentStroke = { id: genId(), type: 'dimension', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: dp, p1: dp, text: '', textPos: dp, note: '' };
@@ -2643,21 +2653,42 @@ function onPointerUp(e){
     state.currentStroke = null;
     const pixelDist = Math.hypot(dim.p1.x - dim.p0.x, dim.p1.y - dim.p0.y);
     if(pixelDist > 4){
-      const suggested = suggestDimensionLength(pixelDist);
-      showModal({
-        title: 'Dimension text', value: suggested, placeholder: 'e.g. 12\'-6" or 4" CU', withSymbols: true, confirmLabel: 'Add',
-        onConfirm: (text) => {
-          if(!text) return;
-          dim.text = text;
-          dim.textIsCustom = (text !== suggested);
-          dim.textPos = { x: (dim.p0.x + dim.p1.x) / 2, y: (dim.p0.y + dim.p1.y) / 2 - 16 };
-          dim.createdAt = Date.now();
-          activeSheet().markups.push(dim);
-          markDirty();
-          renderNoteList();
-          switchToSelectAndSelect(dim.id);
-        }
-      });
+      const sh = activeSheet();
+      function commitDim(text, suggested){
+        if(!text) return;
+        dim.text = text;
+        dim.textIsCustom = (text !== suggested);
+        dim.textPos = { x: (dim.p0.x + dim.p1.x) / 2, y: (dim.p0.y + dim.p1.y) / 2 - 16 };
+        dim.createdAt = Date.now();
+        sh.markups.push(dim);
+        markDirty();
+        renderNoteList();
+        switchToSelectAndSelect(dim.id);
+      }
+      if(!sh || !sh.scaleCalibration){
+        // No scale set — open the Set Scale Reference modal first
+        showFeetInchesModal({
+          title: 'Set Scale Reference', sub: 'No scale is set. Enter the real-world length this dimension represents to calibrate the scale for this sheet.',
+          feetValue: '', inchesValue: '', confirmLabel: 'Set & Add Dimension',
+          onConfirm: (feet, inches) => {
+            const realLength = feet + inches / 12;
+            if(realLength > 0){
+              sh.scaleCalibration = { pixelDist, realLength, unit: 'ft' };
+              markDirty();
+            }
+            const suggested = suggestDimensionLength(pixelDist);
+            commitDim(suggested || (feet ? `${feet}'-${inches || 0}"` : ''), suggested);
+          }
+        });
+      } else {
+        const suggested = suggestDimensionLength(pixelDist);
+        showModal({
+          title: 'Dimension text', value: suggested, placeholder: 'e.g. 12\'-6" or 4" CU', withSymbols: true, confirmLabel: 'Add',
+          onConfirm: (text) => {
+            commitDim(text, suggested);
+          }
+        });
+      }
     } else {
       drawAllMarkups();
     }
@@ -3405,8 +3436,10 @@ function showMarkupActionButtons(markupId){
   if(!m) return;
   const group = bar;
 
+  // Single flex row: [edit buttons] | div | [colors] | div | [stroke] | div | [delete]
   const buttonRow = document.createElement('div');
   buttonRow.className = 'markup-action-row';
+  buttonRow.style.cssText = 'display:flex;align-items:center;gap:5px;flex:1;overflow:hidden;';
   if(m.type === 'label' || m.type === 'note' || m.type === 'dimension'){
     const editBtn = document.createElement('button');
     editBtn.textContent = m.text ? 'Edit text' : 'Add text';
@@ -3574,6 +3607,56 @@ function showMarkupActionButtons(markupId){
     });
     buttonRow.appendChild(dupBtn);
   }
+  // ---- Color section (left of stroke, right of edit buttons) ----
+  if(m.type !== 'whiteoutRect' && m.type !== 'whiteoutFreeform' && m.type !== 'airOutletTag'){
+    const divColor = document.createElement('span');
+    divColor.className = 'action-bar-divider';
+    buttonRow.appendChild(divColor);
+    PALETTE.forEach(c => {
+      const dot = document.createElement('button');
+      dot.className = 'markup-color-dot' + (m.color === c ? ' active' : '');
+      dot.style.background = c;
+      dot.title = c;
+      dot.addEventListener('click', (e) => {
+        e.stopPropagation();
+        m.color = c;
+        if(m.groupId){
+          sheet.markups.forEach(gm => { if(gm.groupId === m.groupId) gm.color = c; });
+        }
+        markDirty();
+        drawAllMarkups();
+        renderNoteList();
+        showMarkupActionButtons(markupId);
+      });
+      buttonRow.appendChild(dot);
+    });
+  }
+
+  // ---- Stroke section ----
+  if(['line', 'multiline', 'freehand', 'shape', 'symbol'].includes(m.type)){
+    const divStroke = document.createElement('span');
+    divStroke.className = 'action-bar-divider';
+    buttonRow.appendChild(divStroke);
+    [2, 4, 7].forEach(t => {
+      const btn = document.createElement('button');
+      btn.className = 'action-bar-stroke-btn' + ((m.thickness || 3) === t ? ' active' : '');
+      btn.textContent = t === 2 ? 'Thin' : t === 4 ? 'Med' : 'Thick';
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        m.thickness = t;
+        markDirty();
+        drawAllMarkups();
+        showMarkupActionButtons(markupId);
+      });
+      buttonRow.appendChild(btn);
+    });
+  }
+
+  // ---- Delete button — far right ----
+  const divDel = document.createElement('span');
+  divDel.className = 'action-bar-divider';
+  divDel.style.marginLeft = 'auto';
+  buttonRow.appendChild(divDel);
   const delBtn = document.createElement('button');
   delBtn.className = 'delete-btn';
   delBtn.textContent = 'Delete';
@@ -3590,53 +3673,6 @@ function showMarkupActionButtons(markupId){
   });
   buttonRow.appendChild(delBtn);
   group.appendChild(buttonRow);
-
-  // Stroke-width control — only for the markup types that actually have an
-  // adjustable stroke (Dimension, Callout, Note, Hatch, and Hatch Area stay
-  // fixed on purpose, per earlier decisions).
-  if(['line', 'multiline', 'freehand', 'shape', 'symbol'].includes(m.type)){
-    const thicknessRow = document.createElement('div');
-    thicknessRow.className = 'markup-action-row';
-    [2, 4, 7].forEach(t => {
-      const btn = document.createElement('button');
-      btn.textContent = t === 2 ? 'Thin' : t === 4 ? 'Med' : 'Thick';
-      if((m.thickness || 3) === t) btn.style.textDecoration = 'underline';
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        m.thickness = t;
-        markDirty();
-        drawAllMarkups();
-        showMarkupActionButtons(markupId);
-      });
-      thicknessRow.appendChild(btn);
-    });
-    group.appendChild(thicknessRow);
-  }
-
-  // Color control — available for every markup type except Whiteouts (always
-  // plain fill) and airOutletTag (color is driven by category, not palette).
-  if(m.type !== 'whiteoutRect' && m.type !== 'whiteoutFreeform' && m.type !== 'airOutletTag'){
-  const colorRow = document.createElement('div');
-  colorRow.className = 'markup-action-row';
-  PALETTE.forEach(c => {
-    const dot = document.createElement('button');
-    dot.className = 'markup-color-dot' + (m.color === c ? ' active' : '');
-    dot.style.background = c;
-    dot.addEventListener('click', (e) => {
-      e.stopPropagation();
-      m.color = c;
-      if(m.groupId){
-        sheet.markups.forEach(gm => { if(gm.groupId === m.groupId) gm.color = c; });
-      }
-      markDirty();
-      drawAllMarkups();
-      renderNoteList();
-      showMarkupActionButtons(markupId);
-    });
-    colorRow.appendChild(dot);
-  });
-  group.appendChild(colorRow);
-  }
   positionFloatingControls();
 }
 
