@@ -88,22 +88,23 @@ input,textarea{font-family:inherit;}
 #zoomFitBtn{font-size:14px;}
 .run-done-btn{position:fixed;background:var(--success);color:#fff;border:none;font-weight:600;font-size:13px;padding:9px 16px;border-radius:9px;box-shadow:var(--shadow);z-index:45;}
 .run-done-btn:hover{background:#256e46;}
-.action-bar{background:var(--surface);border-bottom:1px solid var(--line);padding:4px 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;flex-shrink:0;min-height:34px;}
+.action-bar{background:var(--surface);border-bottom:1px solid var(--line);padding:0 10px;display:flex;align-items:center;justify-content:flex-start;gap:6px;flex-shrink:0;height:42px;overflow:hidden;flex-wrap:nowrap;}
 .action-bar-hint{font-size:12px;color:var(--danger);font-weight:600;}
-.markup-action-row{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
-.markup-action-row + .markup-action-row{border-left:1px solid var(--line);padding-left:8px;}
-.markup-action-row button{font-family:inherit;font-size:11.5px;font-weight:600;padding:4px 9px;border-radius:6px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer;}
-.markup-action-row button:hover{border-color:var(--blueprint);}
-.markup-action-row button.delete-btn{background:var(--danger-bg);color:var(--danger);border-color:transparent;}
+.action-bar-divider{width:1px;height:28px;background:var(--line);flex-shrink:0;}
+.markup-action-row{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;}
+.markup-action-row + .markup-action-row{border-left:none;padding-left:0;}
+.markup-action-row button,.markup-action-group button,.action-bar button{font-family:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:6px;border:1px solid #DDE1E6;background:transparent;color:#16202C;cursor:pointer;height:30px;white-space:nowrap;flex-shrink:0;}
+.markup-action-row button:hover,.markup-action-group button:hover,.action-bar button:hover{background:rgba(0,0,0,0.04);}
+.markup-action-row button.delete-btn,.action-bar .delete-btn,.markup-action-row .delete-btn{border-color:#DC2626;color:#DC2626;margin-left:auto;}
+.markup-action-row button.delete-btn:hover,.action-bar .delete-btn:hover{background:rgba(220,38,38,0.07);}
 .markup-color-dot{width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);padding:0;}
 .markup-color-dot.active{box-shadow:0 0 0 2px var(--navy);}
-.markup-action-group button{background:var(--navy);color:#fff;font-size:11px;font-weight:600;padding:5px 10px;border-radius:7px;border:none;box-shadow:var(--shadow);white-space:nowrap;}
-.markup-action-group button:hover{background:var(--navy-2);}
-.markup-action-group button.delete-btn{background:var(--danger);}
-.markup-action-group button.delete-btn:hover{background:#9C2E20;}
+.markup-action-group button.delete-btn{border-color:#DC2626;color:#DC2626;background:transparent;}
+.markup-action-group button.delete-btn:hover{background:rgba(220,38,38,0.07);}
 .canvas-stack canvas{display:block;}
 #pdfCanvas{position:relative;}
 #markupCanvas{position:absolute;top:0;left:0;touch-action:none;}
+#markupCanvas.erase-active{cursor:none;}
 
 .empty-state{margin:auto;text-align:center;color:var(--muted);max-width:340px;}
 .empty-state .disp{font-size:22px;color:var(--navy);margin-bottom:6px;}
@@ -202,7 +203,7 @@ input,textarea{font-family:inherit;}
 .status-dot.dirty{background:var(--warn);}
 .action-bar-status-wrap{display:flex;align-items:center;gap:6px;flex-shrink:0;}
 .action-bar-status{font-size:12px;color:var(--muted);}
-.action-bar-dynamic{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex:1;justify-content:center;}
+.action-bar-dynamic{display:flex;flex-wrap:nowrap;gap:6px;align-items:center;flex:1;justify-content:flex-start;overflow:hidden;}
 .mobile-panel-toggle{display:inline-block;font-weight:700;font-size:12px;padding:6px 14px;border-radius:7px;flex-shrink:0;}
 .topbar-logo{height:32px;width:auto;flex-shrink:0;margin-right:2px;}
 .file-menu-wrap{position:relative;flex-shrink:0;}
@@ -339,6 +340,8 @@ input,textarea{font-family:inherit;}
         <div class="file-menu-item" id="fileExport">Export</div>
         <div class="file-menu-sep"></div>
         <div class="file-menu-item" id="fileJobDetails">Job Details</div>
+        <div class="file-menu-sep"></div>
+        <div class="file-menu-item" id="fileExit">Exit</div>
       </div>
       <div class="job-dropdown hidden" id="jobDropdown"></div>
     </div>
@@ -466,6 +469,7 @@ input,textarea{font-family:inherit;}
         <button id="zoomOutBtn" title="Zoom out">−</button>
       </div>
       <button class="run-done-btn hidden" id="runDoneBtn">Done ✓</button>
+      <button class="run-done-btn hidden" id="multilineUndoBtn" style="background:transparent;border:1px solid #7A3E9D;color:#C084FC;margin-left:6px;">↩ Undo Point</button>
       <button class="run-done-btn hidden" id="mSelectGroupBtn" style="display:none!important;"></button>
       <button class="run-done-btn hidden" id="mSelectUngroupBtn" style="display:none!important;"></button>
     </div>
@@ -497,6 +501,7 @@ input,textarea{font-family:inherit;}
           <div class="count" id="takeoffCount">0 items</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
+          <button class="takeoff-export-btn" id="takeoffRefreshBtn" title="Refresh takeoff data">↻ Refresh</button>
           <button class="takeoff-export-btn" id="takeoffExportBtn" title="Export takeoff as PDF">⬇ Export PDF</button>
           <button class="panel-close" id="takeoffCloseBtn">✕</button>
         </div>
@@ -977,7 +982,7 @@ $('#fileNewJob').addEventListener('click', () => {
 // Browse Existing
 $('#fileBrowse').addEventListener('click', () => {
   closeFileMenu();
-  openJobDropdown();
+  openBrowseModal();
 });
 
 // Export
@@ -991,6 +996,49 @@ $('#fileJobDetails').addEventListener('click', () => {
   closeFileMenu();
   showJobDetailsModal();
 });
+
+// Exit
+$('#fileExit').addEventListener('click', () => {
+  closeFileMenu();
+  if(state.dirty){
+    showConfirmModal({
+      title: 'Unsaved Changes',
+      sub: 'You have unsaved changes. What would you like to do?',
+      confirmLabel: 'Exit Anyway',
+      cancelLabel: 'Cancel',
+      extraLabel: 'Save & Exit',
+      onConfirm: () => exitToBlankCanvas(),
+      onExtra: () => { saveSession && saveSession(); exitToBlankCanvas(); },
+      onCancel: () => {}
+    });
+  } else {
+    exitToBlankCanvas();
+  }
+});
+
+function exitToBlankCanvas(){
+  state.data = { jobId: '', jobName: '', sheets: [{ id: Date.now(), name: 'Sheet 1', markups: [], pdfData: null, pdfPageNum: 1 }] };
+  state.jobId = null;
+  state.jobName = '';
+  state.fileName = null;
+  state.activeSheetIndex = 0;
+  state.selectedMarkupId = null;
+  state.multiSelectedIds = new Set();
+  state.dirty = false;
+  state.tool = 'pan';
+  const pdfCanvas = document.getElementById('pdfCanvas');
+  const markupCanvas = document.getElementById('markupCanvas');
+  if(pdfCanvas){ const c = pdfCanvas.getContext('2d'); c.clearRect(0,0,pdfCanvas.width,pdfCanvas.height); }
+  if(markupCanvas){ const c = markupCanvas.getContext('2d'); c.clearRect(0,0,markupCanvas.width,markupCanvas.height); }
+  renderSheetTabs();
+  drawAllMarkups();
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+  const panBtn = document.querySelector('[data-tool="pan"]');
+  if(panBtn) panBtn.classList.add('active');
+  clearMarkupActionButtons();
+  updateJobNameChip();
+  setStatus('clean', 'No job open');
+}
 document.addEventListener('click', (e) => {
   const dd = $('#jobDropdown');
   if(!dd.classList.contains('hidden') && !e.target.closest('.file-menu-wrap')) closeJobDropdown();
@@ -1001,6 +1049,78 @@ function openJobDropdown(){
   refreshJobDropdown();
 }
 function closeJobDropdown(){ $('#jobDropdown').classList.add('hidden'); }
+
+function openBrowseModal(){
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  card.style.cssText = 'width:460px;max-width:96vw;max-height:80vh;display:flex;flex-direction:column;';
+  card.innerHTML = `
+    <div class="disp">Open Existing Job</div>
+    <input id="browseSearchInput" type="text" placeholder="Search by job # or name…"
+      style="margin:10px 0 8px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;font-size:13px;width:100%;box-sizing:border-box;outline:none;">
+    <div id="browseJobList" style="flex:1;overflow-y:auto;min-height:80px;max-height:380px;border:1px solid var(--line);border-radius:6px;">
+      <div style="padding:14px;color:#6B7280;font-size:13px;">Loading…</div>
+    </div>
+    <div class="modal-row" style="margin-top:12px;">
+      <button type="button" class="cancel" id="browseModalClose">Cancel</button>
+    </div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+
+  let allJobs = [];
+  function renderBrowseList(filter){
+    const list = document.getElementById('browseJobList');
+    if(!list) return;
+    const q = (filter || '').toLowerCase();
+    const shown = q ? allJobs.filter(j =>
+      (j.jobId || '').toLowerCase().includes(q) ||
+      (j.jobName || '').toLowerCase().includes(q)
+    ) : allJobs;
+    if(shown.length === 0){
+      list.innerHTML = `<div style="padding:14px;color:#6B7280;font-size:13px;">${q ? 'No jobs match your search.' : 'No jobs on file.'}</div>`;
+      return;
+    }
+    list.innerHTML = shown.map(j => `
+      <div class="job-row" data-job-id="${escapeHtml(j.jobId)}"
+        style="display:flex;align-items:center;padding:8px 12px;gap:10px;border-bottom:1px solid var(--line);cursor:pointer;">
+        <span style="font-weight:700;min-width:60px;font-size:13px;">#${escapeHtml(j.jobId)}</span>
+        <span style="flex:1;font-size:13px;color:#374151;">${escapeHtml(j.jobName || '(no name)')}</span>
+      </div>`).join('');
+    list.querySelectorAll('.job-row').forEach(row => row.addEventListener('click', () => {
+      root.innerHTML = '';
+      openJobById(row.dataset.jobId);
+    }));
+  }
+
+  document.getElementById('browseSearchInput').addEventListener('input', e => renderBrowseList(e.target.value));
+  document.getElementById('browseModalClose').addEventListener('click', () => { root.innerHTML = ''; });
+  backdrop.addEventListener('click', e => { if(e.target === backdrop) root.innerHTML = ''; });
+
+  (async () => {
+    const indexData = await loadJobsIndex();
+    let jobs = (indexData && indexData.jobs) ? indexData.jobs.slice() : null;
+    if(jobs === null){
+      try{
+        const files = await AppCore.listFilesMatching(/^job-(.+)-markup\.json$/);
+        jobs = files.map(f => {
+          const m = f.name.match(/^job-(.+)-markup\.json$/);
+          return { jobId: m[1], jobName: '', lastModified: f.lastModifiedDateTime };
+        });
+      } catch(err) {
+        const list = document.getElementById('browseJobList');
+        if(list) list.innerHTML = `<div style="padding:14px;color:#DC2626;font-size:13px;">Could not load job list.</div>`;
+        return;
+      }
+    }
+    jobs.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+    allJobs = jobs;
+    renderBrowseList('');
+  })();
+}
 
 async function refreshJobDropdown(){
   const indexData = await loadJobsIndex();
@@ -1228,10 +1348,33 @@ async function exportSheetsToPDF(sheetIndices){
       ctx.drawImage(pdfCanvas, 0, 0);
       ctx.drawImage(markupCanvas, 0, 0);
       const imgData = out.toDataURL('image/png');
-      const pageW = out.width;
-      const pageH = out.height;
+      const canvasW = out.width;
+      const canvasH = out.height;
+      const aspectCanvas = canvasW / canvasH;
+      // ARCH sheet size detection (points: 1 pt = 1/72 inch)
+      const ARCH_SIZES = [
+        { name: 'ARCH A',  w: 648,  h: 864  },
+        { name: 'ARCH B',  w: 864,  h: 1296 },
+        { name: 'ARCH C',  w: 1296, h: 1728 },
+        { name: 'ARCH D',  w: 1728, h: 2592 },
+        { name: 'ARCH E1', w: 2160, h: 3024 },
+        { name: 'ARCH E',  w: 2592, h: 3456 },
+      ];
+      let pdfW = canvasW * 0.75;
+      let pdfH = canvasH * 0.75;
+      for(const sz of ARCH_SIZES){
+        const aspectSz = sz.w / sz.h;
+        const aspectSzFlip = sz.h / sz.w;
+        if(Math.abs(aspectCanvas - aspectSz) < 0.02 || Math.abs(aspectCanvas - aspectSzFlip) < 0.02){
+          pdfW = aspectCanvas > 1 ? sz.h : sz.w;
+          pdfH = aspectCanvas > 1 ? sz.w : sz.h;
+          break;
+        }
+      }
+      const pageW = pdfW;
+      const pageH = pdfH;
       if(ii === 0){
-        doc = new jsPDF({ orientation: pageW >= pageH ? 'landscape' : 'portrait', unit: 'px', format: [pageW, pageH], compress: true });
+        doc = new jsPDF({ orientation: pageW >= pageH ? 'landscape' : 'portrait', unit: 'pt', format: [pageW, pageH], compress: true });
       } else {
         doc.addPage([pageW, pageH], pageW >= pageH ? 'landscape' : 'portrait');
       }
@@ -1571,7 +1714,7 @@ async function renderActiveSheet(){
     const buf = await contentRes.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
     const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 1.5 });
+    const viewport = page.getViewport({ scale: 1.75 });
     state.pageViewport = viewport;
     state.naturalWidth = viewport.width;
     state.naturalHeight = viewport.height;
@@ -1581,6 +1724,32 @@ async function renderActiveSheet(){
     canvas.height = viewport.height;
     const ctx = canvas.getContext('2d');
     await page.render({ canvasContext: ctx, viewport }).promise;
+
+    // Grayscale detection
+    (function detectGrayscale(){
+      function isCanvasGrayscale(cv){
+        const c = cv.getContext('2d');
+        const d = c.getImageData(0,0,Math.min(cv.width,200),Math.min(cv.height,200)).data;
+        for(let i=0;i<d.length;i+=4){
+          const a=d[i+3]; if(a<10) continue;
+          if(Math.abs(d[i]-d[i+1])>10||Math.abs(d[i+1]-d[i+2])>10||Math.abs(d[i]-d[i+2])>10) return false;
+        }
+        return true;
+      }
+      const pdfCv = document.getElementById('pdfCanvas');
+      if(pdfCv && !isCanvasGrayscale(pdfCv)){
+        showConfirmModal({ title:'Color Detected', sub:'This PDF appears to have color. Render as grayscale?', confirmLabel:'Yes, Grayscale', cancelLabel:'Keep Color',
+          onConfirm:()=>{
+            const ctx2=pdfCv.getContext('2d');
+            const imgData=ctx2.getImageData(0,0,pdfCv.width,pdfCv.height);
+            const d=imgData.data;
+            for(let i=0;i<d.length;i+=4){ const g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]; d[i]=d[i+1]=d[i+2]=g; }
+            ctx2.putImageData(imgData,0,0);
+          },
+          onCancel:()=>{}
+        });
+      }
+    })();
 
     const mCanvas = markupCanvasEl();
     mCanvas.width = viewport.width;
@@ -1747,6 +1916,7 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     state.tool = btn.dataset.tool;
+    if(state.freehandTimeout){ clearTimeout(state.freehandTimeout); state.freehandTimeout = null; }
     state.multiPoints = null;
     state.routeDragging = false;
     state.routeSegmentStart = null;
@@ -1765,6 +1935,12 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     hideRunDoneBtn();
     updatePickersVisibility();
     drawAllMarkups();
+    if(state.tool === 'airOutletTag'){
+      setTimeout(() => { if(state.tool === 'airOutletTag') placeAirOutletTag(); }, 10);
+    }
+    // Erase cursor
+    const mCv = document.getElementById('markupCanvas');
+    if(mCv) mCv.classList.toggle('erase-active', state.tool === 'erase');
   });
 });
 
@@ -1909,6 +2085,7 @@ $('#takeoffFlowFilter').addEventListener('change', (e) => {
   renderTakeoffList();
 });
 $('#takeoffExportBtn').addEventListener('click', exportTakeoffPDF);
+$('#takeoffRefreshBtn').addEventListener('click', () => { ensureCatalogLoaded().then(() => renderTakeoffList()); });
 $('#takeoffAddBtn').addEventListener('click', async () => {
   await ensureCatalogLoaded();
   showTakeoffCategoryPickerModal();
@@ -1985,7 +2162,7 @@ document.addEventListener('click', (e) => {
     });
   }
   addResizeHandle('panelResizeHandle', 'panel', 450);
-  addResizeHandle('takeoffResizeHandle', 'takeoffPanel', 1000);
+  addResizeHandle('takeoffResizeHandle', 'takeoffPanel', 1100);
 })();
 
 /* ============================================================
@@ -2145,8 +2322,18 @@ function onPointerDown(e){
     if(state.tool === 'hatchline') drawHatchLinePreview(state.multiPoints);
     else drawMultilinePreview(state.multiPoints);
   } else if(state.tool === 'hatcharea' || state.tool === 'whiteoutFreeform'){
-    if(!state.multiPoints) state.multiPoints = [p];
-    else state.multiPoints.push(p);
+    let snappedPt = p;
+    if(state.tool === 'hatcharea' && state.multiPoints && state.multiPoints.length > 0){
+      const last = state.multiPoints[state.multiPoints.length - 1];
+      const dx = p.x - last.x, dy = p.y - last.y;
+      const angle = Math.atan2(dy, dx);
+      const snapRad = 2 * Math.PI / 180;
+      const snappedAngle = Math.round(angle / snapRad) * snapRad;
+      const dist = Math.hypot(dx, dy);
+      snappedPt = { x: last.x + dist * Math.cos(snappedAngle), y: last.y + dist * Math.sin(snappedAngle) };
+    }
+    if(!state.multiPoints) state.multiPoints = [snappedPt];
+    else state.multiPoints.push(snappedPt);
     showRunDoneBtn();
     drawAllMarkups();
     if(state.tool === 'whiteoutFreeform') drawWhiteoutFreeformPreview(state.multiPoints);
@@ -2155,6 +2342,19 @@ function onPointerDown(e){
     state.drawing = true;
     state.currentStroke = { id: genId(), type: 'shape', shape: state.shapeType, color: state.color, thickness: state.thickness, rotation: 0, p0: p, p1: p, note: '' };
   } else if(state.tool === 'dimension'){
+    // First-use: if no scale calibration set, prompt user to set one
+    if(!state._dimensionScalePrompted){
+      state._dimensionScalePrompted = true;
+      const sheet = activeSheet();
+      if(!sheet || !sheet.scaleCalibration){
+        showConfirmModal({
+          title: 'Set Scale Reference',
+          sub: 'No scale is set for this sheet. Draw a dimension line, then use "Set as scale ref" to calibrate. Would you like a reminder after placing your first dimension?',
+          confirmLabel: 'OK, Got It', cancelLabel: 'Dismiss',
+          onConfirm: () => {}, onCancel: () => {}
+        });
+      }
+    }
     state.drawing = true;
     const dp = canvasPointClearFingertip(e);
     state.currentStroke = { id: genId(), type: 'dimension', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: dp, p1: dp, text: '', textPos: dp, note: '' };
@@ -2250,7 +2450,15 @@ function onPointerMove(e){
     else drawMultilinePreview(state.multiPoints.concat([snapped]));
   } else if(state.tool === 'hatcharea' && state.multiPoints){
     drawAllMarkups();
-    drawHatchAreaPreview(state.multiPoints.concat([p]));
+    let hatchPreviewPt = p;
+    if(state.multiPoints.length > 0){
+      const last = state.multiPoints[state.multiPoints.length - 1];
+      const dx = p.x - last.x, dy = p.y - last.y;
+      const angle = Math.atan2(dy, dx);
+      const snapRad = 2 * Math.PI / 180;
+      hatchPreviewPt = { x: last.x + Math.hypot(dx,dy) * Math.cos(Math.round(angle/snapRad)*snapRad), y: last.y + Math.hypot(dx,dy) * Math.sin(Math.round(angle/snapRad)*snapRad) };
+    }
+    drawHatchAreaPreview(state.multiPoints.concat([hatchPreviewPt]));
   } else if(state.tool === 'whiteoutFreeform' && state.multiPoints){
     drawAllMarkups();
     drawWhiteoutFreeformPreview(state.multiPoints.concat([p]));
@@ -2259,6 +2467,20 @@ function onPointerMove(e){
   if(state.tool === 'airOutletTag' && state.airOutletRunItem && !state.airOutletPendingAnchor){
     state.ghostAirOutletPos = p;
     drawAllMarkups();
+  }
+  // Erase halo cursor
+  if(state.tool === 'erase'){
+    drawAllMarkups();
+    const eraseCtx = mCanvas.getContext('2d');
+    eraseCtx.save();
+    eraseCtx.beginPath();
+    eraseCtx.arc(p.x, p.y, 18, 0, Math.PI * 2);
+    eraseCtx.strokeStyle = 'rgba(200,50,50,0.7)';
+    eraseCtx.lineWidth = 2;
+    eraseCtx.setLineDash([4, 3]);
+    eraseCtx.stroke();
+    eraseCtx.setLineDash([]);
+    eraseCtx.restore();
   }
 }
 
@@ -2375,6 +2597,15 @@ function onPointerUp(e){
     }
     state.currentStroke = null;
     drawAllMarkups();
+    // 4-second inactivity timeout — revert to select if no new stroke
+    if(state.freehandTimeout) clearTimeout(state.freehandTimeout);
+    state.freehandTimeout = setTimeout(() => {
+      if(state.tool === 'draw'){
+        switchToTool('select');
+        clearMarkupActionButtons();
+        updatePickersVisibility();
+      }
+    }, 4000);
   } else if(state.tool === 'line' && state.drawing){
     state.drawing = false;
     if(Math.hypot(state.currentStroke.p1.x - state.currentStroke.p0.x, state.currentStroke.p1.y - state.currentStroke.p0.y) > 4){
@@ -2435,9 +2666,16 @@ function onPointerUp(e){
 
 /* ---- Run tool "Done" button — also used to finish a freeform hatch area,
    since both are the same "tap points, then finish" interaction pattern. ---- */
-function showRunDoneBtn(){ $('#runDoneBtn').classList.remove('hidden'); positionRunDoneBtn(); }
+function showRunDoneBtn(){
+  const rb = $('#runDoneBtn');
+  rb.classList.remove('hidden');
+  rb.textContent = (state.tool === 'hatcharea') ? 'Close ✓' : 'Done ✓';
+  $('#multilineUndoBtn').classList.remove('hidden');
+  positionRunDoneBtn();
+}
 function hideRunDoneBtn(){
   $('#runDoneBtn').classList.add('hidden');
+  $('#multilineUndoBtn').classList.add('hidden');
   // If we were in an airOutletTag placement run, end it and clear all ghost state
   if(state.airOutletRunItem){
     clearAirOutletSessionTimer();
@@ -2452,6 +2690,11 @@ function finishMultiline(){
   let createdId = null;
   if(state.multiPoints && state.multiPoints.length > 1){
     if(state.tool === 'hatcharea' && state.multiPoints.length >= 3){
+      // Close: add final point equal to first to close the polygon
+      const pts = state.multiPoints;
+      if(pts[pts.length-1].x !== pts[0].x || pts[pts.length-1].y !== pts[0].y){
+        pts.push({ ...pts[0] });
+      }
       const markup = { id: genId(), type: 'hatcharea', color: HATCH_COLOR, points: state.multiPoints, note: '', createdAt: Date.now() };
       activeSheet().markups.push(markup);
       markDirty();
@@ -2484,6 +2727,15 @@ function finishMultiline(){
   if(createdId) switchToSelectAndSelect(createdId);
   else drawAllMarkups();
 }
+$('#multilineUndoBtn').addEventListener('click', () => {
+  if(state.multiPoints && state.multiPoints.length > 1){
+    state.multiPoints.pop();
+    drawAllMarkups();
+    if(state.tool === 'hatchline') drawHatchLinePreview(state.multiPoints);
+    else if(state.tool === 'hatcharea') drawHatchAreaPreview(state.multiPoints);
+    else drawMultilinePreview(state.multiPoints);
+  }
+});
 $('#runDoneBtn').addEventListener('click', () => {
   if(state.airOutletRunItem){
     // End air outlet placement run
@@ -2869,9 +3121,9 @@ function defaultBendPosition(anchor, textPos){
    SELECTION / HANDLE HIT-TESTING + DRAGGING
    ============================================================ */
 function handlePointsForMarkup(m){
-  if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'textPos', p: m.textPos }];
+  if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment') return [{ key: 'move', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'textPos', p: m.textPos }];
   if(m.type === 'dimension') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'textPos', p: m.textPos }];
-  if(m.type === 'line') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
+  if(m.type === 'line'){ const mid = { x: (m.p0.x + m.p1.x)/2, y: (m.p0.y + m.p1.y)/2 }; return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: mid }]; }
   if(m.type === 'whiteoutRect') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: shapeCenter(m) }];
   if(m.type === 'shape'){
     const handles = [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: shapeCenter(m) }];
@@ -2880,9 +3132,15 @@ function handlePointsForMarkup(m){
     }
     return handles;
   }
-  if(m.type === 'multiline' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform' || m.type === 'hatchline') return m.points.map((p, i) => ({ key: 'pt' + i, p }));
-  if(m.type === 'photo') return [{ key: 'anchor', p: m.anchor }, { key: 'rotate', p: computePhotoRotateHandle(m) }];
-  if(m.type === 'symbol') return [{ key: 'anchor', p: m.anchor }, { key: 'rotate', p: computePhotoRotateHandle(m) }, { key: 'scale', p: computeSymbolScaleHandle(m) }];
+  if(m.type === 'multiline' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform' || m.type === 'hatchline'){
+    const handles = m.points.map((p, i) => ({ key: 'pt' + i, p }));
+    const c = markupCenterPoint(m);
+    handles.push({ key: 'move', p: c });
+    return handles;
+  }
+  if(m.type === 'freehand'){ const c = markupCenterPoint(m); return [{ key: 'move', p: c }]; }
+  if(m.type === 'photo') return [{ key: 'move', p: m.anchor }, { key: 'rotate', p: computePhotoRotateHandle(m) }];
+  if(m.type === 'symbol') return [{ key: 'move', p: m.anchor }, { key: 'rotate', p: computePhotoRotateHandle(m) }, { key: 'scale', p: computeSymbolScaleHandle(m) }];
   return [];
 }
 function cloneMarkupPoints(m){ return JSON.parse(JSON.stringify(m)); }
@@ -3017,6 +3275,25 @@ function applyDragHandle(drag, p){
   }
   if(drag.key.startsWith('pt')){
     const idx = parseInt(drag.key.slice(2), 10);
+    if(m.type === 'multiline' && m.points.length >= 2){
+      // 5° angle snap relative to adjacent point(s)
+      const SNAP_DEG = 5;
+      const step = SNAP_DEG * Math.PI / 180;
+      const prev = idx > 0 ? m.points[idx - 1] : null;
+      const next = idx < m.points.length - 1 ? m.points[idx + 1] : null;
+      // Snap relative to the previous segment if it exists
+      if(prev){
+        const dx = p.x - prev.x, dy = p.y - prev.y;
+        const dist = Math.hypot(dx, dy);
+        const angle = Math.round(Math.atan2(dy, dx) / step) * step;
+        p = { x: prev.x + Math.cos(angle) * dist, y: prev.y + Math.sin(angle) * dist };
+      } else if(next){
+        const dx = p.x - next.x, dy = p.y - next.y;
+        const dist = Math.hypot(dx, dy);
+        const angle = Math.round(Math.atan2(dy, dx) / step) * step;
+        p = { x: next.x + Math.cos(angle) * dist, y: next.y + Math.sin(angle) * dist };
+      }
+    }
     m.points[idx] = p;
     return;
   }
@@ -3167,6 +3444,7 @@ function showMarkupActionButtons(markupId){
           if(!realLength || realLength <= 0) return;
           const pixelDist = Math.hypot(m.p1.x - m.p0.x, m.p1.y - m.p0.y);
           sheet.scaleCalibration = { pixelDist, realLength, unit: 'ft' };
+          state._dimensionScalePrompted = false; // reset so next sheet gets the prompt too
           markDirty();
         }
       });
@@ -3527,18 +3805,32 @@ function drawAllMarkups(){
   }
   if(state.tool === 'mselect'){
     if(state.multiSelectedIds.size > 0){
-      ctx.save();
-      ctx.strokeStyle = '#0000FF';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([4, 3]);
+      ctx.setLineDash([]);
+      // Draw navy move grip for each multi-selected markup
       sheet.markups.forEach(m => {
         if(!state.multiSelectedIds.has(m.id)) return;
         const c = markupCenterPoint(m);
+        ctx.save();
+        ctx.fillStyle = '#2F5D8A';
+        roundRect(ctx, c.x - 6.75, c.y - 6.75, 13.5, 13.5, 3);
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.4;
         ctx.beginPath();
-        ctx.arc(c.x, c.y, 18, 0, Math.PI * 2);
+        ctx.moveTo(c.x - 3.75, c.y); ctx.lineTo(c.x + 3.75, c.y);
+        ctx.moveTo(c.x, c.y - 3.75); ctx.lineTo(c.x, c.y + 3.75);
+        ctx.moveTo(c.x - 3.75, c.y); ctx.lineTo(c.x - 2.25, c.y - 1.5);
+        ctx.moveTo(c.x - 3.75, c.y); ctx.lineTo(c.x - 2.25, c.y + 1.5);
+        ctx.moveTo(c.x + 3.75, c.y); ctx.lineTo(c.x + 2.25, c.y - 1.5);
+        ctx.moveTo(c.x + 3.75, c.y); ctx.lineTo(c.x + 2.25, c.y + 1.5);
+        ctx.moveTo(c.x, c.y - 3.75); ctx.lineTo(c.x - 1.5, c.y - 2.25);
+        ctx.moveTo(c.x, c.y - 3.75); ctx.lineTo(c.x + 1.5, c.y - 2.25);
+        ctx.moveTo(c.x, c.y + 3.75); ctx.lineTo(c.x - 1.5, c.y + 2.25);
+        ctx.moveTo(c.x, c.y + 3.75); ctx.lineTo(c.x + 1.5, c.y + 2.25);
         ctx.stroke();
+        ctx.restore();
       });
-      ctx.restore();
+      ctx.setLineDash([]);
     }
     if(state.marqueeStart && state.marqueeCurrent){
       ctx.save();
@@ -4624,7 +4916,7 @@ function renderTakeoffList(){
     groups[style][mfr][row.cat].push(row);
   });
 
-  const NCOLS = 17; // Place | # | Sched Tag | Mfr | Model | Neck | Face | Frame | Color | Sheet Qty | Loc | Notes | Vendor | Total | Edit | Dup | Del
+  const NCOLS = 15; // Place | Edit | Dup | Del | # | Sched Tag | Mfr | Model | SizeA | SizeB | Frame | Color | Sheet Qty | Loc | Notes
   const table = document.createElement('table');
   table.className = 'ao-table';
 
@@ -4633,6 +4925,9 @@ function renderTakeoffList(){
   const hdr = thead.insertRow();
   [
     { label:'',           cls:'ao-th-place' },
+    { label:'',           cls:'ao-th-action' },
+    { label:'',           cls:'ao-th-action' },
+    { label:'',           cls:'ao-th-del' },
     { label:'#',          cls:'ao-th-id' },
     { label:'Schedule Tag' },
     { label:'Manufacturer' },
@@ -4644,11 +4939,6 @@ function renderTakeoffList(){
     { label:'Sheet Qty',  cls:'ao-th-num' },
     { label:'Location' },
     { label:'Notes' },
-    { label:'Vendor' },
-    { label:'Total Qty',  cls:'ao-th-num' },
-    { label:'',           cls:'ao-th-action' },
-    { label:'',           cls:'ao-th-action' },
-    { label:'',           cls:'ao-th-del' },
   ].forEach(h => {
     const th = document.createElement('th');
     th.textContent = h.label || '';
@@ -4728,11 +5018,40 @@ function renderTakeoffList(){
           placeBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
           tdPlace.appendChild(placeBtn);
 
-          // Get vendor from manufacturer directory
-          const mfrEntry = (state.manufacturerDirectory.manufacturers || []).find(m => m.name === c.manufacturer);
-          const vendor = (mfrEntry && mfrEntry.vendor) || '';
+          // Col 1: Edit button
+          const tdEdit = tr.insertCell();
+          tdEdit.className = 'ao-td-action';
+          const editBtn = document.createElement('button');
+          editBtn.className = 'ao-edit-btn takeoff-row-edit';
+          editBtn.dataset.lineId = li.lineId;
+          editBtn.dataset.cat = rowCat;
+          editBtn.title = 'Edit row';
+          editBtn.textContent = '✎';
+          tdEdit.appendChild(editBtn);
 
-          // Cols 1–13: data (#, Sched Tag, Mfr, Model, Neck, Face, Frame, Color, Sheet Qty, Loc, Notes, Vendor, Total)
+          // Col 2: Duplicate button
+          const tdDup = tr.insertCell();
+          tdDup.className = 'ao-td-action';
+          const dupBtn = document.createElement('button');
+          dupBtn.className = 'ao-dup-btn takeoff-row-dup';
+          dupBtn.dataset.lineId = li.lineId;
+          dupBtn.dataset.cat = rowCat;
+          dupBtn.title = 'Duplicate row';
+          dupBtn.textContent = '⧉';
+          tdDup.appendChild(dupBtn);
+
+          // Col 3: Delete button
+          const tdDel = tr.insertCell();
+          tdDel.className = 'ao-td-del';
+          const delBtn = document.createElement('button');
+          delBtn.className = 'ao-del-btn takeoff-row-del';
+          delBtn.dataset.lineId = li.lineId;
+          delBtn.dataset.cat = rowCat;
+          delBtn.title = 'Delete row';
+          delBtn.textContent = '✕';
+          tdDel.appendChild(delBtn);
+
+          // Cols 4–14: data (#, Sched Tag, Mfr, Model, SizeA, SizeB, Frame, Color, Sheet Qty, Loc, Notes)
           [
             li.scheduleNum != null ? String(li.scheduleNum) : '',
             li.scheduleTag || li.description || '',
@@ -4745,47 +5064,11 @@ function renderTakeoffList(){
             sheetQty > 0 ? String(sheetQty) : '—',
             li.location || '',
             li.notes || '',
-            vendor,
-            totalQty > 0 ? String(totalQty) : '—',
           ].forEach((val, i) => {
             const td = tr.insertCell();
             td.textContent = val;
-            if(i === 8)  { td.className = 'ao-td-num'; if(sheetQty > 0) td.style.color = color; }
-            if(i === 12) { td.className = 'ao-td-num'; if(totalQty > 0) td.style.color = color; }
+            if(i === 8) { td.className = 'ao-td-num'; if(sheetQty > 0) td.style.color = color; }
           });
-
-          // Col 14: Edit button
-          const tdEdit = tr.insertCell();
-          tdEdit.className = 'ao-td-action';
-          const editBtn = document.createElement('button');
-          editBtn.className = 'ao-edit-btn takeoff-row-edit';
-          editBtn.dataset.lineId = li.lineId;
-          editBtn.dataset.cat = rowCat;
-          editBtn.title = 'Edit row';
-          editBtn.textContent = '✎';
-          tdEdit.appendChild(editBtn);
-
-          // Col 15: Duplicate button
-          const tdDup = tr.insertCell();
-          tdDup.className = 'ao-td-action';
-          const dupBtn = document.createElement('button');
-          dupBtn.className = 'ao-dup-btn takeoff-row-dup';
-          dupBtn.dataset.lineId = li.lineId;
-          dupBtn.dataset.cat = rowCat;
-          dupBtn.title = 'Duplicate row';
-          dupBtn.textContent = '⧉';
-          tdDup.appendChild(dupBtn);
-
-          // Col 16: delete button
-          const tdDel = tr.insertCell();
-          tdDel.className = 'ao-td-del';
-          const delBtn = document.createElement('button');
-          delBtn.className = 'ao-del-btn takeoff-row-del';
-          delBtn.dataset.lineId = li.lineId;
-          delBtn.dataset.cat = rowCat;
-          delBtn.title = 'Delete row';
-          delBtn.textContent = '✕';
-          tdDel.appendChild(delBtn);
         });
       });
     });
@@ -4804,18 +5087,22 @@ function wireTakeoffRowEvents(){
     btn.addEventListener('click', () => {
       const lineId = btn.dataset.lineId;
       const cat    = btn.dataset.cat;
-      if(state.data.airTerminalTakeoff[cat]){
-        state.data.airTerminalTakeoff[cat] = state.data.airTerminalTakeoff[cat].filter(x => x.lineId !== lineId);
-        // Remove all canvas airOutletTag markups with this lineId across every sheet
-        (state.data.sheets || []).forEach(sheet => {
-          sheet.markups = (sheet.markups || []).filter(m => !(m.type === 'airOutletTag' && m.lineId === lineId));
-        });
-        renumberTakeoffItems();
-        markDirty();
-        drawAllMarkups();
-        renderNoteList();
-        renderTakeoffList();
-      }
+      showConfirmModal({ title: 'Delete Item', sub: 'Are you sure you want to delete this item? All placed tags will also be removed.', confirmLabel: 'Delete', cancelLabel: 'Cancel',
+        onConfirm: () => {
+          if(state.data.airTerminalTakeoff[cat]){
+            state.data.airTerminalTakeoff[cat] = state.data.airTerminalTakeoff[cat].filter(x => x.lineId !== lineId);
+            (state.data.sheets || []).forEach(sheet => {
+              sheet.markups = (sheet.markups || []).filter(m => !(m.type === 'airOutletTag' && m.lineId === lineId));
+            });
+            renumberTakeoffItems();
+            markDirty();
+            drawAllMarkups();
+            renderNoteList();
+            renderTakeoffList();
+          }
+        },
+        onCancel: () => {}
+      });
     });
   });
 
@@ -4887,6 +5174,9 @@ function wireTakeoffRowEvents(){
 function exportTakeoffPDF(){
   const jobName   = state.jobName  || 'Unknown Job';
   const sheetName = (activeSheet() && activeSheet().name) || 'Unknown Sheet';
+  // Capture logo src for embedding in the PDF report
+  const logoImgEl = document.querySelector('.topbar-logo, #topbar img, img[alt="PPC"]');
+  const logoSrc = (logoImgEl && logoImgEl.src && logoImgEl.src.startsWith('data:')) ? logoImgEl.src : null;
   const takeoff   = state.data.airTerminalTakeoff || { supply: [], return: [], exhaust: [] };
   const catColors = { supply:'#1A56DB', return:'#C026D3', exhaust:'#16a34a' };
   const catLabels = { supply:'Supply',  return:'Return',  exhaust:'Exhaust' };
@@ -5000,7 +5290,7 @@ function exportTakeoffPDF(){
 <body>
 <div class="pdf-header">
   <div style="display:flex;align-items:center;gap:12px;">
-    <div class="pdf-logo-box">Logo<br>Here</div>
+    ${logoSrc ? `<img src="${logoSrc}" style="width:56px;height:auto;object-fit:contain;" alt="PPC">` : `<div class="pdf-logo-box">PPC Inc.</div>`}
     <div>
       <div class="pdf-company">PPC Inc.</div>
       <div class="pdf-meta">Job: <strong>${escapeHtml(jobName)}</strong></div>
