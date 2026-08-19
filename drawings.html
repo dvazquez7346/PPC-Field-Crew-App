@@ -449,8 +449,8 @@ input,textarea{font-family:inherit;}
         <button id="zoomOutBtn" title="Zoom out">−</button>
       </div>
       <button class="run-done-btn hidden" id="runDoneBtn">Done ✓</button>
-      <button class="run-done-btn hidden" id="mSelectGroupBtn">Group</button>
-      <button class="run-done-btn hidden" id="mSelectUngroupBtn">Ungroup</button>
+      <button class="run-done-btn hidden" id="mSelectGroupBtn" style="display:none!important;"></button>
+      <button class="run-done-btn hidden" id="mSelectUngroupBtn" style="display:none!important;"></button>
     </div>
 
     <div class="panel panel-hidden" id="panel">
@@ -570,7 +570,7 @@ const LOCKED_SHAPES = ['circle', 'square', 'triangle', 'diamond', 'hexagon'];
 // naturally want to treat as one rigid unit (a symbol + the line it sits on,
 // several shapes marking one area); leader-based types (Callout, Note, etc.)
 // have their own mechanics that don't benefit from rigid grouping.
-const GROUPABLE_TYPES = ['line', 'multiline', 'shape', 'symbol'];
+const GROUPABLE_TYPES = ['line', 'multiline', 'freehand', 'shape', 'symbol', 'label', 'note', 'hatchline', 'hatcharea', 'dimension', 'elevation', 'equipment', 'photo', 'airOutletTag'];
 const AXIS_SNAP_THRESHOLD = 6; // degrees — Dimension tool snaps only near horizontal/vertical, else free angle
 const JOINT_RADIUS = 15; // fixed fillet radius for multi-segment corners (diagrammatic, not exact)
 const PALETTE = ['#FF0000', '#00FF00', '#0000FF', '#FF8000', '#FF00FF', '#000000'];
@@ -1523,8 +1523,7 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
       state.marqueeStart = null;
       state.marqueeCurrent = null;
       state.mDragActive = false;
-      $('#mSelectGroupBtn').classList.add('hidden');
-      $('#mSelectUngroupBtn').classList.add('hidden');
+      // group/ungroup now live in the action bar — no floating buttons to hide
     }
     $('#canvasArea').classList.remove('panning');
     clearMarkupActionButtons();
@@ -2476,7 +2475,7 @@ function startAirOutletSessionTimer(){
     switchToTool('select');
     clearMarkupActionButtons();
     drawAllMarkups();
-  }, 10000);
+  }, 20000);
 }
 function clearAirOutletSessionTimer(){
   if(state.airOutletSessionTimer){ clearTimeout(state.airOutletSessionTimer); state.airOutletSessionTimer = null; }
@@ -3148,6 +3147,46 @@ function updateMSelectActionBar(){
 
   const colorRow = document.createElement('div');
   colorRow.className = 'markup-action-row';
+
+  // Group / Ungroup — left of color dots
+  const allGroupable = selected.length >= 2 && selected.every(m => GROUPABLE_TYPES.includes(m.type));
+  const anyGrouped = selected.some(m => m.groupId);
+  const btnStyle = 'background:var(--navy);color:#fff;border:none;border-radius:5px;padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;line-height:20px;flex-shrink:0;';
+  if(allGroupable){
+    const groupInlineBtn = document.createElement('button');
+    groupInlineBtn.textContent = '⊞ Group';
+    groupInlineBtn.setAttribute('style', btnStyle + 'margin-right:4px;');
+    groupInlineBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const sh = activeSheet(); if(!sh) return;
+      const sel = sh.markups.filter(m => state.multiSelectedIds.has(m.id));
+      const gid = genId();
+      sel.forEach(m => { m.groupId = gid; });
+      markDirty(); drawAllMarkups(); updateMSelectActionBar();
+    });
+    colorRow.appendChild(groupInlineBtn);
+  }
+  if(anyGrouped){
+    const ungroupInlineBtn = document.createElement('button');
+    ungroupInlineBtn.textContent = '⊟ Ungroup';
+    ungroupInlineBtn.setAttribute('style', btnStyle + 'margin-right:4px;');
+    ungroupInlineBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const sh = activeSheet(); if(!sh) return;
+      const sel = sh.markups.filter(m => state.multiSelectedIds.has(m.id));
+      sel.forEach(m => { delete m.groupId; });
+      markDirty(); drawAllMarkups(); updateMSelectActionBar();
+    });
+    colorRow.appendChild(ungroupInlineBtn);
+  }
+
+  // Separator between group btns and color dots (only when buttons present)
+  if(allGroupable || anyGrouped){
+    const sep = document.createElement('span');
+    sep.style.cssText = 'width:1px;background:var(--border);margin:0 4px;align-self:stretch;flex-shrink:0;';
+    colorRow.appendChild(sep);
+  }
+
   PALETTE.forEach(c => {
     const dot = document.createElement('button');
     dot.className = 'markup-color-dot';
@@ -3196,49 +3235,8 @@ function updateMSelectActionBar(){
   bar.appendChild(btnRow);
 }
 
-// Group/Ungroup float near wherever you just tapped, marqueed, or dragged —
-// same pattern as the Route/Hatch Area Done button — instead of being buried
-// in the action bar where they were easy to miss entirely.
-function positionMSelectButtons(){
-  const groupBtn = $('#mSelectGroupBtn');
-  const ungroupBtn = $('#mSelectUngroupBtn');
-  const sheet = activeSheet();
-  const selected = (sheet && state.tool === 'mselect') ? sheet.markups.filter(m => state.multiSelectedIds.has(m.id)) : [];
-  const allGroupable = selected.length >= 2 && selected.every(m => GROUPABLE_TYPES.includes(m.type));
-  const anyGrouped = selected.some(m => m.groupId);
-  groupBtn.classList.toggle('hidden', !allGroupable);
-  ungroupBtn.classList.toggle('hidden', !anyGrouped);
-  if(!allGroupable && !anyGrouped) return;
-  if(!state.mLastActionPoint || !mCanvas) return;
-  const rect = mCanvas.getBoundingClientRect();
-  const scaleX = rect.width / mCanvas.width, scaleY = rect.height / mCanvas.height;
-  const left = rect.left + state.mLastActionPoint.x * scaleX - 30;
-  const topGroup = rect.top + state.mLastActionPoint.y * scaleY - 70;
-  const topUngroup = rect.top + state.mLastActionPoint.y * scaleY - (allGroupable ? 116 : 70);
-  if(allGroupable){ groupBtn.style.left = left + 'px'; groupBtn.style.top = topGroup + 'px'; }
-  if(anyGrouped){ ungroupBtn.style.left = left + 'px'; ungroupBtn.style.top = topUngroup + 'px'; }
-}
-$('#mSelectGroupBtn').addEventListener('click', () => {
-  const sheet = activeSheet();
-  if(!sheet) return;
-  const selected = sheet.markups.filter(m => state.multiSelectedIds.has(m.id));
-  const gid = genId();
-  selected.forEach(m => { m.groupId = gid; });
-  markDirty();
-  drawAllMarkups();
-  updateMSelectActionBar();
-  positionMSelectButtons();
-});
-$('#mSelectUngroupBtn').addEventListener('click', () => {
-  const sheet = activeSheet();
-  if(!sheet) return;
-  const selected = sheet.markups.filter(m => state.multiSelectedIds.has(m.id));
-  selected.forEach(m => { delete m.groupId; });
-  markDirty();
-  drawAllMarkups();
-  updateMSelectActionBar();
-  positionMSelectButtons();
-});
+// Group/Ungroup are now inline in updateMSelectActionBar — this is a no-op stub.
+function positionMSelectButtons(){ /* no-op — buttons live in the action bar */ }
 
 /* ============================================================
    RENDERING
