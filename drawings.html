@@ -97,10 +97,9 @@ input,textarea{font-family:inherit;}
 .markup-action-row button:hover,.markup-action-group button:hover{background:rgba(0,0,0,0.04);}
 .markup-action-row button.delete-btn,.markup-action-row .delete-btn{border-color:#DC2626;color:#DC2626;}
 .markup-action-row button.delete-btn:hover{background:rgba(220,38,38,0.07);}
-/* Color dots — circles (higher specificity to beat .markup-action-row button's border-radius:6px) */
-.markup-color-dot{width:20px;height:20px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1.5px var(--line);padding:0;cursor:pointer;flex-shrink:0;}
+/* Color dots — always circles, !important to beat .markup-action-row button overrides */
+.markup-color-dot{width:20px !important;height:20px !important;border-radius:50% !important;border:2px solid #fff !important;box-shadow:0 0 0 1.5px var(--line);padding:0 !important;cursor:pointer;flex-shrink:0;line-height:1 !important;min-width:0 !important;}
 .markup-color-dot.active{box-shadow:0 0 0 2.5px var(--navy);}
-.markup-action-row button.markup-color-dot{width:20px;height:20px;border-radius:50%;padding:0;border:2px solid #fff;line-height:1;}
 /* Stroke pickers — visual line dots matching the no-selection picker */
 .action-bar-stroke-btn{width:34px;height:30px;border-radius:6px;border:1px solid #DDE1E6;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;}
 .action-bar-stroke-btn.active{background:rgba(0,0,0,0.07);}
@@ -3246,7 +3245,16 @@ function hitTestMarkup(p){
   return { markup: found, key: 'whole' };
 }
 function markupContainsPoint(m, p){
-  if(m.type === 'freehand' || m.type === 'multiline' || m.type === 'hatcharea' || m.type === 'hatchline'){
+  if(m.type === 'multiline' || m.type === 'hatchline'){
+    // Check vertices AND the segments between them so clicking anywhere on the line works
+    const pts = m.points || [];
+    if(pts.some(pt => pt && Math.hypot(p.x - pt.x, p.y - pt.y) < 16)) return true;
+    for(let i = 0; i < pts.length - 1; i++){
+      if(pts[i] && pts[i+1] && distToSegment(p, pts[i], pts[i+1]) < 12) return true;
+    }
+    return false;
+  }
+  if(m.type === 'freehand' || m.type === 'hatcharea'){
     const pts = m.points || (m.p0 && m.p1 ? [m.p0, m.p1] : []);
     return pts.some(pt => pt && Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
   }
@@ -3719,54 +3727,57 @@ function updateMSelectActionBar(){
   const selected = sheet.markups.filter(m => state.multiSelectedIds.has(m.id));
   bar.innerHTML = '';
 
+  // Single flat row — #actionBarDynamic is already centered via position:absolute,
+  // so children must NOT themselves be position:absolute or they stack and overflow.
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:5px;flex-wrap:nowrap;';
+
+  // Count label
   const countLabel = document.createElement('span');
-  countLabel.className = 'action-bar-hint';
-  countLabel.style.color = 'var(--navy)';
+  countLabel.style.cssText = 'font-size:12px;font-weight:600;color:var(--navy);white-space:nowrap;flex-shrink:0;';
   countLabel.textContent = `${selected.length} selected`;
-  bar.appendChild(countLabel);
+  row.appendChild(countLabel);
 
-  const colorRow = document.createElement('div');
-  colorRow.className = 'markup-action-row';
+  // Divider
+  const mkDiv = () => { const s = document.createElement('span'); s.className = 'action-bar-divider'; return s; };
 
-  // Group / Ungroup — left of color dots
+  // Group / Ungroup
   const allGroupable = selected.length >= 2 && selected.every(m => GROUPABLE_TYPES.includes(m.type));
   const anyGrouped = selected.some(m => m.groupId);
-  const btnStyle = 'background:var(--navy);color:#fff;border:none;border-radius:5px;padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;line-height:20px;flex-shrink:0;';
-  if(allGroupable){
-    const groupInlineBtn = document.createElement('button');
-    groupInlineBtn.textContent = '⊞ Group';
-    groupInlineBtn.setAttribute('style', btnStyle + 'margin-right:4px;');
-    groupInlineBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const sh = activeSheet(); if(!sh) return;
-      const sel = sh.markups.filter(m => state.multiSelectedIds.has(m.id));
-      const gid = genId();
-      sel.forEach(m => { m.groupId = gid; });
-      markDirty(); drawAllMarkups(); updateMSelectActionBar();
-    });
-    colorRow.appendChild(groupInlineBtn);
-  }
-  if(anyGrouped){
-    const ungroupInlineBtn = document.createElement('button');
-    ungroupInlineBtn.textContent = '⊟ Ungroup';
-    ungroupInlineBtn.setAttribute('style', btnStyle + 'margin-right:4px;');
-    ungroupInlineBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const sh = activeSheet(); if(!sh) return;
-      const sel = sh.markups.filter(m => state.multiSelectedIds.has(m.id));
-      sel.forEach(m => { delete m.groupId; });
-      markDirty(); drawAllMarkups(); updateMSelectActionBar();
-    });
-    colorRow.appendChild(ungroupInlineBtn);
-  }
-
-  // Separator between group btns and color dots (only when buttons present)
+  const btnStyle = 'background:var(--navy);color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:11.5px;font-weight:600;cursor:pointer;height:28px;flex-shrink:0;white-space:nowrap;';
   if(allGroupable || anyGrouped){
-    const sep = document.createElement('span');
-    sep.style.cssText = 'width:1px;background:var(--border);margin:0 4px;align-self:stretch;flex-shrink:0;';
-    colorRow.appendChild(sep);
+    row.appendChild(mkDiv());
+    if(allGroupable){
+      const groupBtn = document.createElement('button');
+      groupBtn.textContent = '⊞ Group';
+      groupBtn.setAttribute('style', btnStyle);
+      groupBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const sh = activeSheet(); if(!sh) return;
+        const sel = sh.markups.filter(m => state.multiSelectedIds.has(m.id));
+        const gid = genId();
+        sel.forEach(m => { m.groupId = gid; });
+        markDirty(); drawAllMarkups(); updateMSelectActionBar();
+      });
+      row.appendChild(groupBtn);
+    }
+    if(anyGrouped){
+      const ungroupBtn = document.createElement('button');
+      ungroupBtn.textContent = '⊟ Ungroup';
+      ungroupBtn.setAttribute('style', btnStyle);
+      ungroupBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const sh = activeSheet(); if(!sh) return;
+        const sel = sh.markups.filter(m => state.multiSelectedIds.has(m.id));
+        sel.forEach(m => { delete m.groupId; });
+        markDirty(); drawAllMarkups(); updateMSelectActionBar();
+      });
+      row.appendChild(ungroupBtn);
+    }
   }
 
+  // Color dots
+  row.appendChild(mkDiv());
   PALETTE.forEach(c => {
     const dot = document.createElement('button');
     dot.className = 'markup-color-dot';
@@ -3774,19 +3785,16 @@ function updateMSelectActionBar(){
     dot.addEventListener('click', (e) => {
       e.stopPropagation();
       selected.forEach(m => { if(m.type !== 'whiteoutRect' && m.type !== 'whiteoutFreeform') m.color = c; });
-      markDirty();
-      drawAllMarkups();
-      renderNoteList();
+      markDirty(); drawAllMarkups(); renderNoteList();
     });
-    colorRow.appendChild(dot);
+    row.appendChild(dot);
   });
-  bar.appendChild(colorRow);
 
-  const btnRow = document.createElement('div');
-  btnRow.className = 'markup-action-row';
-
+  // Clear + Delete
+  row.appendChild(mkDiv());
   const clearBtn = document.createElement('button');
   clearBtn.textContent = 'Clear selection';
+  clearBtn.style.cssText = 'font-family:inherit;font-size:11.5px;font-weight:600;padding:0 10px;border-radius:6px;border:1px solid #DDE1E6;background:transparent;color:#16202C;cursor:pointer;height:30px;white-space:nowrap;flex-shrink:0;';
   clearBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     state.multiSelectedIds.clear();
@@ -3794,25 +3802,21 @@ function updateMSelectActionBar(){
     updateMSelectActionBar();
     positionMSelectButtons();
   });
-  btnRow.appendChild(clearBtn);
+  row.appendChild(clearBtn);
 
   const delBtn = document.createElement('button');
-  delBtn.className = 'delete-btn';
+  delBtn.style.cssText = 'font-family:inherit;font-size:11.5px;font-weight:600;padding:0 10px;border-radius:6px;border:1px solid #DC2626;background:transparent;color:#DC2626;cursor:pointer;height:30px;white-space:nowrap;flex-shrink:0;';
   delBtn.textContent = `Delete (${selected.length})`;
   delBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     const idsToDelete = new Set(state.multiSelectedIds);
     sheet.markups = sheet.markups.filter(m => !idsToDelete.has(m.id));
     state.multiSelectedIds.clear();
-    markDirty();
-    drawAllMarkups();
-    renderNoteList();
-    updateMSelectActionBar();
-    positionMSelectButtons();
+    markDirty(); drawAllMarkups(); renderNoteList(); updateMSelectActionBar(); positionMSelectButtons();
   });
-  btnRow.appendChild(delBtn);
+  row.appendChild(delBtn);
 
-  bar.appendChild(btnRow);
+  bar.appendChild(row);
 }
 
 // Group/Ungroup are now inline in updateMSelectActionBar — this is a no-op stub.
