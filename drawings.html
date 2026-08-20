@@ -2755,6 +2755,9 @@ function onPointerMove(e){
     return;
   }
   if(state.tool === 'select' && state.dragHandle){
+    // Dead zone: ignore tiny tremors — only start moving after 4px of travel
+    const dragDist = Math.hypot(p.x - state.dragHandle.startPoint.x, p.y - state.dragHandle.startPoint.y);
+    if(dragDist < 4) return;
     applyDragHandle(state.dragHandle, p);
     drawAllMarkups();
     return;
@@ -4028,6 +4031,7 @@ function showMarkupActionButtons(markupId){
 // Builds the batch-action bar for M-Select — color/group/ungroup/clear/delete
 // applied to every currently multi-selected markup at once.
 function updateMSelectActionBar(){
+  updateScaleChip();
   const bar = $('#actionBarDynamic');
   const sheet = activeSheet();
   if(!sheet || state.multiSelectedIds.size === 0){
