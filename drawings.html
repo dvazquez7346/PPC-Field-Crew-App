@@ -3491,12 +3491,9 @@ function defaultBendPosition(anchor, textPos){
 function handlePointsForMarkup(m){
   if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'move', p: m.textPos }];
   if(m.type === 'dimension'){
-    const dv = normalizePt(m.p0, m.p1);
-    const perp = { x: -dv.y, y: dv.x };
-    const off = m.extOffset != null ? m.extOffset : 0;
-    const tip0 = { x: m.p0.x + perp.x * (off + 10), y: m.p0.y + perp.y * (off + 10) };
-    const tip1 = { x: m.p1.x + perp.x * (off + 10), y: m.p1.y + perp.y * (off + 10) };
-    return [{ key: 'ext0', p: tip0 }, { key: 'ext1', p: tip1 }, { key: 'textPos', p: m.textPos }];
+    // Grips at measurement points (p0/p1) — lets user freely reposition endpoints
+    // to change span and angle. textPos grip moves the label.
+    return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'textPos', p: m.textPos }];
   }
   if(m.type === 'line'){ const mid = { x: (m.p0.x + m.p1.x)/2, y: (m.p0.y + m.p1.y)/2 }; return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: mid }]; }
   if(m.type === 'whiteoutRect') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: shapeCenter(m) }];
@@ -3700,20 +3697,22 @@ function applyDragHandle(drag, p){
     m.points[idx] = p;
     return;
   }
-  if(m.type === 'dimension' && (drag.key === 'ext0' || drag.key === 'ext1')){
-    // Extension line grips: move both together (shared offset), constrained to perpendicular
-    const base = drag.key === 'ext0' ? m.p0 : m.p1;
-    const dv = normalizePt(m.p0, m.p1);
-    const perp = { x: -dv.y, y: dv.x };
-    // Project drag position onto perpDir relative to measurement point
-    const dx = p.x - base.x, dy = p.y - base.y;
-    const proj = dx * perp.x + dy * perp.y;
-    m.extOffset = Math.max(10, proj - 10); // min 10 so ext line >= 20px total
+  if(m.type === 'dimension' && (drag.key === 'p0' || drag.key === 'p1')){
+    // Move endpoint freely — updates span and angle; recomputes label if not custom
+    if(drag.key === 'p0') m.p0 = p; else m.p1 = p;
     if(!m.textIsCustom){
       const newDist = Math.hypot(m.p1.x - m.p0.x, m.p1.y - m.p0.y);
       const suggestion = suggestDimensionLength(newDist);
       if(suggestion) m.text = suggestion;
     }
+    // Keep text label centered above dim line
+    const dv2 = normalizePt(m.p0, m.p1);
+    const perp2 = { x: -dv2.y, y: dv2.x };
+    const off2 = m.extOffset != null ? m.extOffset : 30;
+    m.textPos = {
+      x: (m.p0.x + m.p1.x) / 2 + perp2.x * (off2 + 8),
+      y: (m.p0.y + m.p1.y) / 2 + perp2.y * (off2 + 8)
+    };
     return;
   }
   if(m.type === 'shape' && (drag.key === 'p0' || drag.key === 'p1')){
