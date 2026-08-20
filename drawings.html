@@ -1034,10 +1034,26 @@ function exitToBlankCanvas(){
   state.multiSelectedIds = new Set();
   state.dirty = false;
   state.tool = 'pan';
+  state.naturalWidth = 0;
+  state.naturalHeight = 0;
+  state.pageViewport = null;
+  state.zoom = 1;
   const pdfCanvas = document.getElementById('pdfCanvas');
   const markupCanvas = document.getElementById('markupCanvas');
   if(pdfCanvas){ const c = pdfCanvas.getContext('2d'); c.clearRect(0,0,pdfCanvas.width,pdfCanvas.height); }
   if(markupCanvas){ const c = markupCanvas.getContext('2d'); c.clearRect(0,0,markupCanvas.width,markupCanvas.height); }
+  // Show the "No job open" placeholder, hide the canvas
+  const emptyState = document.getElementById('emptyState');
+  const zoomWrapper = document.getElementById('zoomWrapper');
+  const zoomControls = document.getElementById('zoomControls');
+  const emptyTitle = document.getElementById('emptyStateTitle');
+  const emptyBody = document.getElementById('emptyStateBody');
+  if(emptyTitle) emptyTitle.textContent = 'No job open';
+  if(emptyBody) emptyBody.textContent = 'No job open. Use File above to start a new job or browse existing jobs.';
+  if(emptyState) emptyState.classList.remove('hidden');
+  if(zoomWrapper) zoomWrapper.classList.add('hidden');
+  if(zoomControls) zoomControls.classList.add('hidden');
+  hideRunDoneBtn();
   renderSheetTabs();
   drawAllMarkups();
   document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
