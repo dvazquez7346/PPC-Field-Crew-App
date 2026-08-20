@@ -303,17 +303,20 @@ input,textarea{font-family:inherit;}
 .ao-group-mfr td{background:var(--surface-2);color:var(--navy);font-size:11px;font-weight:700;padding:4px 12px;border-bottom:1px solid var(--line);}
 .ao-group-flow td{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:3px 16px;border-bottom:1px solid var(--line);}
 .ao-data-row:hover td{background:var(--surface-2);}
-/* Place tag button */
+/* Place tag button (legacy — kept for safety) */
 .ao-place-btn{width:24px;height:24px;border-radius:6px;border:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;padding:0;flex-shrink:0;}
 .ao-place-btn:hover{opacity:0.8;}
+/* # badge — acts as place button */
+.ao-num-place-btn{min-width:28px;height:22px;border-radius:5px;border:none;color:#fff;font-weight:700;font-size:11.5px;cursor:pointer;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;}
+.ao-num-place-btn:hover{opacity:0.8;}
 /* Action buttons (edit / dup / del) */
 .ao-del-btn,.ao-edit-btn,.ao-dup-btn{width:22px;height:22px;border-radius:5px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;padding:0;}
 .ao-del-btn:hover{background:#fee2e2;color:#dc2626;}
 .ao-edit-btn:hover{background:#dbeafe;color:#1d4ed8;}
 .ao-dup-btn:hover{background:#d1fae5;color:#065f46;}
-.ao-reorder-btn{display:block;width:18px;height:12px;border-radius:3px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:9px;line-height:1;padding:0;text-align:center;}
+.ao-reorder-btn{display:inline-flex;width:22px;height:26px;border-radius:4px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:11px;line-height:1;padding:0;align-items:center;justify-content:center;}
 .ao-reorder-btn:hover{background:var(--surface-2);color:var(--navy);}
-.ao-table .ao-th-order,.ao-table .ao-td-order{width:20px;min-width:20px;padding:2px 2px;text-align:center;}
+.ao-table .ao-th-order,.ao-table .ao-td-order{width:48px;min-width:48px;padding:2px 2px;text-align:center;white-space:nowrap;}
 .takeoff-apply-order-btn{padding:5px 10px;font-size:11.5px;font-weight:600;border:1px solid #7A3E9D;border-radius:7px;background:#7A3E9D;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .takeoff-apply-order-btn:hover{background:#6a3488;}
 </style>
@@ -5356,7 +5359,7 @@ function renderTakeoffList(){
     groups[style][mfr][row.cat].push(row);
   });
 
-  const NCOLS = 17; // Place | Edit | Dup | Del | ↕ | # | Sched Tag | Mfr | Model | SizeA | SizeB | Frame | Color | Sheet Qty | Loc | Notes | Total Qty
+  const NCOLS = 15; // Edit | Dup | ↕ | # (place) | Tag | Mfg. | Model | SizeA | SizeB | Frame | Color | Sheet Qty | Notes | Total Qty | Del
   const table = document.createElement('table');
   table.className = 'ao-table';
 
@@ -5364,23 +5367,21 @@ function renderTakeoffList(){
   const thead = table.createTHead();
   const hdr = thead.insertRow();
   [
-    { label:'',           cls:'ao-th-place' },
     { label:'',           cls:'ao-th-action' },
     { label:'',           cls:'ao-th-action' },
-    { label:'',           cls:'ao-th-del' },
     { label:'',           cls:'ao-th-order' },
-    { label:'#',          cls:'ao-th-id' },
-    { label:'Schedule Tag' },
-    { label:'Manufacturer' },
+    { label:'#',          cls:'ao-th-num' },
+    { label:'Tag' },
+    { label:'Mfg.' },
     { label:'Model' },
     { label:'Neck Size',  id:'aoThSizeA' },
     { label:'Face Size',  id:'aoThSizeB' },
     { label:'Frame Type' },
     { label:'Color' },
     { label:'Sheet Qty',  cls:'ao-th-num' },
-    { label:'Location' },
     { label:'Notes' },
-    { label:'Total Qty', cls:'ao-th-num' },
+    { label:'Total Qty',  cls:'ao-th-num' },
+    { label:'',           cls:'ao-th-del' },
   ].forEach(h => {
     const th = document.createElement('th');
     th.textContent = h.label || '';
@@ -5448,19 +5449,7 @@ function renderTakeoffList(){
           tr.dataset.lineId = li.lineId;
           tr.dataset.cat = rowCat;
 
-          // Col 0: Place tag button
-          const tdPlace = tr.insertCell();
-          tdPlace.className = 'ao-td-place';
-          const placeBtn = document.createElement('button');
-          placeBtn.className = 'ao-place-btn takeoff-place-btn';
-          placeBtn.dataset.lineId = li.lineId;
-          placeBtn.dataset.cat = rowCat;
-          placeBtn.title = 'Place tag on drawing';
-          placeBtn.style.background = color;
-          placeBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`;
-          tdPlace.appendChild(placeBtn);
-
-          // Col 1: Edit button
+          // Col 0: Edit button
           const tdEdit = tr.insertCell();
           tdEdit.className = 'ao-td-action';
           const editBtn = document.createElement('button');
@@ -5471,7 +5460,7 @@ function renderTakeoffList(){
           editBtn.textContent = '✎';
           tdEdit.appendChild(editBtn);
 
-          // Col 2: Duplicate button
+          // Col 1: Duplicate button
           const tdDup = tr.insertCell();
           tdDup.className = 'ao-td-action';
           const dupBtn = document.createElement('button');
@@ -5482,18 +5471,7 @@ function renderTakeoffList(){
           dupBtn.textContent = '⧉';
           tdDup.appendChild(dupBtn);
 
-          // Col 3: Delete button
-          const tdDel = tr.insertCell();
-          tdDel.className = 'ao-td-del';
-          const delBtn = document.createElement('button');
-          delBtn.className = 'ao-del-btn takeoff-row-del';
-          delBtn.dataset.lineId = li.lineId;
-          delBtn.dataset.cat = rowCat;
-          delBtn.title = 'Delete row';
-          delBtn.textContent = '✕';
-          tdDel.appendChild(delBtn);
-
-          // Col 4: Reorder up/down buttons
+          // Col 2: Reorder up/down buttons (side by side)
           const tdOrder = tr.insertCell();
           tdOrder.className = 'ao-td-order';
           const upBtn = document.createElement('button');
@@ -5511,9 +5489,20 @@ function renderTakeoffList(){
           tdOrder.appendChild(upBtn);
           tdOrder.appendChild(downBtn);
 
-          // Cols 5–16: data (#, Sched Tag, Mfr, Model, SizeA, SizeB, Frame, Color, Sheet Qty, Loc, Notes, Total Qty)
+          // Col 3: # badge — tapping places the tag
+          const tdNum = tr.insertCell();
+          tdNum.className = 'ao-td-num';
+          const numBtn = document.createElement('button');
+          numBtn.className = 'ao-num-place-btn takeoff-place-btn';
+          numBtn.dataset.lineId = li.lineId;
+          numBtn.dataset.cat = rowCat;
+          numBtn.title = 'Tap to place tag on drawing';
+          numBtn.style.background = color;
+          numBtn.textContent = li.scheduleNum != null ? String(li.scheduleNum) : '#';
+          tdNum.appendChild(numBtn);
+
+          // Cols 4–13: data (Tag, Mfg., Model, SizeA, SizeB, Frame, Color, Sheet Qty, Notes, Total Qty)
           [
-            li.scheduleNum != null ? String(li.scheduleNum) : '',
             li.scheduleTag || li.description || '',
             c.manufacturer || '',
             c.model || '',
@@ -5522,15 +5511,25 @@ function renderTakeoffList(){
             li.frameType || '',
             li.color || '',
             sheetQty > 0 ? String(sheetQty) : '—',
-            li.location || '',
             li.notes || '',
             totalQty > 0 ? String(totalQty) : '—',
           ].forEach((val, i) => {
             const td = tr.insertCell();
             td.textContent = val;
-            if(i === 8)  { td.className = 'ao-td-num'; if(sheetQty > 0) td.style.color = color; }
-            if(i === 11) { td.className = 'ao-td-num'; if(totalQty > 0) td.style.color = color; }
+            if(i === 7) { td.className = 'ao-td-num'; if(sheetQty > 0) td.style.color = color; }
+            if(i === 9) { td.className = 'ao-td-num'; if(totalQty > 0) td.style.color = color; }
           });
+
+          // Col 14: Delete button (far right)
+          const tdDel = tr.insertCell();
+          tdDel.className = 'ao-td-del';
+          const delBtn = document.createElement('button');
+          delBtn.className = 'ao-del-btn takeoff-row-del';
+          delBtn.dataset.lineId = li.lineId;
+          delBtn.dataset.cat = rowCat;
+          delBtn.title = 'Delete row';
+          delBtn.textContent = '✕';
+          tdDel.appendChild(delBtn);
         });
       });
     });
