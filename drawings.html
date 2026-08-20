@@ -88,22 +88,22 @@ input,textarea{font-family:inherit;}
 #zoomFitBtn{font-size:14px;}
 .run-done-btn{position:fixed;background:var(--success);color:#fff;border:none;font-weight:600;font-size:13px;padding:9px 16px;border-radius:9px;box-shadow:var(--shadow);z-index:45;}
 .run-done-btn:hover{background:#256e46;}
-.action-bar{background:var(--surface);border-bottom:1px solid var(--line);padding:0 10px;display:flex;align-items:center;justify-content:flex-start;gap:6px;flex-shrink:0;height:42px;overflow:hidden;flex-wrap:nowrap;}
+.action-bar{background:var(--surface);border-bottom:1px solid var(--line);padding:0 10px;display:flex;align-items:center;height:42px;overflow:hidden;flex-wrap:nowrap;position:relative;}
 .action-bar-hint{font-size:12px;color:var(--danger);font-weight:600;}
-.action-bar-divider{width:1px;height:28px;background:var(--line);flex-shrink:0;margin:0 2px;}
-/* Single-row markup action layout: edits | div | colors | div | stroke | div | delete */
-.markup-action-row{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;flex:1;}
-.markup-action-row button,.markup-action-group button,.action-bar button{font-family:inherit;font-size:11.5px;font-weight:600;padding:0 10px;border-radius:6px;border:1px solid #DDE1E6;background:transparent;color:#16202C;cursor:pointer;height:30px;white-space:nowrap;flex-shrink:0;line-height:30px;}
-.markup-action-row button:hover,.markup-action-group button:hover,.action-bar button:hover{background:rgba(0,0,0,0.04);}
-.markup-action-row button.delete-btn,.action-bar .delete-btn,.markup-action-row .delete-btn{border-color:#DC2626;color:#DC2626;margin-left:auto;}
-.markup-action-row button.delete-btn:hover,.action-bar .delete-btn:hover{background:rgba(220,38,38,0.07);}
-/* Color dots in action bar — sized to match button height */
-.markup-color-dot{width:22px;height:30px;border-radius:6px;border:2px solid transparent;box-shadow:0 0 0 1px var(--line);padding:0;cursor:pointer;flex-shrink:0;position:relative;}
-.markup-color-dot::after{content:'';position:absolute;inset:3px;border-radius:3px;background:inherit;}
-.markup-color-dot.active{box-shadow:0 0 0 2px var(--navy);}
-/* Stroke pickers in action bar */
-.action-bar-stroke-btn{font-family:inherit;font-size:11px;font-weight:600;padding:0 8px;border-radius:6px;border:1px solid #DDE1E6;background:transparent;color:#16202C;cursor:pointer;height:30px;white-space:nowrap;flex-shrink:0;line-height:30px;}
-.action-bar-stroke-btn.active,.action-bar-stroke-btn:hover{background:rgba(0,0,0,0.06);}
+.action-bar-divider{width:1px;height:26px;background:var(--line);flex-shrink:0;margin:0 5px;}
+/* Center container — absolutely centered in the bar regardless of left content */
+.markup-action-row{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;position:absolute;left:50%;transform:translateX(-50%);}
+.markup-action-row button,.markup-action-group button{font-family:inherit;font-size:11.5px;font-weight:600;padding:0 10px;border-radius:6px;border:1px solid #DDE1E6;background:transparent;color:#16202C;cursor:pointer;height:30px;white-space:nowrap;flex-shrink:0;line-height:30px;}
+.markup-action-row button:hover,.markup-action-group button:hover{background:rgba(0,0,0,0.04);}
+.markup-action-row button.delete-btn,.markup-action-row .delete-btn{border-color:#DC2626;color:#DC2626;}
+.markup-action-row button.delete-btn:hover{background:rgba(220,38,38,0.07);}
+/* Color dots — circles */
+.markup-color-dot{width:20px;height:20px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1.5px var(--line);padding:0;cursor:pointer;flex-shrink:0;}
+.markup-color-dot.active{box-shadow:0 0 0 2.5px var(--navy);}
+/* Stroke pickers — visual line dots matching the no-selection picker */
+.action-bar-stroke-btn{width:34px;height:30px;border-radius:6px;border:1px solid #DDE1E6;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;}
+.action-bar-stroke-btn.active{background:rgba(0,0,0,0.07);}
+.action-bar-stroke-btn:hover{background:rgba(0,0,0,0.05);}
 .markup-action-group button.delete-btn{border-color:#DC2626;color:#DC2626;background:transparent;}
 .markup-action-group button.delete-btn:hover{background:rgba(220,38,38,0.07);}
 .canvas-stack canvas{display:block;}
@@ -200,16 +200,17 @@ input,textarea{font-family:inherit;}
 .save-btn:hover{background:var(--navy-2);}
 .save-btn:disabled{opacity:.5;cursor:default;}
 /* Toolbar color/thickness pickers rendered in the action bar (not toolrail) */
-.action-bar-pickers{display:flex;align-items:center;gap:6px;flex:1;justify-content:center;}
-.action-bar-pickers .color-dot{width:24px;height:30px;border-radius:6px;}
-.action-bar-pickers .thickness-dot{width:36px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;border:1px solid #DDE1E6;background:transparent;cursor:pointer;}
+.action-bar-pickers{display:flex;align-items:center;gap:6px;position:absolute;left:50%;transform:translateX(-50%);}
+.action-bar-pickers .color-dot{width:20px;height:20px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1.5px var(--line);cursor:pointer;flex-shrink:0;}
+.action-bar-pickers .color-dot.active{box-shadow:0 0 0 2.5px var(--navy);}
+.action-bar-pickers .thickness-dot{width:34px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;border:1px solid #DDE1E6;background:transparent;cursor:pointer;flex-shrink:0;}
 .action-bar-pickers .thickness-dot.active{background:rgba(0,0,0,0.07);}
-.action-bar-picker-sep{width:1px;height:28px;background:var(--line);margin:0 4px;flex-shrink:0;}
+.action-bar-picker-sep{width:1px;height:26px;background:var(--line);margin:0 4px;flex-shrink:0;}
 .status-dot{width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0;}
 .status-dot.dirty{background:var(--warn);}
 .action-bar-status-wrap{display:flex;align-items:center;gap:6px;flex-shrink:0;}
 .action-bar-status{font-size:12px;color:var(--muted);}
-.action-bar-dynamic{display:flex;flex-wrap:nowrap;gap:6px;align-items:center;flex:1;justify-content:flex-start;overflow:hidden;}
+.action-bar-dynamic{display:flex;flex-wrap:nowrap;gap:5px;align-items:center;position:absolute;left:50%;transform:translateX(-50%);}
 .mobile-panel-toggle{display:inline-block;font-weight:700;font-size:12px;padding:6px 14px;border-radius:7px;flex-shrink:0;}
 .topbar-logo{height:32px;width:auto;flex-shrink:0;margin-right:2px;}
 .file-menu-wrap{position:relative;flex-shrink:0;}
@@ -474,8 +475,8 @@ input,textarea{font-family:inherit;}
         <button id="zoomFitBtn" title="Fit to screen">⤢</button>
         <button id="zoomOutBtn" title="Zoom out">−</button>
       </div>
+      <button class="run-done-btn hidden" id="multilineUndoBtn" style="background:#7A3E9D;border:none;color:#fff;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>Undo</button>
       <button class="run-done-btn hidden" id="runDoneBtn">Done ✓</button>
-      <button class="run-done-btn hidden" id="multilineUndoBtn" style="background:transparent;border:1px solid #7A3E9D;color:#C084FC;">↩ Undo</button>
       <button class="run-done-btn hidden" id="mSelectGroupBtn" style="display:none!important;"></button>
       <button class="run-done-btn hidden" id="mSelectUngroupBtn" style="display:none!important;"></button>
     </div>
@@ -1862,23 +1863,27 @@ function positionRunDoneBtn(){
   const rb = $('#runDoneBtn');
   const ub = $('#multilineUndoBtn');
   const rect = $('#canvasArea').getBoundingClientRect();
-  let rbLeft, rbTop;
+  let anchorLeft, anchorTop;
   if(state.multiPoints && state.multiPoints.length > 0 && state.pageViewport){
     const last = state.multiPoints[state.multiPoints.length - 1];
     const mRect = mCanvas.getBoundingClientRect();
     const scaleX = mRect.width / mCanvas.width, scaleY = mRect.height / mCanvas.height;
-    rbLeft = mRect.left + last.x * scaleX - 20;
-    rbTop = mRect.top + last.y * scaleY - 80;
+    anchorLeft = mRect.left + last.x * scaleX - 20;
+    anchorTop = mRect.top + last.y * scaleY - 80;
   } else {
-    rbLeft = rect.right - 116;
-    rbTop = rect.top + 16;
+    anchorLeft = rect.right - 116;
+    anchorTop = rect.top + 16;
   }
-  rb.style.left = rbLeft + 'px';
-  rb.style.top = rbTop + 'px';
-  // Position Undo button immediately to the right of Done
-  if(ub && !ub.classList.contains('hidden')){
-    ub.style.top = rbTop + 'px';
-    ub.style.left = (rbLeft + rb.offsetWidth + 6) + 'px';
+  // Undo sits to the LEFT, Done sits to the RIGHT
+  const undoVisible = ub && !ub.classList.contains('hidden');
+  if(undoVisible){
+    ub.style.top = anchorTop + 'px';
+    ub.style.left = anchorLeft + 'px';
+    rb.style.top = anchorTop + 'px';
+    rb.style.left = (anchorLeft + ub.offsetWidth + 6) + 'px';
+  } else {
+    rb.style.top = anchorTop + 'px';
+    rb.style.left = anchorLeft + 'px';
   }
 }
 
@@ -3152,7 +3157,7 @@ function defaultBendPosition(anchor, textPos){
    SELECTION / HANDLE HIT-TESTING + DRAGGING
    ============================================================ */
 function handlePointsForMarkup(m){
-  if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment') return [{ key: 'move', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'textPos', p: m.textPos }];
+  if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'move', p: m.textPos }];
   if(m.type === 'dimension') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'textPos', p: m.textPos }];
   if(m.type === 'line'){ const mid = { x: (m.p0.x + m.p1.x)/2, y: (m.p0.y + m.p1.y)/2 }; return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: mid }]; }
   if(m.type === 'whiteoutRect') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: shapeCenter(m) }];
@@ -3261,6 +3266,13 @@ function applyDragHandle(drag, p){
   const sheet = activeSheet();
   const m = sheet.markups.find(x => x.id === drag.markupId);
   if(!m) return;
+  // For leader tags: move grip moves textPos+bend only — anchor (arrowhead) stays pinned
+  if(drag.key === 'move' && (m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment')){
+    const dx = p.x - drag.startPoint.x, dy = p.y - drag.startPoint.y;
+    m.textPos = { x: drag.origins.textPos.x + dx, y: drag.origins.textPos.y + dy };
+    m.bend = { x: drag.origins.bend.x + dx, y: drag.origins.bend.y + dy };
+    return;
+  }
   if(drag.key === 'whole' || drag.key === 'move'){
     const dx = p.x - drag.startPoint.x, dy = p.y - drag.startPoint.y;
     translateMarkup(m, drag.origins, dx, dy);
@@ -3632,7 +3644,7 @@ function showMarkupActionButtons(markupId){
     });
   }
 
-  // ---- Stroke section ----
+  // ---- Stroke section — visual line-thickness dots matching the no-selection picker ----
   if(['line', 'multiline', 'freehand', 'shape', 'symbol'].includes(m.type)){
     const divStroke = document.createElement('span');
     divStroke.className = 'action-bar-divider';
@@ -3640,7 +3652,10 @@ function showMarkupActionButtons(markupId){
     [2, 4, 7].forEach(t => {
       const btn = document.createElement('button');
       btn.className = 'action-bar-stroke-btn' + ((m.thickness || 3) === t ? ' active' : '');
-      btn.textContent = t === 2 ? 'Thin' : t === 4 ? 'Med' : 'Thick';
+      btn.title = t === 2 ? 'Thin' : t === 4 ? 'Medium' : 'Thick';
+      const line = document.createElement('span');
+      line.style.cssText = `display:block;width:16px;height:${t}px;background:#16202C;border-radius:1px;`;
+      btn.appendChild(line);
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         m.thickness = t;
@@ -3652,10 +3667,9 @@ function showMarkupActionButtons(markupId){
     });
   }
 
-  // ---- Delete button — far right ----
+  // ---- Delete button — right after stroke ----
   const divDel = document.createElement('span');
   divDel.className = 'action-bar-divider';
-  divDel.style.marginLeft = 'auto';
   buttonRow.appendChild(divDel);
   const delBtn = document.createElement('button');
   delBtn.className = 'delete-btn';
