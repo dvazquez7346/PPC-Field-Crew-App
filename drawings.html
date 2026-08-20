@@ -4495,7 +4495,7 @@ function drawOutlineArrowHead(ctx, from, tip, color, size = 9, thickness = 2){
 function drawTextPill(ctx, text, pos, color, borderColor){
   const bc = borderColor !== undefined ? borderColor : color;
   const isEmpty = !text;
-  ctx.font = isEmpty ? '600 italic 11px Inter, sans-serif' : '600 11px Inter, sans-serif';
+  ctx.font = isEmpty ? '600 italic 11px Inter, sans-serif' : '600 13px Inter, sans-serif';
   const padX = 5;
   const displayText = isEmpty ? 'Add text' : text;
   const textW = ctx.measureText(displayText).width;
@@ -4568,7 +4568,7 @@ function drawElevation(m){
 }
 function drawElevationPill(ctx, textTop, textBottom, pos, color){
   const isEmpty = !textTop && !textBottom;
-  ctx.font = isEmpty ? '600 italic 11px Inter, sans-serif' : '600 12px Inter, sans-serif';
+  ctx.font = isEmpty ? '600 italic 11px Inter, sans-serif' : '600 13px Inter, sans-serif';
   const padX = 9;
   const displayTop = isEmpty ? 'Top' : (textTop || '');
   const displayBottom = isEmpty ? 'Bottom' : (textBottom || '');
@@ -4627,7 +4627,7 @@ function drawEquipmentTag(m){
 }
 function drawEquipmentHexPill(ctx, eqType, eqNumber, pos, color){
   const isEmpty = !eqType && !eqNumber;
-  ctx.font = isEmpty ? '600 italic 11px Inter, sans-serif' : '600 12px Inter, sans-serif';
+  ctx.font = isEmpty ? '600 italic 11px Inter, sans-serif' : '600 13px Inter, sans-serif';
   const padX = 10;
   const displayTop = isEmpty ? 'Type' : eqType;
   const displayBottom = isEmpty ? 'Number' : eqNumber;
