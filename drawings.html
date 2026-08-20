@@ -364,18 +364,28 @@ input,textarea{font-family:inherit;}
       <span class="status-dot" id="statusDot"></span>
       <span id="statusText" class="action-bar-status">No job open</span>
     </div>
-    <!-- Color + thickness pickers — shown here when no markup selected and tool uses them -->
+    <!-- Color + thickness pickers + scale chip — centered in action bar -->
     <div class="action-bar-pickers hidden" id="actionBarPickers">
-      <div class="color-dot active" data-color="#FF0000" style="background:#FF0000"></div>
-      <div class="color-dot" data-color="#00FF00" style="background:#00FF00"></div>
-      <div class="color-dot" data-color="#0000FF" style="background:#0000FF"></div>
-      <div class="color-dot" data-color="#FF8000" style="background:#FF8000"></div>
-      <div class="color-dot" data-color="#FF00FF" style="background:#FF00FF"></div>
-      <div class="color-dot" data-color="#000000" style="background:#000000"></div>
-      <div class="action-bar-picker-sep"></div>
-      <div class="thickness-dot active" data-thickness="2"><span style="width:14px;height:2px;"></span></div>
-      <div class="thickness-dot" data-thickness="4"><span style="width:14px;height:4px;"></span></div>
-      <div class="thickness-dot" data-thickness="7"><span style="width:14px;height:7px;"></span></div>
+      <!-- Color/stroke group: only shown for tools that use them -->
+      <div id="pickerColorGroup" class="hidden" style="display:contents;">
+        <div class="color-dot active" data-color="#FF0000" style="background:#FF0000"></div>
+        <div class="color-dot" data-color="#00FF00" style="background:#00FF00"></div>
+        <div class="color-dot" data-color="#0000FF" style="background:#0000FF"></div>
+        <div class="color-dot" data-color="#FF8000" style="background:#FF8000"></div>
+        <div class="color-dot" data-color="#FF00FF" style="background:#FF00FF"></div>
+        <div class="color-dot" data-color="#000000" style="background:#000000"></div>
+        <div class="action-bar-picker-sep"></div>
+        <div class="thickness-dot active" data-thickness="2"><span style="width:14px;height:2px;"></span></div>
+        <div class="thickness-dot" data-thickness="4"><span style="width:14px;height:4px;"></span></div>
+        <div class="thickness-dot" data-thickness="7"><span style="width:14px;height:7px;"></span></div>
+        <div class="action-bar-picker-sep" id="pickerScaleSep"></div>
+      </div>
+      <!-- Scale chip: always shown when a job is open -->
+      <div id="scaleChipGroup" class="hidden" style="display:contents;">
+        <span style="font-size:12px;color:var(--muted);white-space:nowrap;flex-shrink:0;">Scale:</span>
+        <span id="scaleChipText" style="font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap;flex-shrink:0;">No scale set</span>
+        <button id="scaleChipBtn" style="font-family:inherit;font-size:11.5px;font-weight:600;padding:0 10px;border-radius:6px;border:1px solid #DDE1E6;background:transparent;color:#16202C;cursor:pointer;height:28px;white-space:nowrap;flex-shrink:0;">Set Scale</button>
+      </div>
     </div>
     <div class="action-bar-dynamic" id="actionBarDynamic"></div>
   </div>
@@ -2040,9 +2050,159 @@ document.querySelectorAll('#actionBarPickers .thickness-dot').forEach(dot => {
 
 // Which tools show color + thickness pickers in the action bar when nothing is selected
 const TOOLS_WITH_PICKERS = new Set(['draw','multiline','shape','symbol','label','note','hatchline','hatcharea','line']);
+
+// Preset drawing scales: N drawing inches = 1 real foot
+const PRESET_SCALES = [
+  { label: '1/16" = 1\'-0"',  inchesPerFoot: 0.0625  },
+  { label: '3/32" = 1\'-0"',  inchesPerFoot: 0.09375 },
+  { label: '1/8" = 1\'-0"',   inchesPerFoot: 0.125   },
+  { label: '3/16" = 1\'-0"',  inchesPerFoot: 0.1875  },
+  { label: '1/4" = 1\'-0"',   inchesPerFoot: 0.25    },
+  { label: '3/8" = 1\'-0"',   inchesPerFoot: 0.375   },
+  { label: '1/2" = 1\'-0"',   inchesPerFoot: 0.5     },
+  { label: '3/4" = 1\'-0"',   inchesPerFoot: 0.75    },
+  { label: '1" = 1\'-0"',     inchesPerFoot: 1.0     },
+  { label: '1-1/2" = 1\'-0"', inchesPerFoot: 1.5     },
+  { label: '3" = 1\'-0"',     inchesPerFoot: 3.0     },
+];
+const PDF_PIXELS_PER_INCH = 72 * 1.75; // PDF DPI × render scale
+
+function scaleCalibrationFromPreset(scale){
+  return { pixelDist: scale.inchesPerFoot * PDF_PIXELS_PER_INCH, realLength: 1, unit: 'ft', label: scale.label };
+}
+function scaleCalibrationFromCustom(drawingInches, realFeet, realInches){
+  const realFeetTotal = realFeet + realInches / 12;
+  if(realFeetTotal <= 0 || drawingInches <= 0) return null;
+  const label = `${drawingInches}" = ${realFeet}'-${realInches || 0}"`;
+  return { pixelDist: drawingInches * PDF_PIXELS_PER_INCH, realLength: realFeetTotal, unit: 'ft', label };
+}
+
+function updateScaleChip(){
+  const sheet = activeSheet();
+  const hasJob = !!state.jobId;
+  const noMarkup = !state.selectedMarkupId && state.multiSelectedIds.size === 0;
+  const scaleGroup = $('#scaleChipGroup');
+  if(!scaleGroup) return;
+  if(!hasJob || !noMarkup){ scaleGroup.classList.add('hidden'); return; }
+  scaleGroup.classList.remove('hidden');
+  const txt = $('#scaleChipText'), btn = $('#scaleChipBtn');
+  if(sheet && sheet.scaleCalibration){
+    txt.textContent = sheet.scaleCalibration.label || 'Custom';
+    btn.textContent = 'Change Scale';
+  } else {
+    txt.textContent = 'No scale set';
+    btn.textContent = 'Set Scale';
+  }
+}
+
 function updatePickersVisibility(){
-  const show = TOOLS_WITH_PICKERS.has(state.tool) && !state.selectedMarkupId && state.multiSelectedIds.size === 0;
-  $('#actionBarPickers').classList.toggle('hidden', !show);
+  const hasJob = !!state.jobId;
+  const noMarkup = !state.selectedMarkupId && state.multiSelectedIds.size === 0;
+  const showPickers = TOOLS_WITH_PICKERS.has(state.tool) && noMarkup;
+  const showScale = hasJob && noMarkup;
+  const colorGroup = $('#pickerColorGroup');
+  const scaleSep = $('#pickerScaleSep');
+  if(colorGroup) colorGroup.classList.toggle('hidden', !showPickers);
+  if(scaleSep) scaleSep.classList.toggle('hidden', !showPickers); // sep only needed when pickers also show
+  $('#actionBarPickers').classList.toggle('hidden', !showPickers && !showScale);
+  updateScaleChip();
+}
+
+$('#scaleChipBtn').addEventListener('click', () => showScaleModal());
+
+function showScaleModal(){
+  const sheet = activeSheet();
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  card.style.maxWidth = '380px';
+
+  // Build tabs + panes
+  const tabStyle = (active) => `flex:1;padding:8px 0;border:none;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.15s;background:${active ? 'var(--navy)' : 'transparent'};color:${active ? '#fff' : 'var(--ink)'};`;
+  card.innerHTML = `
+    <div class="modal-title">Drawing Scale</div>
+    <div class="modal-sub">Set the scale for this sheet. All dimension measurements will update.</div>
+    <div style="display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:14px 0 14px;">
+      <button id="_sTabPre" style="${tabStyle(true)}">Preset</button>
+      <button id="_sTabCus" style="${tabStyle(false)}">Custom</button>
+    </div>
+    <div id="_sPrePane">
+      <select id="_sPreSel" style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;background:var(--surface);color:var(--ink);">
+        ${PRESET_SCALES.map((s,i)=>`<option value="${i}">${s.label}</option>`).join('')}
+      </select>
+    </div>
+    <div id="_sCusPane" class="hidden">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <input id="_sCusIn" type="number" min="0.001" step="any" placeholder="0.25" style="width:72px;padding:8px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;text-align:center;">
+        <span style="font-size:13px;color:var(--muted);white-space:nowrap;">in. =</span>
+        <input id="_sCusFt" type="number" min="0" step="1" placeholder="1" style="width:60px;padding:8px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;text-align:center;">
+        <span style="font-size:13px;color:var(--muted);">ft</span>
+        <input id="_sCusInR" type="number" min="0" max="11" step="1" placeholder="0" style="width:60px;padding:8px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;text-align:center;">
+        <span style="font-size:13px;color:var(--muted);">in</span>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;">
+      <span style="font-size:12px;color:var(--muted);flex:1;">If scale is unknown —</span>
+      <button id="_sRefBtn" style="background:transparent;border:1px solid var(--blueprint);color:var(--blueprint);font-family:inherit;font-weight:600;font-size:12px;padding:6px 12px;border-radius:7px;cursor:pointer;white-space:nowrap;">Set Scale Ref.</button>
+    </div>
+    <div class="modal-actions" style="margin-top:14px;">
+      <button class="cancel">Cancel</button>
+      <button class="confirm" id="_sApply">Apply</button>
+    </div>
+  `;
+  backdrop.appendChild(card); root.appendChild(backdrop);
+
+  let activeTab = 'preset';
+  const preTab = card.querySelector('#_sTabPre'), cusTab = card.querySelector('#_sTabCus');
+  const prePane = card.querySelector('#_sPrePane'), cusPane = card.querySelector('#_sCusPane');
+  function switchTab(t){
+    activeTab = t;
+    preTab.style.cssText = tabStyle(t === 'preset');
+    cusTab.style.cssText = tabStyle(t === 'custom');
+    prePane.classList.toggle('hidden', t !== 'preset');
+    cusPane.classList.toggle('hidden', t !== 'custom');
+  }
+  preTab.addEventListener('click', () => switchTab('preset'));
+  cusTab.addEventListener('click', () => switchTab('custom'));
+
+  // Pre-select matching preset if scale already set
+  if(sheet && sheet.scaleCalibration){
+    const pxPerFt = sheet.scaleCalibration.pixelDist / sheet.scaleCalibration.realLength;
+    const idx = PRESET_SCALES.findIndex(s => Math.abs(s.inchesPerFoot * PDF_PIXELS_PER_INCH - pxPerFt) < 0.5);
+    if(idx >= 0) card.querySelector('#_sPreSel').value = String(idx);
+  }
+
+  // Apply
+  card.querySelector('#_sApply').addEventListener('click', () => {
+    let cal = null;
+    if(activeTab === 'preset'){
+      const idx = parseInt(card.querySelector('#_sPreSel').value, 10);
+      cal = scaleCalibrationFromPreset(PRESET_SCALES[idx]);
+    } else {
+      const inV = parseFloat(card.querySelector('#_sCusIn').value) || 0;
+      const ftV = parseInt(card.querySelector('#_sCusFt').value) || 0;
+      const inR = parseInt(card.querySelector('#_sCusInR').value) || 0;
+      cal = scaleCalibrationFromCustom(inV, ftV, inR);
+      if(!cal){ card.querySelector('#_sCusIn').style.borderColor = 'var(--danger)'; return; }
+    }
+    const sh = activeSheet(); if(sh){ sh.scaleCalibration = cal; markDirty(); }
+    root.innerHTML = ''; updateScaleChip(); drawAllMarkups();
+  });
+
+  // Set Scale Ref — clear calibration, switch to DIM tool, let first dimension prompt
+  card.querySelector('#_sRefBtn').addEventListener('click', () => {
+    const sh = activeSheet(); if(sh) delete sh.scaleCalibration;
+    root.innerHTML = '';
+    switchToTool('dim');
+    setStatus('dirty', 'Draw a line on a known length — you\'ll be prompted for its real measurement');
+    updateScaleChip();
+  });
+
+  card.querySelector('.cancel').addEventListener('click', () => { root.innerHTML = ''; });
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) root.innerHTML = ''; });
 }
 document.querySelectorAll('#shapeRow .shape-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -3497,30 +3657,7 @@ function showMarkupActionButtons(markupId){
     });
     buttonRow.appendChild(editBtn);
   }
-  if(m.type === 'dimension'){
-    const calBtn = document.createElement('button');
-    calBtn.textContent = 'Set as scale ref';
-    calBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const ftMatch = m.text.match(/(\d+)\s*'[\s-]*(\d+)?/);
-      const plainMatch = m.text.match(/[\d.]+/);
-      const guessFeet = ftMatch ? ftMatch[1] : (plainMatch ? plainMatch[0] : '');
-      const guessInches = ftMatch && ftMatch[2] ? ftMatch[2] : '';
-      showFeetInchesModal({
-        title: 'Set scale reference', sub: 'Real-world length this dimension represents.',
-        feetValue: guessFeet, inchesValue: guessInches, confirmLabel: 'Set',
-        onConfirm: (feet, inches) => {
-          const realLength = feet + inches / 12;
-          if(!realLength || realLength <= 0) return;
-          const pixelDist = Math.hypot(m.p1.x - m.p0.x, m.p1.y - m.p0.y);
-          sheet.scaleCalibration = { pixelDist, realLength, unit: 'ft' };
-          state._dimensionScalePrompted = false; // reset so next sheet gets the prompt too
-          markDirty();
-        }
-      });
-    });
-    buttonRow.appendChild(calBtn);
-  }
+  // Scale reference is now set via the Scale chip in the action bar (not per-dimension)
   if(m.type === 'elevation'){
     const editBtn = document.createElement('button');
     editBtn.textContent = (m.textTop || m.textBottom) ? 'Edit text' : 'Add text';
