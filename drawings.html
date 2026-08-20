@@ -160,7 +160,7 @@ input,textarea{font-family:inherit;}
 .takeoff-cat-btn.exhaust.active{background:#16a34a;color:#fff;border-color:#16a34a;}
 .takeoff-search-row{display:flex;gap:6px;padding:8px 16px 6px;border-bottom:1px solid var(--line);}
 .takeoff-search-row input{flex:1;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;}
-.takeoff-add-btn{margin:8px 16px;background:#7A3E9D;color:#fff;border:none;border-radius:8px;padding:8px;font-weight:600;font-size:13px;}
+.takeoff-add-btn{background:#7A3E9D;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-weight:600;font-size:13px;white-space:nowrap;flex-shrink:0;}
 /* Takeoff table section */
 .takeoff-cat-section-head{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:6px 16px 2px;display:flex;align-items:center;gap:6px;}
 .takeoff-cat-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
@@ -311,6 +311,11 @@ input,textarea{font-family:inherit;}
 .ao-del-btn:hover{background:#fee2e2;color:#dc2626;}
 .ao-edit-btn:hover{background:#dbeafe;color:#1d4ed8;}
 .ao-dup-btn:hover{background:#d1fae5;color:#065f46;}
+.ao-reorder-btn{display:block;width:18px;height:12px;border-radius:3px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:9px;line-height:1;padding:0;text-align:center;}
+.ao-reorder-btn:hover{background:var(--surface-2);color:var(--navy);}
+.ao-table .ao-th-order,.ao-table .ao-td-order{width:20px;min-width:20px;padding:2px 2px;text-align:center;}
+.takeoff-apply-order-btn{padding:5px 10px;font-size:11.5px;font-weight:600;border:1px solid #7A3E9D;border-radius:7px;background:#7A3E9D;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.takeoff-apply-order-btn:hover{background:#6a3488;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -526,13 +531,14 @@ input,textarea{font-family:inherit;}
         </div>
       </div>
       <div class="takeoff-toolbar">
+        <button class="takeoff-add-btn" id="takeoffAddBtn">+ Add Air Outlet</button>
         <select id="takeoffFlowFilter" class="takeoff-flow-filter">
           <option value="all">All</option>
           <option value="supply">Supply</option>
           <option value="return">Return</option>
           <option value="exhaust">Exhaust</option>
         </select>
-        <button class="takeoff-add-btn" id="takeoffAddBtn">+ Add Air Outlet</button>
+        <button class="takeoff-apply-order-btn" id="takeoffApplyOrderBtn" style="display:none;">Apply Order</button>
       </div>
       <div class="panel-list takeoff-table-wrap" id="takeoffList">
         <div class="panel-empty">No items yet.</div>
@@ -2163,6 +2169,7 @@ $('#whiteoutLockBtn').addEventListener('click', () => {
   state.selectedMarkupId = null;
   clearMarkupActionButtons();
   hideRunDoneBtn();
+  updateScaleChip();
   drawAllMarkups();
 });
 // Color and thickness pickers live in the action bar; wire them up
@@ -2218,7 +2225,7 @@ function updateScaleChip(){
   if(!scaleGroup) return;
   const aoTagPlacing = state.tool === 'airOutletTag' && !!state.airOutletRunItem;
   const mselActive = state.tool === 'mselect';
-  if(!hasJob || !noMarkup || aoTagPlacing || mselActive){ scaleGroup.classList.add('hidden'); return; }
+  if(!hasJob || !noMarkup || aoTagPlacing || mselActive || state.whiteoutsUnlocked){ scaleGroup.classList.add('hidden'); return; }
   scaleGroup.classList.remove('hidden');
   const txt = $('#scaleChipText'), btn = $('#scaleChipBtn');
   if(sheet && sheet.scaleCalibration){
@@ -2449,6 +2456,13 @@ $('#takeoffRefreshBtn').addEventListener('click', () => { ensureCatalogLoaded().
 $('#takeoffAddBtn').addEventListener('click', async () => {
   await ensureCatalogLoaded();
   showTakeoffCategoryPickerModal();
+});
+$('#takeoffApplyOrderBtn').addEventListener('click', () => {
+  renumberTakeoffItems();
+  markDirty();
+  drawAllMarkups();
+  state.aotReordered = false;
+  renderTakeoffList();
 });
 $('#noteFilterInput').addEventListener('input', (e) => {
   state.noteFilterText = e.target.value;
@@ -5342,7 +5356,7 @@ function renderTakeoffList(){
     groups[style][mfr][row.cat].push(row);
   });
 
-  const NCOLS = 15; // Place | Edit | Dup | Del | # | Sched Tag | Mfr | Model | SizeA | SizeB | Frame | Color | Sheet Qty | Loc | Notes
+  const NCOLS = 17; // Place | Edit | Dup | Del | ↕ | # | Sched Tag | Mfr | Model | SizeA | SizeB | Frame | Color | Sheet Qty | Loc | Notes | Total Qty
   const table = document.createElement('table');
   table.className = 'ao-table';
 
@@ -5354,6 +5368,7 @@ function renderTakeoffList(){
     { label:'',           cls:'ao-th-action' },
     { label:'',           cls:'ao-th-action' },
     { label:'',           cls:'ao-th-del' },
+    { label:'',           cls:'ao-th-order' },
     { label:'#',          cls:'ao-th-id' },
     { label:'Schedule Tag' },
     { label:'Manufacturer' },
@@ -5365,6 +5380,7 @@ function renderTakeoffList(){
     { label:'Sheet Qty',  cls:'ao-th-num' },
     { label:'Location' },
     { label:'Notes' },
+    { label:'Total Qty', cls:'ao-th-num' },
   ].forEach(h => {
     const th = document.createElement('th');
     th.textContent = h.label || '';
@@ -5477,7 +5493,25 @@ function renderTakeoffList(){
           delBtn.textContent = '✕';
           tdDel.appendChild(delBtn);
 
-          // Cols 4–14: data (#, Sched Tag, Mfr, Model, SizeA, SizeB, Frame, Color, Sheet Qty, Loc, Notes)
+          // Col 4: Reorder up/down buttons
+          const tdOrder = tr.insertCell();
+          tdOrder.className = 'ao-td-order';
+          const upBtn = document.createElement('button');
+          upBtn.className = 'ao-reorder-btn ao-up-btn';
+          upBtn.dataset.lineId = li.lineId;
+          upBtn.dataset.cat = rowCat;
+          upBtn.title = 'Move up';
+          upBtn.textContent = '▲';
+          const downBtn = document.createElement('button');
+          downBtn.className = 'ao-reorder-btn ao-down-btn';
+          downBtn.dataset.lineId = li.lineId;
+          downBtn.dataset.cat = rowCat;
+          downBtn.title = 'Move down';
+          downBtn.textContent = '▼';
+          tdOrder.appendChild(upBtn);
+          tdOrder.appendChild(downBtn);
+
+          // Cols 5–16: data (#, Sched Tag, Mfr, Model, SizeA, SizeB, Frame, Color, Sheet Qty, Loc, Notes, Total Qty)
           [
             li.scheduleNum != null ? String(li.scheduleNum) : '',
             li.scheduleTag || li.description || '',
@@ -5490,10 +5524,12 @@ function renderTakeoffList(){
             sheetQty > 0 ? String(sheetQty) : '—',
             li.location || '',
             li.notes || '',
+            totalQty > 0 ? String(totalQty) : '—',
           ].forEach((val, i) => {
             const td = tr.insertCell();
             td.textContent = val;
-            if(i === 8) { td.className = 'ao-td-num'; if(sheetQty > 0) td.style.color = color; }
+            if(i === 8)  { td.className = 'ao-td-num'; if(sheetQty > 0) td.style.color = color; }
+            if(i === 11) { td.className = 'ao-td-num'; if(totalQty > 0) td.style.color = color; }
           });
         });
       });
@@ -5503,6 +5539,10 @@ function renderTakeoffList(){
   container.innerHTML = '';
   container.appendChild(table);
   wireTakeoffRowEvents();
+
+  // Keep Apply Order button in sync with reorder state
+  const applyOrderBtn = $('#takeoffApplyOrderBtn');
+  if(applyOrderBtn) applyOrderBtn.style.display = state.aotReordered ? '' : 'none';
 }
 
 function renderTakeoffTable(){ return ''; } // stub — no longer called directly
@@ -5563,6 +5603,34 @@ function wireTakeoffRowEvents(){
       renderTakeoffList();
       // Open modal to let user tweak the duplicate before confirming
       showTakeoffJobDetailsModal(catalogItem, newLi, cat);
+    });
+  });
+
+  // Reorder: move row up within its category
+  document.querySelectorAll('.ao-up-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lineId = btn.dataset.lineId;
+      const cat    = btn.dataset.cat;
+      const arr    = state.data.airTerminalTakeoff[cat] || [];
+      const idx    = arr.findIndex(x => x.lineId === lineId);
+      if(idx <= 0) return;
+      [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+      state.aotReordered = true;
+      renderTakeoffList();
+    });
+  });
+
+  // Reorder: move row down within its category
+  document.querySelectorAll('.ao-down-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lineId = btn.dataset.lineId;
+      const cat    = btn.dataset.cat;
+      const arr    = state.data.airTerminalTakeoff[cat] || [];
+      const idx    = arr.findIndex(x => x.lineId === lineId);
+      if(idx < 0 || idx >= arr.length - 1) return;
+      [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+      state.aotReordered = true;
+      renderTakeoffList();
     });
   });
 
@@ -5649,7 +5717,7 @@ function exportTakeoffPDF(){
       html += `<tr class="col-header">
         <td>ID</td><td>Schedule Tag</td><td>Manufacturer</td><td>Model</td>
         <td>${sizeALabel}</td><td>${sizeBLabel}</td><td>Frame Type</td><td>Color</td>
-        <td class="num">Sheet Qty</td><td>Location</td><td>Notes</td><td class="num">Total Qty</td>
+        <td class="num">Sheet Qty</td><td>Location</td><td>Notes</td>
       </tr>`;
 
       Object.keys(groups[style]).sort().forEach(mfr => {
@@ -5662,21 +5730,22 @@ function exportTakeoffPDF(){
             <td colspan="12">&#9679; ${catLabels[cat]}</td></tr>`;
           items.forEach(({ li, c, qty, totalQty }) => {
             const isL  = c.terminalStyle === 'LINEAR';
-            const sizeA = isL ? (c.length  || '') : (c.neckSize || '');
-            const sizeB = isL ? (c.numSlots ? c.numSlots + ' slots' : '') : (c.faceSize || '');
+            const sizeA = isL ? (c.length  || '') : (li.neckSize  || c.neckSize  || '');
+            const sizeB = isL ? (c.numSlots ? c.numSlots + ' slots' : '') : (li.faceSize  || c.faceSize  || '');
+            const frameType = li.frameType || c.frameType || '';
+            const itemColor = li.color     || c.color     || '';
             html += `<tr class="data-row">
-              <td>${c.id != null ? c.id : ''}</td>
-              <td>${escapeHtml(li.description || '')}</td>
+              <td>${li.scheduleNum != null ? li.scheduleNum : (c.id != null ? c.id : '')}</td>
+              <td>${escapeHtml(li.scheduleTag || li.description || '')}</td>
               <td>${escapeHtml(c.manufacturer || '')}</td>
               <td>${escapeHtml(c.model || '')}</td>
               <td>${escapeHtml(sizeA)}</td>
               <td>${escapeHtml(sizeB)}</td>
-              <td>${escapeHtml(c.frameType || '')}</td>
-              <td>${escapeHtml(c.color || '')}</td>
+              <td>${escapeHtml(frameType)}</td>
+              <td>${escapeHtml(itemColor)}</td>
               <td class="num" style="color:${col};font-weight:700;">${qty}</td>
               <td>${escapeHtml(li.location || '')}</td>
               <td>${escapeHtml(li.notes || '')}</td>
-              <td class="num" style="color:${col};font-weight:700;">${totalQty}</td>
             </tr>`;
           });
         });
