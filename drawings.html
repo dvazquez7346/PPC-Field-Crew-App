@@ -2217,7 +2217,8 @@ function updateScaleChip(){
   const scaleGroup = $('#scaleChipGroup');
   if(!scaleGroup) return;
   const aoTagPlacing = state.tool === 'airOutletTag' && !!state.airOutletRunItem;
-  if(!hasJob || !noMarkup || aoTagPlacing){ scaleGroup.classList.add('hidden'); return; }
+  const mselActive = state.tool === 'mselect';
+  if(!hasJob || !noMarkup || aoTagPlacing || mselActive){ scaleGroup.classList.add('hidden'); return; }
   scaleGroup.classList.remove('hidden');
   const txt = $('#scaleChipText'), btn = $('#scaleChipBtn');
   if(sheet && sheet.scaleCalibration){
