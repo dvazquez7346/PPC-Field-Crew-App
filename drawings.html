@@ -346,6 +346,8 @@ input,textarea{font-family:inherit;}
         <button class="file-menu-item" id="saveBtn" disabled>Save</button>
         <div class="file-menu-item" id="fileExport">Export</div>
         <div class="file-menu-sep"></div>
+        <div class="file-menu-item" id="fileColorProcessing">Color Processing</div>
+        <div class="file-menu-sep"></div>
         <div class="file-menu-item" id="fileJobDetails">Job Details</div>
         <div class="file-menu-sep"></div>
         <div class="file-menu-item" id="fileExit">Exit</div>
@@ -598,6 +600,7 @@ const state = {
   mLastActionPoint: null,
   whiteoutsUnlocked: false,
   airOutletRunItem: null, // { lineId, catalogId, description, category } — active placement run
+  ghostDimPos: null, // pointer position when dim tool is active but first click not yet placed
 };
 
 const ANGLE_STEP = 15; // degrees — snap increment for Line/Run tools
@@ -647,6 +650,9 @@ function exportFlattenedImage(){
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, out.width, out.height);
   ctx.drawImage(pdfCanvas, 0, 0);
+  // If this sheet has grayscale active, bake the filter into the export
+  const exportSheet = activeSheet();
+  if(exportSheet && exportSheet.grayscale) applyGrayscaleToCanvas(out);
   ctx.drawImage(markupCanvas, 0, 0);
   out.toBlob((blob) => {
     if(!blob) return;
@@ -748,11 +754,10 @@ function showElevationModal({ topValue = '', bottomValue = '', onConfirm, onCanc
   card.className = 'modal-card';
   card.innerHTML = `
     <div class="disp">Add elevation callout</div>
-    <div class="modal-sub">Top field is usually a tag; bottom is usually a value.</div>
     <label class="modal-field-label">Top text</label>
-    <input type="text" id="elevTopInput" placeholder="e.g. EL-1">
+    <input type="text" id="elevTopInput" placeholder="Top Elevation">
     <label class="modal-field-label">Bottom text</label>
-    <input type="text" id="elevBottomInput" placeholder="e.g. 100.00">
+    <input type="text" id="elevBottomInput" placeholder="Bottom elevation">
     <div class="symbol-row">${ELEVATION_SYMBOLS.map(s => `<button type="button" class="symbol-btn" data-sym="${escapeAttr(s)}">${escapeHtml(s)}</button>`).join('')}</div>
     <div class="modal-row">
       <button type="button" class="cancel">Cancel</button>
@@ -802,7 +807,6 @@ function showEquipmentModal({ typeValue = '', numberValue = '', onConfirm, onCan
   card.className = 'modal-card';
   card.innerHTML = `
     <div class="disp">Add equipment tag</div>
-    <div class="modal-sub">e.g. Type "AHU", Number "1-1"</div>
     <label class="modal-field-label">Type</label>
     <input type="text" id="eqTypeInput" placeholder="e.g. AHU">
     <label class="modal-field-label">Number</label>
@@ -845,12 +849,46 @@ function showEquipmentModal({ typeValue = '', numberValue = '', onConfirm, onCan
 
 // Feet/Inches formatting shared by scale calibration — matches how a tape
 // measure actually reads, rather than requiring decimal feet math.
-function formatFeetInches(decimalFeet){
-  const totalInches = Math.round(decimalFeet * 12);
-  const feet = Math.floor(totalInches / 12);
-  const inches = totalInches % 12;
-  return inches === 0 ? `${feet}'` : `${feet}'-${inches}"`;
+function gcd(a, b){ return b < 0.0001 ? a : gcd(b, a % b); }
+// Formats decimal feet as feet-inches string with fractional precision.
+// precision = inch fraction denominator reciprocal: 1=whole inch, 0.5=half, 0.25=quarter, 0.125=eighth.
+// Uses sheet.dimPrecision if no precision arg provided.
+function formatFeetInches(decimalFeet, precision){
+  const prec = precision !== undefined ? precision : ((activeSheet() && activeSheet().dimPrecision) || 1);
+  const totalInches = decimalFeet * 12;
+  const rounded = Math.round(totalInches / prec) * prec;
+  const feet = Math.floor(rounded / 12);
+  const rem = Math.round((rounded - feet * 12) / prec) * prec;
+  function fmtFrac(val){
+    if(Math.abs(val) < 0.0001) return '';
+    const whole = Math.floor(val + 0.0001);
+    const frac = val - whole;
+    if(frac < 0.0001) return whole > 0 ? `${whole}` : '';
+    const denom = Math.round(1 / prec);
+    const num = Math.round(frac * denom);
+    if(num <= 0) return whole > 0 ? `${whole}` : '';
+    if(num >= denom) return `${whole + 1}`;
+    const g = gcd(num, denom);
+    return whole > 0 ? `${whole} ${num/g}/${denom/g}` : `${num/g}/${denom/g}`;
+  }
+  const inStr = fmtFrac(rem);
+  if(feet === 0) return inStr ? `${inStr}"` : `0"`;
+  return inStr ? `${feet}'-${inStr}"` : `${feet}'`;
 }
+// Parse fractional inch input: "3 1/2", "3-1/2", "1/4", "0.25", "3" → decimal number
+function parseFractionalInches(str){
+  const s = (str || '').trim();
+  if(!s) return 0;
+  const mixedRE = /^(\d+(?:\.\d+)?)\s*[-\s]\s*(\d+)\s*\/\s*(\d+)$/;
+  const fracRE = /^(\d+)\s*\/\s*(\d+)$/;
+  const mMixed = s.match(mixedRE);
+  if(mMixed) return parseFloat(mMixed[1]) + parseInt(mMixed[2]) / parseInt(mMixed[3]);
+  const mFrac = s.match(fracRE);
+  if(mFrac) return parseInt(mFrac[1]) / parseInt(mFrac[2]);
+  return parseFloat(s) || 0;
+}
+// Unit vector from point a to point b
+function normalizePt(a, b){ const d = Math.hypot(b.x-a.x, b.y-a.y); return d < 0.01 ? {x:1,y:0} : {x:(b.x-a.x)/d,y:(b.y-a.y)/d}; }
 function showFeetInchesModal({ title, sub, feetValue = '', inchesValue = '', confirmLabel = 'Set', onConfirm, onCancel }){
   const root = $('#modalRoot');
   root.innerHTML = '';
@@ -1006,6 +1044,12 @@ $('#fileBrowse').addEventListener('click', () => {
 $('#fileExport').addEventListener('click', () => {
   closeFileMenu();
   showExportModal();
+});
+
+// Color Processing
+$('#fileColorProcessing').addEventListener('click', () => {
+  closeFileMenu();
+  showColorProcessingModal();
 });
 
 // Job Details
@@ -1708,6 +1752,103 @@ async function resolveSiteIdLocal(token){
   return _cachedSiteIdLocal;
 }
 
+// ---- Grayscale helpers ----
+function canvasHasColor(cv){
+  const c = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const step = Math.max(1, Math.floor(Math.sqrt((W * H) / 400)));
+  for(let y = 0; y < H; y += step){
+    const row = c.getImageData(0, y, W, 1).data;
+    for(let x = 0; x < W; x += step){
+      const i = x * 4;
+      if(row[i+3] < 30) continue;
+      const r = row[i], g = row[i+1], b = row[i+2];
+      if(Math.abs(r-g) > 15 || Math.abs(g-b) > 15 || Math.abs(r-b) > 15) return true;
+    }
+  }
+  return false;
+}
+function applyGrayscaleToCanvas(cv){
+  const ctx2 = cv.getContext('2d');
+  const imgData = ctx2.getImageData(0, 0, cv.width, cv.height);
+  const d = imgData.data;
+  for(let i = 0; i < d.length; i += 4){
+    const g = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+    d[i] = d[i+1] = d[i+2] = g;
+  }
+  ctx2.putImageData(imgData, 0, 0);
+}
+
+function showColorProcessingModal(){
+  const sh = activeSheet();
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+
+  function build(){
+    const isOn = !!(sh && sh.grayscale);
+    const detected = sh ? sh.colorDetected : undefined;
+    let detectedLabel = '';
+    if(detected === true) detectedLabel = 'Color detected on this sheet.';
+    else if(detected === false) detectedLabel = 'No color detected on this sheet.';
+    else detectedLabel = 'Color scan not yet run.';
+
+    card.innerHTML = `
+      <div class="disp">Color Processing</div>
+      <div class="modal-sub" style="margin-bottom:14px;">${detectedLabel}</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <label class="modal-field-label" style="margin:0;flex:1;">Grayscale Filter</label>
+        <label style="position:relative;display:inline-flex;align-items:center;cursor:pointer;">
+          <input type="checkbox" id="_cpToggle" style="opacity:0;width:0;height:0;position:absolute;" ${isOn ? 'checked' : ''}>
+          <span id="_cpTrack" style="display:inline-block;width:40px;height:22px;border-radius:11px;background:${isOn ? '#2F5D8A' : '#CBD5E1'};position:relative;transition:background 0.2s;flex-shrink:0;">
+            <span id="_cpThumb" style="position:absolute;top:3px;left:${isOn ? '21px' : '3px'};width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.2);transition:left 0.15s;"></span>
+          </span>
+        </label>
+      </div>
+      <div style="margin-bottom:8px;font-size:12px;color:var(--muted);">Toggle grayscale filter for this sheet. This setting persists and applies on every reload.</div>
+      <div class="modal-row" style="margin-top:8px;">
+        <button type="button" id="_cpRescan" style="background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;">Re-scan for color</button>
+        <button type="button" class="save" id="_cpClose">Close</button>
+      </div>`;
+
+    card.querySelector('#_cpToggle').addEventListener('change', (e) => {
+      if(!sh) return;
+      sh.grayscale = e.target.checked;
+      markDirty();
+      const pdfCv = pdfCanvasEl();
+      if(sh.grayscale){
+        // Re-render then apply grayscale
+        renderActiveSheet();
+        root.innerHTML = '';
+        return;
+      } else {
+        renderActiveSheet();
+        root.innerHTML = '';
+        return;
+      }
+    });
+
+    card.querySelector('#_cpRescan').addEventListener('click', () => {
+      if(!sh) return;
+      // Reset persisted choice so auto-detect runs again
+      delete sh.grayscale;
+      delete sh.colorDetected;
+      root.innerHTML = '';
+      renderActiveSheet();
+    });
+
+    card.querySelector('#_cpClose').addEventListener('click', () => { root.innerHTML = ''; });
+  }
+
+  build();
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) root.innerHTML = ''; });
+}
+
 async function renderActiveSheet(){
   const sheet = activeSheet();
   clearMarkupActionButtons();
@@ -1760,34 +1901,26 @@ async function renderActiveSheet(){
 
     // Grayscale detection — sample a grid across the full canvas so color
     // in the drawing body isn't missed by a title-block-only sample area.
+    // If the sheet already has a persisted grayscale decision, apply it immediately.
+    // Otherwise run the auto-detect flow.
     (function detectGrayscale(){
-      function hasColor(cv){
-        const c = cv.getContext('2d');
-        const W = cv.width, H = cv.height;
-        // Sample ~400 evenly-spaced pixels across the whole canvas
-        const step = Math.max(1, Math.floor(Math.sqrt((W * H) / 400)));
-        for(let y = 0; y < H; y += step){
-          const row = c.getImageData(0, y, W, 1).data;
-          for(let x = 0; x < W; x += step){
-            const i = x * 4;
-            const a = row[i+3]; if(a < 30) continue; // skip transparent/near-transparent
-            const r = row[i], g = row[i+1], b = row[i+2];
-            if(Math.abs(r-g) > 15 || Math.abs(g-b) > 15 || Math.abs(r-b) > 15) return true;
-          }
-        }
-        return false;
+      const sh = activeSheet();
+      if(!sh) return;
+      if(sh.grayscale === true){
+        applyGrayscaleToCanvas(canvas);
+        return;
       }
-      const pdfCv = canvas; // use the local canvas var (same as #pdfCanvas)
-      if(pdfCv && hasColor(pdfCv)){
+      if(sh.grayscale === false) return; // user explicitly chose Keep Color
+      // grayscale is undefined — run auto-detect
+      const detected = canvasHasColor(canvas);
+      sh.colorDetected = detected;
+      if(detected){
         showConfirmModal({ title:'Color Detected', sub:'This PDF appears to have color. Render as grayscale?', confirmLabel:'Yes, Grayscale', cancelLabel:'Keep Color',
           onConfirm:()=>{
-            const ctx2=pdfCv.getContext('2d');
-            const imgData=ctx2.getImageData(0,0,pdfCv.width,pdfCv.height);
-            const d=imgData.data;
-            for(let i=0;i<d.length;i+=4){ const g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]; d[i]=d[i+1]=d[i+2]=g; }
-            ctx2.putImageData(imgData,0,0);
+            sh.grayscale = true;
+            applyGrayscaleToCanvas(canvas);
           },
-          onCancel:()=>{}
+          onCancel:()=>{ sh.grayscale = false; }
         });
       }
     })();
@@ -2083,7 +2216,8 @@ function updateScaleChip(){
   const noMarkup = !state.selectedMarkupId && state.multiSelectedIds.size === 0;
   const scaleGroup = $('#scaleChipGroup');
   if(!scaleGroup) return;
-  if(!hasJob || !noMarkup){ scaleGroup.classList.add('hidden'); return; }
+  const aoTagPlacing = state.tool === 'airOutletTag' && !!state.airOutletRunItem;
+  if(!hasJob || !noMarkup || aoTagPlacing){ scaleGroup.classList.add('hidden'); return; }
   scaleGroup.classList.remove('hidden');
   const txt = $('#scaleChipText'), btn = $('#scaleChipBtn');
   if(sheet && sheet.scaleCalibration){
@@ -2110,7 +2244,7 @@ function updatePickersVisibility(){
 
 $('#scaleChipBtn').addEventListener('click', () => showScaleModal());
 
-function showScaleModal(){
+function showScaleModal(opts = {}){
   const sheet = activeSheet();
   const root = $('#modalRoot');
   root.innerHTML = '';
@@ -2118,12 +2252,19 @@ function showScaleModal(){
   backdrop.className = 'modal-backdrop';
   const card = document.createElement('div');
   card.className = 'modal-card';
-  card.style.maxWidth = '380px';
+  card.style.maxWidth = '400px';
 
-  // Build tabs + panes
   const tabStyle = (active) => `flex:1;padding:8px 0;border:none;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background 0.15s;background:${active ? 'var(--navy)' : 'transparent'};color:${active ? '#fff' : 'var(--ink)'};`;
+  const currentPrec = (sheet && sheet.dimPrecision) || 1;
+  const precOptions = [
+    { label: '1" — whole inch', value: 1 },
+    { label: '1/2"', value: 0.5 },
+    { label: '1/4"', value: 0.25 },
+    { label: '1/8"', value: 0.125 },
+  ];
+
   card.innerHTML = `
-    <div class="modal-title">Drawing Scale</div>
+    <div class="disp">Drawing Scale</div>
     <div class="modal-sub">Set the scale for this sheet. All dimension measurements will update.</div>
     <div style="display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:14px 0 14px;">
       <button id="_sTabPre" style="${tabStyle(true)}">Preset</button>
@@ -2136,21 +2277,27 @@ function showScaleModal(){
     </div>
     <div id="_sCusPane" class="hidden">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <input id="_sCusIn" type="number" min="0.001" step="any" placeholder="0.25" style="width:72px;padding:8px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;text-align:center;">
+        <input id="_sCusIn" type="text" inputmode="decimal" placeholder="e.g. 1/4 or 0.25" style="width:110px;padding:8px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;text-align:center;">
         <span style="font-size:13px;color:var(--muted);white-space:nowrap;">in. =</span>
         <input id="_sCusFt" type="number" min="0" step="1" placeholder="1" style="width:60px;padding:8px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;text-align:center;">
         <span style="font-size:13px;color:var(--muted);">ft</span>
-        <input id="_sCusInR" type="number" min="0" max="11" step="1" placeholder="0" style="width:60px;padding:8px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;text-align:center;">
+        <input id="_sCusInR" type="text" inputmode="decimal" placeholder="0" style="width:60px;padding:8px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;text-align:center;">
         <span style="font-size:13px;color:var(--muted);">in</span>
       </div>
     </div>
-    <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;">
-      <span style="font-size:12px;color:var(--muted);flex:1;">If scale is unknown —</span>
+    <div style="margin-top:14px;">
+      <label style="display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;margin-bottom:4px;">Dimension Precision</label>
+      <select id="_sPrecision" style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;background:var(--surface);color:var(--ink);">
+        ${precOptions.map(o=>`<option value="${o.value}"${o.value===currentPrec?' selected':''}>${o.label}</option>`).join('')}
+      </select>
+    </div>
+    <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--line);">
+      <p style="margin:0 0 8px 0;font-size:12px;color:var(--muted);line-height:1.5;">Set Scale Ref. lets you draw a line over a known real-world distance on the drawing, then enter its actual length to automatically calibrate the scale.</p>
       <button id="_sRefBtn" style="background:transparent;border:1px solid var(--blueprint);color:var(--blueprint);font-family:inherit;font-weight:600;font-size:12px;padding:6px 12px;border-radius:7px;cursor:pointer;white-space:nowrap;">Set Scale Ref.</button>
     </div>
-    <div class="modal-actions" style="margin-top:14px;">
+    <div class="modal-row">
       <button class="cancel">Cancel</button>
-      <button class="confirm" id="_sApply">Apply</button>
+      <button class="save" id="_sApply">Apply</button>
     </div>
   `;
   backdrop.appendChild(card); root.appendChild(backdrop);
@@ -2182,21 +2329,29 @@ function showScaleModal(){
       const idx = parseInt(card.querySelector('#_sPreSel').value, 10);
       cal = scaleCalibrationFromPreset(PRESET_SCALES[idx]);
     } else {
-      const inV = parseFloat(card.querySelector('#_sCusIn').value) || 0;
+      const inV = parseFractionalInches(card.querySelector('#_sCusIn').value);
       const ftV = parseInt(card.querySelector('#_sCusFt').value) || 0;
-      const inR = parseInt(card.querySelector('#_sCusInR').value) || 0;
+      const inR = parseFractionalInches(card.querySelector('#_sCusInR').value);
       cal = scaleCalibrationFromCustom(inV, ftV, inR);
       if(!cal){ card.querySelector('#_sCusIn').style.borderColor = 'var(--danger)'; return; }
     }
-    const sh = activeSheet(); if(sh){ sh.scaleCalibration = cal; markDirty(); }
-    root.innerHTML = ''; updateScaleChip(); drawAllMarkups();
+    const sh = activeSheet();
+    if(sh){
+      if(cal) sh.scaleCalibration = cal;
+      sh.dimPrecision = parseFloat(card.querySelector('#_sPrecision').value) || 1;
+      markDirty();
+    }
+    root.innerHTML = '';
+    updateScaleChip();
+    drawAllMarkups();
+    if(opts && opts.afterApply) opts.afterApply();
   });
 
   // Set Scale Ref — clear calibration, switch to DIM tool, let first dimension prompt
   card.querySelector('#_sRefBtn').addEventListener('click', () => {
     const sh = activeSheet(); if(sh) delete sh.scaleCalibration;
     root.innerHTML = '';
-    switchToTool('dim');
+    switchToTool('dimension');
     setStatus('dirty', 'Draw a line on a known length — you\'ll be prompted for its real measurement');
     updateScaleChip();
   });
@@ -2412,17 +2567,15 @@ function angleSnap(from, to){
 // Dimension tool: snaps only when close to horizontal or vertical (within
 // AXIS_SNAP_THRESHOLD degrees); otherwise stays free-angle, since a dimension
 // is measuring between two arbitrary existing points, not laying out a run.
+// Dimension angle snap: snaps to every 2° during drawing and grip dragging
 function axisSnap(from, to){
   const dx = to.x - from.x, dy = to.y - from.y;
   const dist = Math.hypot(dx, dy);
   if(dist < 1) return to;
-  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-  const nearest = Math.round(angle / 90) * 90;
-  if(Math.abs(angle - nearest) <= AXIS_SNAP_THRESHOLD){
-    const rad = nearest * (Math.PI / 180);
-    return { x: from.x + Math.cos(rad) * dist, y: from.y + Math.sin(rad) * dist };
-  }
-  return to;
+  const angle = Math.atan2(dy, dx);
+  const step = Math.PI / 90; // 2° increments
+  const snapped = Math.round(angle / step) * step;
+  return { x: from.x + Math.cos(snapped) * dist, y: from.y + Math.sin(snapped) * dist };
 }
 
 function groupMemberIds(m){
@@ -2548,7 +2701,8 @@ function onPointerDown(e){
   } else if(state.tool === 'dimension'){
     state.drawing = true;
     const dp = canvasPointClearFingertip(e);
-    state.currentStroke = { id: genId(), type: 'dimension', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: dp, p1: dp, text: '', textPos: dp, note: '' };
+    state.ghostDimPos = null; // clear ghost when drawing starts
+    state.currentStroke = { id: genId(), type: 'dimension', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: dp, p1: dp, text: '', textPos: dp, note: '', extOffset: 30 };
   } else if(state.tool === 'whiteoutRect'){
     state.drawing = true;
     state.currentStroke = { id: genId(), type: 'whiteoutRect', p0: p, p1: p, note: '' };
@@ -2659,6 +2813,11 @@ function onPointerMove(e){
     state.ghostAirOutletPos = p;
     drawAllMarkups();
   }
+  // Ghost dim arrowhead — before first click
+  if(state.tool === 'dimension' && !state.drawing){
+    state.ghostDimPos = p;
+    drawAllMarkups();
+  }
   // Erase halo cursor
   if(state.tool === 'erase'){
     drawAllMarkups();
@@ -2680,6 +2839,7 @@ function switchToTool(toolName){
   const btn = document.querySelector(`.tool-btn[data-tool="${toolName}"]`);
   if(btn) btn.classList.add('active');
   state.tool = toolName;
+  if(toolName !== 'dimension') state.ghostDimPos = null; // clear ghost when leaving dim tool
 }
 
 // Native 'dblclick' doesn't reliably fire from two touch taps on iOS Safari
@@ -2839,7 +2999,14 @@ function onPointerUp(e){
         if(!text) return;
         dim.text = text;
         dim.textIsCustom = (text !== suggested);
-        dim.textPos = { x: (dim.p0.x + dim.p1.x) / 2, y: (dim.p0.y + dim.p1.y) / 2 - 16 };
+        // Position text above the dim line midpoint (accounting for extension lines)
+        const dv = normalizePt(dim.p0, dim.p1);
+        const perp = { x: -dv.y, y: dv.x };
+        const off = dim.extOffset != null ? dim.extOffset : 30;
+        dim.textPos = {
+          x: (dim.p0.x + dim.p1.x) / 2 + perp.x * (off + 8),
+          y: (dim.p0.y + dim.p1.y) / 2 + perp.y * (off + 8)
+        };
         dim.createdAt = Date.now();
         sh.markups.push(dim);
         markDirty();
@@ -2847,28 +3014,17 @@ function onPointerUp(e){
         switchToSelectAndSelect(dim.id);
       }
       if(!sh || !sh.scaleCalibration){
-        // No scale set — open the Set Scale Reference modal first
-        showFeetInchesModal({
-          title: 'Set Scale Reference', sub: 'No scale is set. Enter the real-world length this dimension represents to calibrate the scale for this sheet.',
-          feetValue: '', inchesValue: '', confirmLabel: 'Set & Add Dimension',
-          onConfirm: (feet, inches) => {
-            const realLength = feet + inches / 12;
-            if(realLength > 0){
-              sh.scaleCalibration = { pixelDist, realLength, unit: 'ft' };
-              markDirty();
-            }
+        // No scale — open Set Scale modal; auto-commit after scale is applied
+        showScaleModal({
+          afterApply: () => {
             const suggested = suggestDimensionLength(pixelDist);
-            commitDim(suggested || (feet ? `${feet}'-${inches || 0}"` : ''), suggested);
+            commitDim(suggested || '?', suggested);
           }
         });
       } else {
+        // Scale is set — auto-compute text and commit immediately, no modal
         const suggested = suggestDimensionLength(pixelDist);
-        showModal({
-          title: 'Dimension text', value: suggested, placeholder: 'e.g. 12\'-6" or 4" CU', withSymbols: true, confirmLabel: 'Add',
-          onConfirm: (text) => {
-            commitDim(text, suggested);
-          }
-        });
+        commitDim(suggested || '?', suggested);
       }
     } else {
       drawAllMarkups();
@@ -3334,7 +3490,14 @@ function defaultBendPosition(anchor, textPos){
    ============================================================ */
 function handlePointsForMarkup(m){
   if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'move', p: m.textPos }];
-  if(m.type === 'dimension') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'textPos', p: m.textPos }];
+  if(m.type === 'dimension'){
+    const dv = normalizePt(m.p0, m.p1);
+    const perp = { x: -dv.y, y: dv.x };
+    const off = m.extOffset != null ? m.extOffset : 0;
+    const tip0 = { x: m.p0.x + perp.x * (off + 10), y: m.p0.y + perp.y * (off + 10) };
+    const tip1 = { x: m.p1.x + perp.x * (off + 10), y: m.p1.y + perp.y * (off + 10) };
+    return [{ key: 'ext0', p: tip0 }, { key: 'ext1', p: tip1 }, { key: 'textPos', p: m.textPos }];
+  }
   if(m.type === 'line'){ const mid = { x: (m.p0.x + m.p1.x)/2, y: (m.p0.y + m.p1.y)/2 }; return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: mid }]; }
   if(m.type === 'whiteoutRect') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: shapeCenter(m) }];
   if(m.type === 'shape'){
@@ -3381,7 +3544,8 @@ function hitTestHandle(p){
   const m = sheet.markups.find(x => x.id === state.selectedMarkupId);
   if(!m) return null;
   for(const h of handlePointsForMarkup(m)){
-    if(Math.hypot(p.x - h.p.x, p.y - h.p.y) < 12) return { markup: m, key: h.key };
+    const hitR = h.key === 'move' ? 7 : 12; // move grip: tighter hit zone to avoid overlap with tag body
+    if(Math.hypot(p.x - h.p.x, p.y - h.p.y) < hitR) return { markup: m, key: h.key };
   }
   return null;
 }
@@ -3418,7 +3582,18 @@ function markupContainsPoint(m, p){
     const pts = m.points || (m.p0 && m.p1 ? [m.p0, m.p1] : []);
     return pts.some(pt => pt && Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
   }
-  if(m.type === 'line' || m.type === 'dimension') return distToSegment(p, m.p0, m.p1) < 12 || (m.textPos && Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 24);
+  if(m.type === 'line') return distToSegment(p, m.p0, m.p1) < 12 || (m.textPos && Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 24);
+  if(m.type === 'dimension'){
+    const dv = normalizePt(m.p0, m.p1);
+    const perp = { x: -dv.y, y: dv.x };
+    const off = m.extOffset != null ? m.extOffset : 0;
+    const dl0 = { x: m.p0.x + perp.x * off, y: m.p0.y + perp.y * off };
+    const dl1 = { x: m.p1.x + perp.x * off, y: m.p1.y + perp.y * off };
+    return distToSegment(p, dl0, dl1) < 12
+        || distToSegment(p, m.p0, dl0) < 10
+        || distToSegment(p, m.p1, dl1) < 10
+        || (m.textPos && Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 24);
+  }
   if(m.type === 'shape' || m.type === 'whiteoutRect'){
     const x0 = Math.min(m.p0.x, m.p1.x), x1 = Math.max(m.p0.x, m.p1.x);
     const y0 = Math.min(m.p0.y, m.p1.y), y1 = Math.max(m.p0.y, m.p1.y);
@@ -3525,20 +3700,15 @@ function applyDragHandle(drag, p){
     m.points[idx] = p;
     return;
   }
-  if(m.type === 'dimension' && (drag.key === 'p0' || drag.key === 'p1')){
-    // Dimension grips had no snapping at all when edited (a real bug — only
-    // the initial draw snapped near horizontal/vertical). A fine 1-degree
-    // snap avoids stray fractional angles while still feeling essentially free.
-    const fixed = drag.key === 'p0' ? m.p1 : m.p0;
-    const dx = p.x - fixed.x, dy = p.y - fixed.y;
-    const dist = Math.hypot(dx, dy);
-    const step = Math.PI / 180;
-    const angle = Math.round(Math.atan2(dy, dx) / step) * step;
-    m[drag.key] = { x: fixed.x + Math.cos(angle) * dist, y: fixed.y + Math.sin(angle) * dist };
-    // Keep the text in sync with the new length — but only while it's still
-    // just the auto-suggested value. The moment someone edits it by hand it
-    // locks (see the Edit-text handler), so this never overwrites something
-    // typed on purpose.
+  if(m.type === 'dimension' && (drag.key === 'ext0' || drag.key === 'ext1')){
+    // Extension line grips: move both together (shared offset), constrained to perpendicular
+    const base = drag.key === 'ext0' ? m.p0 : m.p1;
+    const dv = normalizePt(m.p0, m.p1);
+    const perp = { x: -dv.y, y: dv.x };
+    // Project drag position onto perpDir relative to measurement point
+    const dx = p.x - base.x, dy = p.y - base.y;
+    const proj = dx * perp.x + dy * perp.y;
+    m.extOffset = Math.max(10, proj - 10); // min 10 so ext line >= 20px total
     if(!m.textIsCustom){
       const newDist = Math.hypot(m.p1.x - m.p0.x, m.p1.y - m.p0.y);
       const suggestion = suggestDimensionLength(newDist);
@@ -4060,6 +4230,22 @@ function drawAllMarkups(){
     const pos = state.airOutletPendingAnchor || state.ghostAirOutletPos;
     if(pos) drawAirOutletGhost(pos, !!state.airOutletPendingAnchor);
   }
+  // Ghost dim arrowhead — shows before first click to indicate where p0 will be placed
+  if(state.tool === 'dimension' && !state.drawing && state.ghostDimPos){
+    const ctx = mCanvas.getContext('2d');
+    ctx.save();
+    ctx.globalAlpha = 0.45;
+    const gp = state.ghostDimPos;
+    // Draw the left arrowhead of a horizontal dim as a preview
+    drawArrowHead(ctx, { x: gp.x + 24, y: gp.y }, gp, DEFAULT_DIMENSION_COLOR);
+    ctx.strokeStyle = DEFAULT_DIMENSION_COLOR;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(gp.x, gp.y);
+    ctx.lineTo(gp.x + 24, gp.y);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 function drawHandles(m){
@@ -4303,7 +4489,9 @@ function drawOutlineArrowHead(ctx, from, tip, color, size = 9, thickness = 2){
   ctx.stroke();
 }
 
-function drawTextPill(ctx, text, pos, color){
+// borderColor: overrides the border stroke color (defaults to same as text color)
+function drawTextPill(ctx, text, pos, color, borderColor){
+  const bc = borderColor !== undefined ? borderColor : color;
   const isEmpty = !text;
   ctx.font = isEmpty ? '600 italic 12px Inter, sans-serif' : '600 13px Inter, sans-serif';
   const padX = 8;
@@ -4312,7 +4500,7 @@ function drawTextPill(ctx, text, pos, color){
   const boxW = textW + padX * 2, boxH = 22;
   const bx = pos.x, by = pos.y - boxH / 2;
   ctx.fillStyle = '#fff';
-  ctx.strokeStyle = isEmpty ? 'rgba(20,30,50,0.35)' : color;
+  ctx.strokeStyle = isEmpty ? 'rgba(20,30,50,0.35)' : bc;
   ctx.lineWidth = 1.5;
   if(isEmpty) ctx.setLineDash([3, 2]);
   roundRect(ctx, bx, by, boxW, boxH, 6);
@@ -4674,28 +4862,51 @@ function lightenHexColor(hex, amount = 0.55){
 }
 function drawDimension(m){
   const ctx = mCanvas.getContext('2d');
+  const dv = normalizePt(m.p0, m.p1);
+  const perp = { x: -dv.y, y: dv.x };
+  const off = m.extOffset != null ? m.extOffset : 0;
+  // Dim line endpoints (offset from measurement points along perp)
+  const dl0 = { x: m.p0.x + perp.x * off, y: m.p0.y + perp.y * off };
+  const dl1 = { x: m.p1.x + perp.x * off, y: m.p1.y + perp.y * off };
+  // Extension line tips (10px past dim line)
+  const tip0 = { x: m.p0.x + perp.x * (off + 10), y: m.p0.y + perp.y * (off + 10) };
+  const tip1 = { x: m.p1.x + perp.x * (off + 10), y: m.p1.y + perp.y * (off + 10) };
+
   ctx.strokeStyle = m.color;
   ctx.lineWidth = m.thickness || 2;
-  ctx.beginPath();
-  ctx.moveTo(m.p0.x, m.p0.y);
-  ctx.lineTo(m.p1.x, m.p1.y);
-  ctx.stroke();
-  drawArrowHead(ctx, m.p1, m.p0, m.color);
-  drawArrowHead(ctx, m.p0, m.p1, m.color);
-  if(m.text) drawTextPill(ctx, m.text, m.textPos, m.textIsCustom ? lightenHexColor(m.color) : m.color);
+
+  // Extension lines: from measurement point to tip (overshoots dim line by 10px)
+  ctx.beginPath(); ctx.moveTo(m.p0.x, m.p0.y); ctx.lineTo(tip0.x, tip0.y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(m.p1.x, m.p1.y); ctx.lineTo(tip1.x, tip1.y); ctx.stroke();
+
+  // Dimension line between the two offset endpoints
+  ctx.beginPath(); ctx.moveTo(dl0.x, dl0.y); ctx.lineTo(dl1.x, dl1.y); ctx.stroke();
+
+  // Arrowheads at dim line endpoints pointing inward
+  drawArrowHead(ctx, dl1, dl0, m.color);
+  drawArrowHead(ctx, dl0, dl1, m.color);
+
+  // Text pill — neutral border (no color border per item 5)
+  if(m.text) drawTextPill(ctx, m.text, m.textPos, m.textIsCustom ? lightenHexColor(m.color) : m.color, '#DDE1E6');
 }
 function drawDimensionPreview(p0, p1){
   const ctx = mCanvas.getContext('2d');
   ctx.save();
   ctx.globalAlpha = 0.6;
+  const dv = normalizePt(p0, p1);
+  const perp = { x: -dv.y, y: dv.x };
+  const off = 30;
+  const dl0 = { x: p0.x + perp.x * off, y: p0.y + perp.y * off };
+  const dl1 = { x: p1.x + perp.x * off, y: p1.y + perp.y * off };
+  const tip0 = { x: p0.x + perp.x * (off + 10), y: p0.y + perp.y * (off + 10) };
+  const tip1 = { x: p1.x + perp.x * (off + 10), y: p1.y + perp.y * (off + 10) };
   ctx.strokeStyle = DEFAULT_DIMENSION_COLOR;
   ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(p0.x, p0.y);
-  ctx.lineTo(p1.x, p1.y);
-  ctx.stroke();
-  drawArrowHead(ctx, p1, p0, DEFAULT_DIMENSION_COLOR);
-  drawArrowHead(ctx, p0, p1, DEFAULT_DIMENSION_COLOR);
+  ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(tip0.x, tip0.y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(tip1.x, tip1.y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(dl0.x, dl0.y); ctx.lineTo(dl1.x, dl1.y); ctx.stroke();
+  drawArrowHead(ctx, dl1, dl0, DEFAULT_DIMENSION_COLOR);
+  drawArrowHead(ctx, dl0, dl1, DEFAULT_DIMENSION_COLOR);
   ctx.restore();
 }
 
@@ -5988,6 +6199,22 @@ document.addEventListener('keydown', (e) => {
   renderNoteList();
   if(target.type === 'airOutletTag') renderTakeoffList();
   clearMarkupActionButtons();
+});
+
+// Esc key — cancel active tool/drawing and switch to Select.
+// Does nothing if a modal is open or a text field is focused (let the browser handle it).
+document.addEventListener('keydown', (e) => {
+  if(e.key !== 'Escape') return;
+  const tag = (document.activeElement && document.activeElement.tagName) || '';
+  if(tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if($('#modalRoot').innerHTML.trim() !== '') return; // let modal handle its own Esc
+  if(state.drawing){
+    state.drawing = false;
+    state.currentStroke = null;
+  }
+  state.ghostDimPos = null;
+  switchToTool('select');
+  drawAllMarkups();
 });
 
 // Periodic silent auto-save — every 2 minutes, if there's unsaved work,
