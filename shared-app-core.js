@@ -84,9 +84,12 @@ const AppCore = (function(){
       const res = await msalInstance.acquireTokenSilent(req);
       return res.accessToken;
     }catch(e){
-      if(isMobileDevice() && !isInIframe()){
+      // Redirect is the default for everyone — it's reliable across all browsers,
+      // extensions, and privacy settings. Popup is only used when we're inside an
+      // iframe (where redirect can't navigate the top frame).
+      if(!isInIframe()){
         await msalInstance.acquireTokenRedirect(req);
-        return; // page navigates away; caller's page should call handleRedirectPromise on load
+        return; // page navigates away; handleRedirectPromise on reload completes the flow
       }
       const res = await msalInstance.acquireTokenPopup(req);
       return res.accessToken;
@@ -96,7 +99,10 @@ const AppCore = (function(){
   // onSuccess(account) / onError(message) let each page hook its own state+render
   // without this shared file knowing anything about either page's UI.
   async function signIn(onSuccess, onError){
-    if(isMobileDevice() && !isInIframe()){
+    // Use redirect for everyone — it's reliable on all browsers, devices, and
+    // privacy/extension configurations. Popup is only used as a last resort when
+    // the page is embedded in an iframe (redirect can't navigate the parent frame).
+    if(!isInIframe()){
       try{
         await msalInstance.loginRedirect({ scopes: GRAPH_SCOPES });
       }catch(e){
@@ -105,6 +111,7 @@ const AppCore = (function(){
       }
       return; // page navigates away; execution resumes via handleRedirectPromise on reload
     }
+    // Iframe fallback only
     try{
       const res = await msalInstance.loginPopup({ scopes: GRAPH_SCOPES });
       if(onSuccess) onSuccess(res.account);
@@ -117,12 +124,13 @@ const AppCore = (function(){
   function signOut(){
     const account = getActiveAccount();
     if(account && msalInstance){
-      msalInstance.logoutPopup({ account }).catch(()=>{});
+      // Use redirect for sign-out to match the redirect sign-in flow.
+      msalInstance.logoutRedirect({ account }).catch(()=>{});
     }
   }
 
-  // Call once on page load (after initMsal) to finish a redirect-based sign-in
-  // on mobile. Resolves to the account if a redirect just completed, else null.
+  // Call once on page load (after initMsal) to finish a redirect-based sign-in.
+  // Resolves to the account if a redirect just completed, else null.
   async function handleRedirectPromise(){
     if(!msalInstance) return null;
     try{
@@ -283,13 +291,13 @@ const AppCore = (function(){
    Then in your page's own script, roughly:
 
    AppCore.initMsal();
-   await AppCore.handleRedirectPromise();  -- finishes mobile redirect sign-in, if any
+   await AppCore.handleRedirectPromise();  -- finishes redirect sign-in, if any
    if (AppCore.getActiveAccount()) {
      const result = await AppCore.readJsonFile('job-4521-markup.json', { sheets: [] });
      -- render your drawing tool using result.data
    } else {
      AppCore.signIn(onSuccessCallback, onErrorCallback);
-     -- onSuccessCallback(account) should re-run the load above
+     -- onSuccessCallback(account) should re-run the load above (called after redirect returns)
      -- onErrorCallback(errMsg) should show errMsg to the user
    }
 
