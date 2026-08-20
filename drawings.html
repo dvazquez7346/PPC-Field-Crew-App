@@ -3698,6 +3698,9 @@ function applyDragHandle(drag, p){
     return;
   }
   if(m.type === 'dimension' && (drag.key === 'p0' || drag.key === 'p1')){
+    // Snap to 2° increments relative to the fixed endpoint
+    const fixedPt = drag.key === 'p0' ? m.p1 : m.p0;
+    p = axisSnap(fixedPt, p);
     // Move endpoint freely — updates span and angle; recomputes label if not custom
     if(drag.key === 'p0') m.p0 = p; else m.p1 = p;
     if(!m.textIsCustom){
@@ -4492,11 +4495,11 @@ function drawOutlineArrowHead(ctx, from, tip, color, size = 9, thickness = 2){
 function drawTextPill(ctx, text, pos, color, borderColor){
   const bc = borderColor !== undefined ? borderColor : color;
   const isEmpty = !text;
-  ctx.font = isEmpty ? '600 italic 12px Inter, sans-serif' : '600 13px Inter, sans-serif';
-  const padX = 8;
+  ctx.font = isEmpty ? '600 italic 11px Inter, sans-serif' : '600 11px Inter, sans-serif';
+  const padX = 5;
   const displayText = isEmpty ? 'Add text' : text;
   const textW = ctx.measureText(displayText).width;
-  const boxW = textW + padX * 2, boxH = 22;
+  const boxW = textW + padX * 2, boxH = 17;
   const bx = pos.x, by = pos.y - boxH / 2;
   ctx.fillStyle = '#fff';
   ctx.strokeStyle = isEmpty ? 'rgba(20,30,50,0.35)' : bc;
@@ -4886,7 +4889,7 @@ function drawDimension(m){
   drawArrowHead(ctx, dl0, dl1, m.color);
 
   // Text pill — neutral border (no color border per item 5)
-  if(m.text) drawTextPill(ctx, m.text, m.textPos, m.textIsCustom ? lightenHexColor(m.color) : m.color, '#DDE1E6');
+  if(m.text) drawTextPill(ctx, m.text, m.textPos, m.textIsCustom ? lightenHexColor(m.color) : m.color, '#ffffff');
 }
 function drawDimensionPreview(p0, p1){
   const ctx = mCanvas.getContext('2d');
