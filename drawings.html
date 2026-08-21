@@ -242,6 +242,7 @@ input,textarea{font-family:inherit;}
 .modal-card .disp{font-size:16px;color:var(--navy);margin-bottom:4px;}
 .modal-card .modal-sub{font-size:12.5px;color:var(--muted);margin-bottom:12px;}
 .modal-card textarea,.modal-card input[type=text]{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:14px;resize:vertical;min-height:38px;}
+.modal-card select{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;background:var(--surface);color:var(--ink);cursor:pointer;}
 .modal-card textarea{min-height:70px;}
 .symbol-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
 .recent-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
@@ -331,12 +332,14 @@ input,textarea{font-family:inherit;}
 .ao-table .ao-th-order,.ao-table .ao-td-order{width:48px;min-width:48px;padding:2px 2px;text-align:center;white-space:nowrap;}
 .takeoff-apply-order-btn{padding:5px 10px;font-size:11.5px;font-weight:600;border:1px solid #7A3E9D;border-radius:7px;background:#7A3E9D;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .takeoff-apply-order-btn:hover{background:#6a3488;}
-/* ── Takeoffs dropdown menu ──────────────────────────────── */
+/* ── Takeoffs dropdown menu — styled to match AO modals ─── */
 .takeoffs-btn-wrap{position:relative;display:inline-flex;flex-shrink:0;}
-.takeoffs-dd{position:absolute;top:calc(100% + 5px);left:0;min-width:188px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);z-index:90;overflow:hidden;}
-.takeoffs-dd-item{padding:10px 14px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:8px;}
+.takeoffs-dd{position:absolute;top:calc(100% + 6px);left:0;min-width:210px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);z-index:90;padding:8px;}
+.takeoffs-dd-label{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);padding:2px 4px 6px 4px;}
+.takeoffs-dd-item{padding:9px 12px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:8px;margin-bottom:5px;transition:border-color 0.12s,background 0.12s;}
+.takeoffs-dd-item:last-child{margin-bottom:0;}
 .takeoffs-dd-item:hover{background:var(--surface-2);}
-.takeoffs-dd-item .tdd-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.takeoffs-dd-item .tdd-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
 /* ── Damper category colors ──────────────────────────────── */
 .dmpr-cat-fire{color:#DC2626;}
 .dmpr-cat-smoke{color:#475569;}
@@ -389,8 +392,13 @@ input,textarea{font-family:inherit;}
     <div class="takeoffs-btn-wrap">
       <button class="tabs-row-btn" id="takeoffToggle" style="border-color:#7A3E9D;color:#C084FC;">Takeoffs ▾</button>
       <div class="takeoffs-dd hidden" id="takeoffsDd">
-        <div class="takeoffs-dd-item" id="takeoffsDdAOT"><span class="tdd-dot" style="background:#7A3E9D;"></span>Air Terminals</div>
-        <div class="takeoffs-dd-item" id="takeoffsDdDamper"><span class="tdd-dot" style="background:#DC2626;"></span>Smoke &amp; Fire Dampers</div>
+        <div class="takeoffs-dd-label">Takeoff List</div>
+        <div class="takeoffs-dd-item" id="takeoffsDdAOT" style="--dd-color:#7A3E9D;" onmouseenter="this.style.borderColor='#7A3E9D'" onmouseleave="this.style.borderColor=''">
+          <span class="tdd-dot" style="background:#7A3E9D;"></span>Air Terminals
+        </div>
+        <div class="takeoffs-dd-item" id="takeoffsDdDamper" style="--dd-color:#DC2626;" onmouseenter="this.style.borderColor='#DC2626'" onmouseleave="this.style.borderColor=''">
+          <span class="tdd-dot" style="background:#DC2626;"></span>Smoke &amp; Fire Dampers
+        </div>
       </div>
     </div>
     <button class="tabs-row-btn" id="mobilePanelToggle" style="border-color:#166534;color:#4ade80;">Notes</button>
@@ -494,6 +502,10 @@ input,textarea{font-family:inherit;}
         <div class="flyout-item" data-tool="airOutletTag" title="A/O Tag">
           <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="7" cy="12" r="2" fill="currentColor" opacity="0.5"/><line x1="10" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1.3"/></svg></button>
           <span class="fly-label">A/O Tag</span>
+        </div>
+        <div class="flyout-item" data-tool="damperTag" title="FSD Tag">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="7" cy="12" r="2" fill="#DC2626"/><line x1="10" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1.3"/></svg></button>
+          <span class="fly-label">FSD Tag</span>
         </div>
       </div>
       <div class="tool-sep"></div>
@@ -2276,6 +2288,9 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     if(state.tool === 'airOutletTag'){
       setTimeout(() => { if(state.tool === 'airOutletTag') placeAirOutletTag(); }, 10);
     }
+    if(state.tool === 'damperTag'){
+      setTimeout(() => { if(state.tool === 'damperTag') placeDamperTag(); }, 10);
+    }
     // Erase cursor
     const mCv = document.getElementById('markupCanvas');
     if(mCv) mCv.classList.toggle('erase-active', state.tool === 'erase');
@@ -2497,7 +2512,7 @@ function updateScaleChip(){
   const noMarkup = !state.selectedMarkupId && state.multiSelectedIds.size === 0;
   const scaleGroup = $('#scaleChipGroup');
   if(!scaleGroup) return;
-  const aoTagPlacing = state.tool === 'airOutletTag' && !!state.airOutletRunItem;
+  const aoTagPlacing = (state.tool === 'airOutletTag' && !!state.airOutletRunItem) || (state.tool === 'damperTag' && !!state.damperRunItem);
   const mselActive = state.tool === 'mselect';
   if(!hasJob || !noMarkup || aoTagPlacing || mselActive || state.whiteoutsUnlocked || state.splitMode){ scaleGroup.classList.add('hidden'); return; }
   scaleGroup.classList.remove('hidden');
@@ -4241,7 +4256,7 @@ function translateMarkup(m, origin, dx, dy){
     m.anchor = { x: origin.anchor.x + dx, y: origin.anchor.y + dy };
     m.bend = { x: origin.bend.x + dx, y: origin.bend.y + dy };
     m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
-  } else if(m.type === 'photo' || m.type === 'symbol' || m.type === 'airOutletTag'){
+  } else if(m.type === 'photo' || m.type === 'symbol' || m.type === 'airOutletTag' || m.type === 'damperTag'){
     m.anchor = { x: origin.anchor.x + dx, y: origin.anchor.y + dy };
   }
 }
