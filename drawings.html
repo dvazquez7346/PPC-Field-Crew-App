@@ -4711,13 +4711,13 @@ function drawAllMarkups(){
     ctx.save();
     ctx.globalAlpha = 0.45;
     const gp = state.ghostDimPos;
-    // Draw a right-pointing arrowhead as the dim ghost preview
-    drawArrowHead(ctx, gp, { x: gp.x + 24, y: gp.y }, DEFAULT_DIMENSION_COLOR);
+    // Draw a right-pointing arrowhead as the dim ghost preview (line extends left)
+    drawArrowHead(ctx, { x: gp.x - 24, y: gp.y }, gp, DEFAULT_DIMENSION_COLOR);
     ctx.strokeStyle = DEFAULT_DIMENSION_COLOR;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(gp.x, gp.y);
-    ctx.lineTo(gp.x + 24, gp.y);
+    ctx.lineTo(gp.x - 24, gp.y);
     ctx.stroke();
     ctx.restore();
   }
