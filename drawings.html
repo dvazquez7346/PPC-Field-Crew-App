@@ -747,6 +747,7 @@ const LINE_TYPE_MAP = Object.fromEntries(LINE_TYPES.map(t => [t.key, t]));
 const AIR_OUTLET_COLORS = { supply: '#1A56DB', return: '#C026D3', exhaust: '#16a34a' };
 const DAMPER_CATEGORY_COLORS = { fire: '#DC2626', smoke: '#475569', combination: '#D97706' };
 const DAMPER_CATEGORY_LABELS = { fire: 'Fire', smoke: 'Smoke', combination: 'Combination (FSD)' };
+const DAMPER_TYPE_ABBR = { fire: 'FD', smoke: 'SD', combination: 'FSD' };
 const DAMPER_CATS = ['fire', 'smoke', 'combination'];
 const SYSTEM_COLORS = { SUPPLY: '#1A56DB', RETURN: '#C026D3', EXHAUST: '#16a34a' };
 const SYSTEM_LABELS = { SUPPLY: 'Supply', RETURN: 'Return', EXHAUST: 'Exhaust' };
@@ -4480,7 +4481,33 @@ function showMarkupActionButtons(markupId){
     });
     buttonRow.appendChild(splitBtn);
   }
-  if(m.type !== 'airOutletTag'){
+  if(m.type === 'airOutletTag'){
+    const editBtn = document.createElement('button');
+    editBtn.textContent = 'Edit';
+    editBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const cat = m.category;
+      const li = (state.data.airTerminalTakeoff[cat] || []).find(x => x.lineId === m.lineId);
+      if(!li) return;
+      await ensureCatalogLoaded();
+      const catalogItem = (state.airTerminalCatalog && state.airTerminalCatalog.items.find(c => c.id === li.catalogId)) || { id: li.catalogId, manufacturer: '', model: '' };
+      showTakeoffJobDetailsModal(catalogItem, li, cat);
+    });
+    buttonRow.appendChild(editBtn);
+  }
+  if(m.type === 'damperTag'){
+    const editBtn = document.createElement('button');
+    editBtn.textContent = 'Edit';
+    editBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const cat = m.category;
+      const li = ((state.data.damperTakeoff && state.data.damperTakeoff[cat]) || []).find(x => x.lineId === m.lineId);
+      if(!li) return;
+      showDamperRowModal(cat, li);
+    });
+    buttonRow.appendChild(editBtn);
+  }
+  if(m.type !== 'airOutletTag' && m.type !== 'damperTag'){
     const dupBtn = document.createElement('button');
     dupBtn.textContent = 'Duplicate';
     dupBtn.addEventListener('click', (e) => {
@@ -4494,7 +4521,7 @@ function showMarkupActionButtons(markupId){
     buttonRow.appendChild(dupBtn);
   }
   // ---- Color dropdown ----
-  if(m.type !== 'whiteoutRect' && m.type !== 'whiteoutFreeform' && m.type !== 'airOutletTag'){
+  if(m.type !== 'whiteoutRect' && m.type !== 'whiteoutFreeform' && m.type !== 'airOutletTag' && m.type !== 'damperTag'){
     buttonRow.appendChild(Object.assign(document.createElement('span'), {className:'action-bar-divider'}));
     const colorBtn = document.createElement('button');
     colorBtn.className = 'picker-dd-btn';
@@ -4557,7 +4584,7 @@ function showMarkupActionButtons(markupId){
       if(idx > -1) sheet.markups.splice(idx, 1);
     }
     state.selectedMarkupId = null;
-    markDirty(); drawAllMarkups(); renderNoteList(); renderTakeoffList(); clearMarkupActionButtons();
+    markDirty(); drawAllMarkups(); renderNoteList(); renderTakeoffList(); renderDamperTakeoffList(); clearMarkupActionButtons();
   });
   buttonRow.appendChild(delBtn);
   group.appendChild(buttonRow);
@@ -6912,7 +6939,8 @@ function drawDamperTag(m){
   const ctx = mCanvas.getContext('2d');
   const { anchor } = m;
   const color = DAMPER_CATEGORY_COLORS[m.category] || '#475569';
-  const label = `#${m.scheduleNum != null ? m.scheduleNum : '?'} / ${m.tagLabel || ''}`;
+  const abbr = DAMPER_TYPE_ABBR[m.category] || 'FD';
+  const label = `#${m.scheduleNum != null ? m.scheduleNum : '?'} / ${abbr} / ${m.tagLabel || ''}`;
   const font = 'bold 13px Inter, sans-serif';
   ctx.font = font;
   const textW = ctx.measureText(label).width;
@@ -6941,7 +6969,8 @@ function drawDamperGhost(anchor, isPending){
   const run = state.damperRunItem;
   if(!run) return;
   const color = DAMPER_CATEGORY_COLORS[run.category] || '#475569';
-  const label = `#${run.scheduleNum != null ? run.scheduleNum : '?'} / ${run.tagLabel || ''}`;
+  const abbr = DAMPER_TYPE_ABBR[run.category] || 'FD';
+  const label = `#${run.scheduleNum != null ? run.scheduleNum : '?'} / ${abbr} / ${run.tagLabel || ''}`;
   const ctx = mCanvas.getContext('2d');
   const font = 'bold 13px Inter, sans-serif';
   ctx.save(); ctx.font = font;
@@ -7273,7 +7302,7 @@ function renderDamperTakeoffList(){
           placeBtn.className = 'ao-place-btn dmpr-place-btn'; placeBtn.dataset.lineId = li.lineId; placeBtn.dataset.cat = cat;
           placeBtn.title = 'Place tag on drawing';
           placeBtn.style.cssText = `background:${catColor};color:#fff;border:none;border-radius:5px;padding:1px 6px;font-size:11px;font-weight:700;cursor:pointer;`;
-          placeBtn.textContent = li.scheduleNum != null ? '#' + li.scheduleNum : '#?';
+          placeBtn.textContent = li.scheduleNum != null ? String(li.scheduleNum) : '?';
           tdNum.appendChild(placeBtn);
 
           const vals = [
