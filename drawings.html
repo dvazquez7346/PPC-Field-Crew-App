@@ -15,7 +15,7 @@
   --success:#2E8B57; --success-bg:#E6F3EC; --warn:#B8860B; --warn-bg:#FBF2DF;
   --danger:#C0392B; --danger-bg:#FBEAE7; --radius:14px;
   --shadow:0 1px 2px rgba(20,30,50,0.06), 0 4px 14px rgba(20,30,50,0.06);
-  --toolrail-w:64px; --panel-w:300px;
+  --toolrail-w:62px; --panel-w:300px;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;height:100%;overflow:hidden;}
@@ -92,17 +92,17 @@ input,textarea{font-family:inherit;}
 .action-bar-divider{width:1px;height:26px;background:var(--line);flex-shrink:0;margin:0 5px;}
 /* Center container — absolutely centered in the bar regardless of left content */
 .markup-action-row{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;position:absolute;left:50%;transform:translateX(-50%);}
-.markup-action-row button,.markup-action-group button{font-family:inherit;font-size:11.5px;font-weight:600;padding:0 10px;border-radius:6px;border:1px solid #DDE1E6;background:transparent;color:#16202C;cursor:pointer;height:30px;white-space:nowrap;flex-shrink:0;line-height:30px;}
-.markup-action-row button:hover,.markup-action-group button:hover{background:rgba(0,0,0,0.04);}
+.markup-action-row button,.markup-action-group button{font-family:inherit;font-size:11.5px;font-weight:600;padding:0 10px;border-radius:7px;border:1.5px solid #B5BDC8;background:#EEF1F4;color:#16202C;cursor:pointer;height:28px;white-space:nowrap;flex-shrink:0;line-height:28px;}
+.markup-action-row button:hover,.markup-action-group button:hover{background:#E2E6EA;border-color:#9CA5B0;}
 .markup-action-row button.delete-btn,.markup-action-row .delete-btn{border-color:#DC2626;color:#DC2626;}
 .markup-action-row button.delete-btn:hover{background:rgba(220,38,38,0.07);}
 /* Color dots — always circles, !important to beat .markup-action-row button overrides */
 .markup-color-dot{width:20px !important;height:20px !important;border-radius:50% !important;border:2px solid #fff !important;box-shadow:0 0 0 1.5px var(--line);padding:0 !important;cursor:pointer;flex-shrink:0;line-height:1 !important;min-width:0 !important;}
 .markup-color-dot.active{box-shadow:0 0 0 2.5px var(--navy);}
 /* Stroke pickers — visual line dots matching the no-selection picker */
-.action-bar-stroke-btn{width:34px;height:30px;border-radius:6px;border:1px solid #DDE1E6;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;}
-.action-bar-stroke-btn.active{background:rgba(0,0,0,0.07);}
-.action-bar-stroke-btn:hover{background:rgba(0,0,0,0.05);}
+.action-bar-stroke-btn{width:34px;height:28px;border-radius:7px;border:1.5px solid #B5BDC8;background:#EEF1F4;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;}
+.action-bar-stroke-btn.active{background:#E2E6EA;border-color:#9CA5B0;}
+.action-bar-stroke-btn:hover{background:#E2E6EA;border-color:#9CA5B0;}
 .markup-action-group button.delete-btn{border-color:#DC2626;color:#DC2626;background:transparent;}
 .markup-action-group button.delete-btn:hover{background:rgba(220,38,38,0.07);}
 .canvas-stack canvas{display:block;}
@@ -132,7 +132,7 @@ input,textarea{font-family:inherit;}
 .tool-label{font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;margin-top:-2px;text-align:center;}
 .color-row,.thickness-row,.shape-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:0 6px;}
 .tool-flyout{position:fixed;display:flex;flex-wrap:wrap;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:var(--shadow);z-index:60;max-width:172px;}
-.tool-flyout.flyout-vertical{flex-direction:column;flex-wrap:nowrap;gap:2px;max-width:none;width:80px;padding:6px;}
+.tool-flyout.flyout-vertical{flex-direction:column;flex-wrap:nowrap;gap:2px;max-width:none;width:62px;padding:6px;}
 .tool-flyout.flyout-vertical .flyout-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;border-radius:8px;cursor:pointer;}
 .tool-flyout.flyout-vertical .flyout-item:hover{background:var(--surface-2);}
 .tool-flyout.flyout-vertical .flyout-item .tool-btn{width:38px;height:38px;border-radius:8px;border:1px solid transparent;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:17px;pointer-events:none;}
@@ -354,7 +354,7 @@ input,textarea{font-family:inherit;}
 
   <div class="tabs-row">
     <div class="file-menu-wrap">
-      <button class="tabs-row-btn" id="fileMenuBtn" style="min-width:72px;border-color:#8A9BB0;">File ▾</button>
+      <button class="tabs-row-btn" id="fileMenuBtn" style="padding:6px 20px;border-color:#8A9BB0;">File ▾</button>
       <div class="file-dropdown hidden" id="fileDropdown">
         <div class="file-menu-item" id="fileNewJob">New</div>
         <div class="file-menu-item" id="fileBrowse">Open Existing</div>
@@ -420,7 +420,7 @@ input,textarea{font-family:inherit;}
       <div id="scaleChipGroup" class="hidden" style="display:contents;">
         <span style="font-size:12px;color:var(--muted);white-space:nowrap;flex-shrink:0;">Scale:</span>
         <span id="scaleChipText" style="font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap;flex-shrink:0;">No scale set</span>
-        <button id="scaleChipBtn" style="font-family:inherit;font-size:11.5px;font-weight:600;padding:0 10px;border-radius:6px;border:1px solid #DDE1E6;background:transparent;color:#16202C;cursor:pointer;height:28px;white-space:nowrap;flex-shrink:0;">Set Scale</button>
+        <button id="scaleChipBtn" style="font-family:inherit;font-size:11.5px;font-weight:600;padding:0 10px;border-radius:7px;border:1.5px solid #B5BDC8;background:#EEF1F4;color:#16202C;cursor:pointer;height:28px;white-space:nowrap;flex-shrink:0;">Set Scale</button>
       </div>
     </div>
     <div class="action-bar-dynamic" id="actionBarDynamic"></div>
@@ -443,18 +443,18 @@ input,textarea{font-family:inherit;}
       <div class="tool-label">Route</div>
       <button class="tool-btn" data-tool="dimension" title="Dimension line with arrowheads and text"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2"/><polygon points="4,12 8,9 8,15" fill="currentColor"/><polygon points="20,12 16,9 16,15" fill="currentColor"/></svg></button>
       <div class="tool-label">Dim</div>
-      <button class="tool-btn" data-tool="shape" title="Shapes">⬡<span class="tool-btn-flyout-arrow">▸</span></button>
-      <div class="tool-label">Shape</div>
-      <button class="tool-btn" data-tool="symbol" title="Trade symbols (flex duct, valve, etc.)"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 12 L10 7 L10 17 Z M21 12 L14 7 L14 17 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span class="tool-btn-flyout-arrow">▸</span></button>
-      <div class="tool-label">Symbol</div>
+      <button class="tool-btn" data-tool="shape" title="Shapes">⬡</button>
+      <div class="tool-label">Shapes ▸</div>
+      <button class="tool-btn" data-tool="symbol" title="Trade symbols (flex duct, valve, etc.)"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 12 L10 7 L10 17 Z M21 12 L14 7 L14 17 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+      <div class="tool-label">Symb ▸</div>
       <div class="tool-sep"></div>
       <button class="tool-btn" data-tool="hatchline" title="Demo Line: cross-out a run"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="7" y1="8" x2="9" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="11" y1="8" x2="13" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="15" y1="8" x2="17" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
       <div class="tool-label">Demo</div>
       <button class="tool-btn" data-tool="hatcharea" title="Hatch: freeform hatched area (demo'd zone)"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="4" y1="12" x2="12" y2="4" stroke="currentColor" stroke-width="1.2"/><line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="1.2"/><line x1="12" y1="20" x2="20" y2="12" stroke="currentColor" stroke-width="1.2"/></svg></button>
       <div class="tool-label">Hatch</div>
       <div class="tool-sep"></div>
-      <button class="tool-btn" id="tagsToolBtn" title="Tags — Callout, Note, Elev, Equip, A/O Tag"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 6h6l3 4-3 4H3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="9" y1="10" x2="13" y2="10" stroke="currentColor" stroke-width="1.6"/><line x1="13" y1="10" x2="16" y2="16" stroke="currentColor" stroke-width="1.6"/><circle cx="16" cy="16" r="1.6" fill="currentColor"/></svg><span class="tool-btn-flyout-arrow">▸</span></button>
-      <div class="tool-label">Tags</div>
+      <button class="tool-btn" id="tagsToolBtn" title="Tags — Callout, Note, Elev, Equip, A/O Tag"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 6h6l3 4-3 4H3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="9" y1="10" x2="13" y2="10" stroke="currentColor" stroke-width="1.6"/><line x1="13" y1="10" x2="16" y2="16" stroke="currentColor" stroke-width="1.6"/><circle cx="16" cy="16" r="1.6" fill="currentColor"/></svg></button>
+      <div class="tool-label">Tags ▸</div>
       <div class="tool-flyout flyout-vertical hidden" id="tagsRow">
         <div class="flyout-item" data-tool="label" title="Callout">
           <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="4" width="12" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="15" y1="7.5" x2="19" y2="7.5" stroke="currentColor" stroke-width="1.6"/><line x1="19" y1="7.5" x2="21" y2="15" stroke="currentColor" stroke-width="1.6"/><circle cx="21" cy="15" r="1.6" fill="currentColor"/></svg></button>
@@ -649,6 +649,7 @@ const state = {
   whiteoutsUnlocked: false,
   airOutletRunItem: null, // { lineId, catalogId, description, category } — active placement run
   ghostDimPos: null, // pointer position when dim tool is active but first click not yet placed
+  ghostLeaderPos: null, // pointer position when a leader tool is active but not yet placed
   splitMode: false, splitMarkupId: null, // split-a-route mode: tap to split the selected multiline
 };
 
@@ -805,9 +806,25 @@ function showModal({ title, sub, value = '', placeholder = '', withSymbols = fal
 }
 
 // Dedicated two-field modal for Elevation Callout — the general showModal only
-// has one text area, and this needs a separate labeled Top/Bottom pair plus
-// its own symbol set (feet/inch marks) rather than the general °/⌀/± one.
-const ELEVATION_SYMBOLS = ["'", '-', '"'];
+// Elevation callout modal — structured ft / in entry with optional ½" toggle.
+// Parses an existing formatted string back into fields on open.
+function _parseElevField(val){
+  const s = (val || '').trim();
+  // XX'-XX 1/2"
+  let m = s.match(/^(\d+)'-(\d+)\s+1\/2"$/);
+  if(m) return { ft: m[1], inch: m[2], half: true };
+  // XX'-XX"
+  m = s.match(/^(\d+)'-(\d+)"$/);
+  if(m) return { ft: m[1], inch: m[2], half: false };
+  // Fallback: treat whole string as ft field
+  return { ft: s, inch: '', half: false };
+}
+function _buildElevText(ft, inch, half){
+  const f = ft.trim(), i = inch.trim();
+  if(!f && !i) return '';
+  if(!i) return f + "'";
+  return f + "'-" + i + (half ? " 1/2" : "") + '"';
+}
 function showElevationModal({ topValue = '', bottomValue = '', onConfirm, onCancel }){
   const root = $('#modalRoot');
   root.innerHTML = '';
@@ -815,43 +832,46 @@ function showElevationModal({ topValue = '', bottomValue = '', onConfirm, onCanc
   backdrop.className = 'modal-backdrop';
   const card = document.createElement('div');
   card.className = 'modal-card';
+  const topParsed = _parseElevField(topValue);
+  const botParsed = _parseElevField(bottomValue);
+  const fieldRow = (prefix, parsed) => `
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+      <input type="text" id="${prefix}Ft" placeholder="0" value="${escapeAttr(parsed.ft)}"
+        style="width:52px;border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:14px;font-family:inherit;text-align:center;">
+      <span style="font-size:13px;color:var(--muted);white-space:nowrap;">'-</span>
+      <input type="text" id="${prefix}In" placeholder="0" value="${escapeAttr(parsed.inch)}"
+        style="width:52px;border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:14px;font-family:inherit;text-align:center;">
+      <span style="font-size:13px;color:var(--muted);">"</span>
+      <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink);margin-left:6px;cursor:pointer;">
+        <input type="radio" name="${prefix}Half" value="0" ${!parsed.half ? 'checked' : ''}> —
+      </label>
+      <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink);cursor:pointer;">
+        <input type="radio" name="${prefix}Half" value="1" ${parsed.half ? 'checked' : ''}> ½"
+      </label>
+    </div>`;
   card.innerHTML = `
-    <div class="disp">Add elevation callout</div>
-    <label class="modal-field-label">Top text</label>
-    <input type="text" id="elevTopInput" placeholder="Top Elevation">
-    <label class="modal-field-label">Bottom text</label>
-    <input type="text" id="elevBottomInput" placeholder="Bottom elevation">
-    <div class="symbol-row">${ELEVATION_SYMBOLS.map(s => `<button type="button" class="symbol-btn" data-sym="${escapeAttr(s)}">${escapeHtml(s)}</button>`).join('')}</div>
+    <div class="disp">Elevation callout</div>
+    <label class="modal-field-label">Top</label>
+    ${fieldRow('elevTop', topParsed)}
+    <label class="modal-field-label">Bottom</label>
+    ${fieldRow('elevBot', botParsed)}
     <div class="modal-row">
       <button type="button" class="cancel">Cancel</button>
-      <button type="button" class="save">Add</button>
+      <button type="button" class="save">Save</button>
     </div>`;
   backdrop.appendChild(card);
   root.appendChild(backdrop);
-  const topInput = card.querySelector('#elevTopInput');
-  const bottomInput = card.querySelector('#elevBottomInput');
-  topInput.value = topValue;
-  bottomInput.value = bottomValue;
-  topInput.focus();
-
-  let activeInput = topInput;
-  [topInput, bottomInput].forEach(inp => inp.addEventListener('focus', () => { activeInput = inp; }));
-
-  card.querySelectorAll('.symbol-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const start = activeInput.selectionStart, end = activeInput.selectionEnd;
-      activeInput.value = activeInput.value.slice(0, start) + btn.dataset.sym + activeInput.value.slice(end);
-      activeInput.focus();
-      activeInput.setSelectionRange(start + btn.dataset.sym.length, start + btn.dataset.sym.length);
-    });
-  });
+  card.querySelector('#elevTopFt').focus();
   let confirmed = false;
   function close(){ root.innerHTML = ''; if(!confirmed && onCancel) onCancel(); }
   card.querySelector('.cancel').addEventListener('click', close);
   backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
   card.querySelector('.save').addEventListener('click', () => {
     confirmed = true;
-    const top = topInput.value.trim(), bottom = bottomInput.value.trim();
+    const topHalf = card.querySelector('input[name="elevTopHalf"]:checked')?.value === '1';
+    const botHalf  = card.querySelector('input[name="elevBotHalf"]:checked')?.value === '1';
+    const top    = _buildElevText(card.querySelector('#elevTopFt').value, card.querySelector('#elevTopIn').value, topHalf);
+    const bottom = _buildElevText(card.querySelector('#elevBotFt').value, card.querySelector('#elevBotIn').value, botHalf);
     close();
     if(onConfirm) onConfirm(top, bottom);
   });
@@ -1536,6 +1556,10 @@ async function exportSheetsToPDF(sheetIndices){
 async function openJobById(jobId, initialJobName){
   if(!jobId) return;
   closeJobDropdown();
+  // Close Notes and Takeoff panels when switching jobs
+  $('#panel').classList.add('panel-hidden');
+  $('#takeoffPanel').classList.add('panel-hidden');
+  positionFloatingControls();
   setStatus('loading', 'Loading job ' + jobId + '…');
   const fileName = `job-${jobId}-markup.json`;
   try{
@@ -2984,7 +3008,7 @@ function onPointerDown(e){
     state.drawing = true;
     const dp = canvasPointClearFingertip(e);
     state.ghostDimPos = null; // clear ghost when drawing starts
-    state.currentStroke = { id: genId(), type: 'dimension', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: dp, p1: dp, text: '', textPos: dp, note: '', extOffset: 30 };
+    state.currentStroke = { id: genId(), type: 'dimension', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: dp, p1: dp, text: '', textPos: dp, note: '', extOffset: 25 };
   } else if(state.tool === 'whiteoutRect'){
     state.drawing = true;
     state.currentStroke = { id: genId(), type: 'whiteoutRect', p0: p, p1: p, note: '' };
@@ -3129,6 +3153,13 @@ function onPointerMove(e){
     state.ghostDimPos = p;
     drawAllMarkups();
   }
+  // Ghost leader anchor — before first click on label/note/elevation/equipment
+  if(['label','note','elevation','equipment'].includes(state.tool) && !state.drawing){
+    state.ghostLeaderPos = p;
+    drawAllMarkups();
+  } else if(!['label','note','elevation','equipment'].includes(state.tool)){
+    state.ghostLeaderPos = null;
+  }
   // Erase halo cursor
   if(state.tool === 'erase'){
     drawAllMarkups();
@@ -3151,6 +3182,7 @@ function switchToTool(toolName){
   if(btn) btn.classList.add('active');
   state.tool = toolName;
   if(toolName !== 'dimension') state.ghostDimPos = null; // clear ghost when leaving dim tool
+  if(!['label','note','elevation','equipment'].includes(toolName)) state.ghostLeaderPos = null;
 }
 
 // Native 'dblclick' doesn't reliably fire from two touch taps on iOS Safari
@@ -3313,10 +3345,12 @@ function onPointerUp(e){
         // Position text above the dim line midpoint (accounting for extension lines)
         const dv = normalizePt(dim.p0, dim.p1);
         const perp = { x: -dv.y, y: dv.x };
-        const off = dim.extOffset != null ? dim.extOffset : 30;
+        // Normalize perp to match drawDimension — always same direction
+        if(perp.y > 0 || (perp.y === 0 && perp.x < 0)){ perp.x = -perp.x; perp.y = -perp.y; }
+        const off = dim.extOffset != null ? dim.extOffset : 25;
         dim.textPos = {
-          x: (dim.p0.x + dim.p1.x) / 2 + perp.x * (off + 8),
-          y: (dim.p0.y + dim.p1.y) / 2 + perp.y * (off + 8)
+          x: (dim.p0.x + dim.p1.x) / 2 + perp.x * (off - 10),
+          y: (dim.p0.y + dim.p1.y) / 2 + perp.y * (off - 10)
         };
         dim.createdAt = Date.now();
         sh.markups.push(dim);
@@ -3491,7 +3525,7 @@ function openTextEditForMarkup(m){
    then it's fully adjustable via drag handles in the Select tool) ---- */
 function placeLeaderMarkup(kind, anchor){
   const defaultColor = kind === 'note' ? DEFAULT_NOTE_COLOR : DEFAULT_LABEL_COLOR;
-  const textPos = { x: anchor.x + 70, y: anchor.y - 60 };
+  const textPos = { x: anchor.x + 60, y: anchor.y - 50 };
   const bend = defaultBendPosition(anchor, textPos);
   const markup = {
     id: genId(), type: kind, color: defaultColor, text: '', anchor, bend, textPos,
@@ -3504,7 +3538,7 @@ function placeLeaderMarkup(kind, anchor){
 }
 
 function placeElevationMarkup(anchor){
-  const textPos = { x: anchor.x + 70, y: anchor.y - 60 };
+  const textPos = { x: anchor.x + 60, y: anchor.y - 50 };
   const bend = defaultBendPosition(anchor, textPos);
   const markup = {
     id: genId(), type: 'elevation', color: DEFAULT_ELEVATION_COLOR, textTop: '', textBottom: '',
@@ -3517,7 +3551,7 @@ function placeElevationMarkup(anchor){
 }
 
 function placeEquipmentMarkup(anchor){
-  const textPos = { x: anchor.x + 70, y: anchor.y - 60 };
+  const textPos = { x: anchor.x + 60, y: anchor.y - 50 };
   const bend = defaultBendPosition(anchor, textPos);
   const markup = {
     id: genId(), type: 'equipment', color: DEFAULT_EQUIPMENT_COLOR, eqType: '', eqNumber: '',
@@ -3808,9 +3842,16 @@ function defaultBendPosition(anchor, textPos){
 function handlePointsForMarkup(m){
   if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'move', p: m.textPos }];
   if(m.type === 'dimension'){
-    // Grips at measurement points (p0/p1) — lets user freely reposition endpoints
-    // to change span and angle. textPos grip moves the label.
-    return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'textPos', p: m.textPos }];
+    // Grips at measurement points (p0/p1), label (textPos), and dim-line midpoint (extOffset)
+    const dv_h = normalizePt(m.p0, m.p1);
+    const perp_h = { x: -dv_h.y, y: dv_h.x };
+    if(perp_h.y > 0 || (perp_h.y === 0 && perp_h.x < 0)){ perp_h.x = -perp_h.x; perp_h.y = -perp_h.y; }
+    const off_h = m.extOffset != null ? m.extOffset : 25;
+    const dimMid = {
+      x: (m.p0.x + m.p1.x) / 2 + perp_h.x * off_h,
+      y: (m.p0.y + m.p1.y) / 2 + perp_h.y * off_h
+    };
+    return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'textPos', p: m.textPos }, { key: 'extOffset', p: dimMid }];
   }
   if(m.type === 'line'){ const mid = { x: (m.p0.x + m.p1.x)/2, y: (m.p0.y + m.p1.y)/2 }; return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: mid }]; }
   if(m.type === 'whiteoutRect') return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'move', p: shapeCenter(m) }];
@@ -4014,6 +4055,24 @@ function applyDragHandle(drag, p){
     m.points[idx] = p;
     return;
   }
+  if(m.type === 'dimension' && drag.key === 'extOffset'){
+    // Drag the dim-line midpoint grip perpendicular to the measurement axis
+    const dv_e = normalizePt(m.p0, m.p1);
+    const perp_e = { x: -dv_e.y, y: dv_e.x };
+    if(perp_e.y > 0 || (perp_e.y === 0 && perp_e.x < 0)){ perp_e.x = -perp_e.x; perp_e.y = -perp_e.y; }
+    const mid_e = { x: (m.p0.x + m.p1.x) / 2, y: (m.p0.y + m.p1.y) / 2 };
+    // Project the pointer onto the perp axis from the midpoint
+    const dot = (p.x - mid_e.x) * perp_e.x + (p.y - mid_e.y) * perp_e.y;
+    m.extOffset = Math.max(10, dot); // enforce minimum 10px
+    // Recompute text position to track the new offset
+    if(!m.textIsCustom){
+      m.textPos = {
+        x: mid_e.x + perp_e.x * (m.extOffset - 10),
+        y: mid_e.y + perp_e.y * (m.extOffset - 10)
+      };
+    }
+    return;
+  }
   if(m.type === 'dimension' && (drag.key === 'p0' || drag.key === 'p1')){
     // Snap to 2° increments relative to the fixed endpoint
     const fixedPt = drag.key === 'p0' ? m.p1 : m.p0;
@@ -4025,13 +4084,14 @@ function applyDragHandle(drag, p){
       const suggestion = suggestDimensionLength(newDist);
       if(suggestion) m.text = suggestion;
     }
-    // Keep text label centered above dim line
+    // Keep text label centered above dim line (normalized perp, off - 10)
     const dv2 = normalizePt(m.p0, m.p1);
     const perp2 = { x: -dv2.y, y: dv2.x };
-    const off2 = m.extOffset != null ? m.extOffset : 30;
+    if(perp2.y > 0 || (perp2.y === 0 && perp2.x < 0)){ perp2.x = -perp2.x; perp2.y = -perp2.y; }
+    const off2 = m.extOffset != null ? m.extOffset : 25;
     m.textPos = {
-      x: (m.p0.x + m.p1.x) / 2 + perp2.x * (off2 + 8),
-      y: (m.p0.y + m.p1.y) / 2 + perp2.y * (off2 + 8)
+      x: (m.p0.x + m.p1.x) / 2 + perp2.x * (off2 - 10),
+      y: (m.p0.y + m.p1.y) / 2 + perp2.y * (off2 - 10)
     };
     return;
   }
@@ -4397,7 +4457,7 @@ function updateMSelectActionBar(){
   // Group / Ungroup
   const allGroupable = selected.length >= 2 && selected.every(m => GROUPABLE_TYPES.includes(m.type));
   const anyGrouped = selected.some(m => m.groupId);
-  const btnStyle = 'background:var(--navy);color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:11.5px;font-weight:600;cursor:pointer;height:28px;flex-shrink:0;white-space:nowrap;';
+  const btnStyle = 'background:var(--navy);color:#fff;border:1.5px solid #35496A;border-radius:7px;padding:0 10px;font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;height:28px;flex-shrink:0;white-space:nowrap;';
   if(allGroupable || anyGrouped){
     row.appendChild(mkDiv());
     if(allGroupable){
@@ -4429,25 +4489,69 @@ function updateMSelectActionBar(){
     }
   }
 
-  // Color dots
-  row.appendChild(mkDiv());
-  PALETTE.forEach(c => {
-    const dot = document.createElement('button');
-    dot.className = 'markup-color-dot';
-    dot.style.background = c;
-    dot.addEventListener('click', (e) => {
+  // Line Style picker — only if any selected items support line type
+  const hasLineType = selected.some(m => ['line','multiline','freehand','shape'].includes(m.type));
+  if(hasLineType){
+    row.appendChild(mkDiv());
+    const ltBtn = document.createElement('button');
+    ltBtn.className = 'picker-dd-btn';
+    // Show the line type of the first eligible selected item
+    const firstLt = selected.find(m => ['line','multiline','freehand','shape'].includes(m.type));
+    const curLt = (firstLt && firstLt.lineType) || 'solid';
+    ltBtn.appendChild(makeLineTypeSvg(curLt, 28, 10));
+    const ltLbl = document.createElement('span');
+    ltLbl.textContent = (LINE_TYPE_MAP[curLt] || LINE_TYPES[0]).label;
+    ltBtn.appendChild(ltLbl);
+    const ltArr = document.createElement('span'); ltArr.className = 'picker-dd-arrow'; ltArr.textContent = '▾';
+    ltBtn.appendChild(ltArr);
+    ltBtn.title = 'Line type';
+    ltBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      selected.forEach(m => { if(m.type !== 'whiteoutRect' && m.type !== 'whiteoutFreeform') m.color = c; });
-      markDirty(); drawAllMarkups(); renderNoteList();
+      _openLineTypeDropdown(ltBtn, (key) => {
+        selected.forEach(m => {
+          if(['line','multiline','freehand','shape'].includes(m.type)){
+            m.lineType = key;
+            m.hatched = (key === 'hatch');
+          }
+        });
+        markDirty(); drawAllMarkups(); renderNoteList(); updateMSelectActionBar();
+      });
     });
-    row.appendChild(dot);
-  });
+    row.appendChild(ltBtn);
+  }
+
+  // Color picker-dd-btn
+  row.appendChild(mkDiv());
+  const colorableSelected = selected.filter(m => m.type !== 'whiteoutRect' && m.type !== 'whiteoutFreeform');
+  if(colorableSelected.length > 0){
+    const firstColor = colorableSelected[0].color || PALETTE[0];
+    const colorBtn = document.createElement('button');
+    colorBtn.className = 'picker-dd-btn';
+    const colorSwatch = document.createElement('span');
+    colorSwatch.className = 'picker-dd-color-swatch';
+    colorSwatch.style.background = firstColor;
+    const colorLabel = document.createElement('span');
+    colorLabel.textContent = COLOR_NAMES[firstColor] || 'Color';
+    const colorArrow = document.createElement('span');
+    colorArrow.className = 'picker-dd-arrow'; colorArrow.textContent = '▾';
+    colorBtn.append(colorSwatch, colorLabel, colorArrow);
+    colorBtn.title = 'Color';
+    colorBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _openPickerDropdown(colorBtn, PALETTE.map(_buildColorItem), (c) => {
+        colorableSelected.forEach(m => { m.color = c; });
+        markDirty(); drawAllMarkups(); renderNoteList(); updateMSelectActionBar();
+      });
+    });
+    row.appendChild(colorBtn);
+  }
 
   // Clear + Delete
   row.appendChild(mkDiv());
   const clearBtn = document.createElement('button');
-  clearBtn.textContent = 'Clear selection';
-  clearBtn.style.cssText = 'font-family:inherit;font-size:11.5px;font-weight:600;padding:0 10px;border-radius:6px;border:1px solid #DDE1E6;background:transparent;color:#16202C;cursor:pointer;height:30px;white-space:nowrap;flex-shrink:0;';
+  clearBtn.textContent = 'Clear';
+  clearBtn.className = '';
+  clearBtn.style.cssText = 'font-family:inherit;font-size:11.5px;font-weight:600;padding:0 10px;border-radius:7px;border:1.5px solid #B5BDC8;background:#EEF1F4;color:#16202C;cursor:pointer;height:28px;white-space:nowrap;flex-shrink:0;';
   clearBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     state.multiSelectedIds.clear();
@@ -4458,7 +4562,7 @@ function updateMSelectActionBar(){
   row.appendChild(clearBtn);
 
   const delBtn = document.createElement('button');
-  delBtn.style.cssText = 'font-family:inherit;font-size:11.5px;font-weight:600;padding:0 10px;border-radius:6px;border:1px solid #DC2626;background:transparent;color:#DC2626;cursor:pointer;height:30px;white-space:nowrap;flex-shrink:0;';
+  delBtn.style.cssText = 'font-family:inherit;font-size:11.5px;font-weight:600;padding:0 10px;border-radius:7px;border:1.5px solid #DC2626;background:transparent;color:#DC2626;cursor:pointer;height:28px;white-space:nowrap;flex-shrink:0;';
   delBtn.textContent = `Delete (${selected.length})`;
   delBtn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -4571,6 +4675,35 @@ function drawAllMarkups(){
       ctx.restore();
     }
   }
+  // Split mode — draw grip circles at every multiline point + highlight last split point
+  if(state.splitMode){
+    const splitCtx = mCanvas.getContext('2d');
+    splitCtx.save();
+    sheet.markups.forEach(m => {
+      if(m.type !== 'multiline' || !m.points) return;
+      m.points.forEach(pt => {
+        splitCtx.beginPath();
+        splitCtx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
+        splitCtx.fillStyle = 'rgba(47,93,138,0.5)';
+        splitCtx.fill();
+        splitCtx.strokeStyle = '#fff';
+        splitCtx.lineWidth = 1.2;
+        splitCtx.stroke();
+      });
+    });
+    // Highlight the most recent split point in orange
+    if(state._lastSplitPt){
+      const sp = state._lastSplitPt;
+      splitCtx.beginPath();
+      splitCtx.arc(sp.x, sp.y, 7, 0, Math.PI * 2);
+      splitCtx.fillStyle = '#E8622C';
+      splitCtx.fill();
+      splitCtx.strokeStyle = '#fff';
+      splitCtx.lineWidth = 1.5;
+      splitCtx.stroke();
+    }
+    splitCtx.restore();
+  }
   // Ghost air outlet tag preview (follows cursor or frozen at pending anchor)
   if(state.tool === 'airOutletTag' && state.airOutletRunItem){
     const pos = state.airOutletPendingAnchor || state.ghostAirOutletPos;
@@ -4589,6 +4722,49 @@ function drawAllMarkups(){
     ctx.beginPath();
     ctx.moveTo(gp.x, gp.y);
     ctx.lineTo(gp.x + 24, gp.y);
+    ctx.stroke();
+    ctx.restore();
+  }
+  // Ghost leader — shows before first click on label/note/elevation/equipment
+  if(['label','note','elevation','equipment'].includes(state.tool) && !state.drawing && state.ghostLeaderPos){
+    const ctx = mCanvas.getContext('2d');
+    ctx.save();
+    ctx.globalAlpha = 0.4;
+    const ga = state.ghostLeaderPos;
+    const gt = { x: ga.x + 60, y: ga.y - 50 };
+    const gb = defaultBendPosition(ga, gt);
+    // Leader line
+    const ghostColor = state.tool === 'note' ? DEFAULT_NOTE_COLOR
+      : state.tool === 'elevation' ? DEFAULT_ELEVATION_COLOR
+      : state.tool === 'equipment' ? DEFAULT_EQUIPMENT_COLOR
+      : DEFAULT_LABEL_COLOR;
+    ctx.strokeStyle = ghostColor;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(gt.x, gt.y);
+    ctx.lineTo(gb.x, gb.y);
+    ctx.lineTo(ga.x, ga.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Anchor dot
+    ctx.fillStyle = ghostColor;
+    ctx.beginPath();
+    ctx.arc(ga.x, ga.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+    // Text pill outline (simple box)
+    ctx.font = '600 12px Inter, sans-serif';
+    const pillW = 52, pillH = 20, pillR = 6;
+    const px = gt.x - pillW / 2, py = gt.y - pillH / 2;
+    ctx.strokeStyle = ghostColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(px + pillR, py);
+    ctx.arcTo(px + pillW, py, px + pillW, py + pillH, pillR);
+    ctx.arcTo(px + pillW, py + pillH, px, py + pillH, pillR);
+    ctx.arcTo(px, py + pillH, px, py, pillR);
+    ctx.arcTo(px, py, px + pillW, py, pillR);
+    ctx.closePath();
     ctx.stroke();
     ctx.restore();
   }
@@ -4642,6 +4818,17 @@ function drawHandles(m){
       ctx.moveTo(h.p.x, h.p.y + 3.75); ctx.lineTo(h.p.x + 1.5, h.p.y + 1.5);
       ctx.stroke();
       ctx.restore();
+      return;
+    }
+    if(h.key === 'extOffset'){
+      // Orange filled circle — drag perpendicular to move dim line in/out
+      ctx.beginPath();
+      ctx.arc(h.p.x, h.p.y, 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#E8622C';
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
       return;
     }
     ctx.beginPath();
@@ -4775,15 +4962,12 @@ function enterSplitMode(markupId){
   state.splitMode = true;
   state.splitMarkupId = markupId; // kept only as a hint for the first tap
   state.selectedMarkupId = null;
+  state._lastSplitPt = null; // cleared on entry
   _showSplitBar();
   mCanvas.style.cursor = 'crosshair';
   updatePickersVisibility();
   updateScaleChip();
-  // 5-second idle timeout — auto-exit if no tap is made
-  if(state._splitTimeout) clearTimeout(state._splitTimeout);
-  state._splitTimeout = setTimeout(() => {
-    if(state.splitMode){ exitSplitMode(); }
-  }, 5000);
+  drawAllMarkups(); // show grips immediately
 }
 
 function _showSplitBar(){
@@ -4807,6 +4991,7 @@ function _showSplitBar(){
 function exitSplitMode(){
   state.splitMode = false;
   state.splitMarkupId = null;
+  state._lastSplitPt = null;
   if(state._splitTimeout){ clearTimeout(state._splitTimeout); state._splitTimeout = null; }
   mCanvas.style.cursor = '';
   clearMarkupActionButtons();
@@ -4859,8 +5044,10 @@ function performSplit(pt){
 
   const idx = sheet.markups.findIndex(x => x.id === bestM.id);
   sheet.markups.splice(idx, 1, m1, m2);
+  // Store the split point to draw a highlighted grip circle on the canvas
+  state._lastSplitPt = { x: splitPt.x, y: splitPt.y };
   markDirty(); drawAllMarkups(); renderNoteList(); renderTakeoffList();
-  // Stay in split mode — reset the 5s idle timeout after each successful split
+  // Start (or reset) the 5s idle timeout — only runs after first successful split
   if(state._splitTimeout) clearTimeout(state._splitTimeout);
   state._splitTimeout = setTimeout(() => { if(state.splitMode) exitSplitMode(); }, 5000);
 }
@@ -5345,6 +5532,8 @@ function drawDimension(m){
   const ctx = mCanvas.getContext('2d');
   const dv = normalizePt(m.p0, m.p1);
   const perp = { x: -dv.y, y: dv.x };
+  // Normalize so extension lines always go the same direction regardless of draw direction
+  if(perp.y > 0 || (perp.y === 0 && perp.x < 0)){ perp.x = -perp.x; perp.y = -perp.y; }
   const off = m.extOffset != null ? m.extOffset : 0;
   // Dim line endpoints (offset from measurement points along perp)
   const dl0 = { x: m.p0.x + perp.x * off, y: m.p0.y + perp.y * off };
@@ -5376,7 +5565,8 @@ function drawDimensionPreview(p0, p1){
   ctx.globalAlpha = 0.6;
   const dv = normalizePt(p0, p1);
   const perp = { x: -dv.y, y: dv.x };
-  const off = 30;
+  if(perp.y > 0 || (perp.y === 0 && perp.x < 0)){ perp.x = -perp.x; perp.y = -perp.y; }
+  const off = 25;
   const dl0 = { x: p0.x + perp.x * off, y: p0.y + perp.y * off };
   const dl1 = { x: p1.x + perp.x * off, y: p1.y + perp.y * off };
   const tip0 = { x: p0.x + perp.x * (off + 10), y: p0.y + perp.y * (off + 10) };
@@ -5831,8 +6021,8 @@ function renderTakeoffList(){
     { label:'',                cls:'ao-th-action' },
     { label:'',                cls:'ao-th-order' },
     { label:'#',               cls:'ao-th-num' },
-    { label:'Schedule Tag' },
-    { label:'Manufacturer' },
+    { label:'Tag' },
+    { label:'Mfg.' },
     { label:'Model' },
     { label:'Neck Size',       id:'aoThSizeA' },
     { label:'Face Size',       id:'aoThSizeB' },
@@ -6179,7 +6369,7 @@ function exportTakeoffPDF(){
 
       html += `<tr class="group-style"><td colspan="11">${styleLabel}</td></tr>`;
       html += `<tr class="col-header">
-        <td>ID</td><td>Schedule Tag</td><td>Manufacturer</td><td>Model</td>
+        <td>ID</td><td>Tag</td><td>Mfg.</td><td>Model</td>
         <td>${sizeALabel}</td><td>${sizeBLabel}</td><td>Frame Type</td><td>Color</td>
         <td class="num">Sheet Qty</td><td>Vendor</td><td>Notes</td>
       </tr>`;
@@ -6501,7 +6691,7 @@ function showTakeoffJobDetailsModal(catalogItem, existingLineItem, existingCat, 
   card.querySelector('#tDesc').focus();
   function close(){ root.innerHTML = ''; }
   card.querySelector('.cancel').addEventListener('click', close);
-  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
+  // Backdrop click intentionally does NOT close — only Cancel or Save dismisses
   card.querySelector('.save').addEventListener('click', async () => {
     const scheduleTag = card.querySelector('#tDesc').value.trim().toUpperCase();
     const neckSize    = card.querySelector('#tNeck').value.trim().toUpperCase();
