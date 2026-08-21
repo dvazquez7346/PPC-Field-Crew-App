@@ -841,12 +841,9 @@ function showElevationModal({ topValue = '', bottomValue = '', onConfirm, onCanc
       <span style="font-size:13px;color:var(--muted);white-space:nowrap;">'-</span>
       <input type="text" id="${prefix}In" placeholder="0" value="${escapeAttr(parsed.inch)}"
         style="width:52px;border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:14px;font-family:inherit;text-align:center;">
-      <span style="font-size:13px;color:var(--muted);">"</span>
-      <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink);margin-left:6px;cursor:pointer;">
-        <input type="radio" name="${prefix}Half" value="0" ${!parsed.half ? 'checked' : ''}> —
-      </label>
-      <label style="display:flex;align-items:center;gap:3px;font-size:12px;color:var(--ink);cursor:pointer;">
-        <input type="radio" name="${prefix}Half" value="1" ${parsed.half ? 'checked' : ''}> ½"
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink);margin-left:4px;cursor:pointer;">
+        <input type="checkbox" id="${prefix}Half" ${parsed.half ? 'checked' : ''}
+          style="width:15px;height:15px;cursor:pointer;accent-color:var(--orange);"> ½"
       </label>
     </div>`;
   card.innerHTML = `
@@ -868,8 +865,8 @@ function showElevationModal({ topValue = '', bottomValue = '', onConfirm, onCanc
   backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
   card.querySelector('.save').addEventListener('click', () => {
     confirmed = true;
-    const topHalf = card.querySelector('input[name="elevTopHalf"]:checked')?.value === '1';
-    const botHalf  = card.querySelector('input[name="elevBotHalf"]:checked')?.value === '1';
+    const topHalf = card.querySelector('#elevTopHalf')?.checked || false;
+    const botHalf  = card.querySelector('#elevBotHalf')?.checked || false;
     const top    = _buildElevText(card.querySelector('#elevTopFt').value, card.querySelector('#elevTopIn').value, topHalf);
     const bottom = _buildElevText(card.querySelector('#elevBotFt').value, card.querySelector('#elevBotIn').value, botHalf);
     close();
@@ -1190,6 +1187,10 @@ function exitToBlankCanvas(){
   if(zoomWrapper) zoomWrapper.classList.add('hidden');
   if(zoomControls) zoomControls.classList.add('hidden');
   hideRunDoneBtn();
+  // Close Notes and Takeoff panels on job exit
+  $('#panel').classList.add('panel-hidden');
+  $('#takeoffPanel').classList.add('panel-hidden');
+  positionFloatingControls();
   renderSheetTabs();
   drawAllMarkups();
   document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
@@ -3008,7 +3009,7 @@ function onPointerDown(e){
     state.drawing = true;
     const dp = canvasPointClearFingertip(e);
     state.ghostDimPos = null; // clear ghost when drawing starts
-    state.currentStroke = { id: genId(), type: 'dimension', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: dp, p1: dp, text: '', textPos: dp, note: '', extOffset: 25 };
+    state.currentStroke = { id: genId(), type: 'dimension', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: dp, p1: dp, text: '', textPos: dp, note: '', extOffset: 15 };
   } else if(state.tool === 'whiteoutRect'){
     state.drawing = true;
     state.currentStroke = { id: genId(), type: 'whiteoutRect', p0: p, p1: p, note: '' };
@@ -3345,12 +3346,10 @@ function onPointerUp(e){
         // Position text above the dim line midpoint (accounting for extension lines)
         const dv = normalizePt(dim.p0, dim.p1);
         const perp = { x: -dv.y, y: dv.x };
-        // Normalize perp to match drawDimension — always same direction
-        if(perp.y > 0 || (perp.y === 0 && perp.x < 0)){ perp.x = -perp.x; perp.y = -perp.y; }
-        const off = dim.extOffset != null ? dim.extOffset : 25;
+        const off = dim.extOffset != null ? dim.extOffset : 15;
         dim.textPos = {
-          x: (dim.p0.x + dim.p1.x) / 2 + perp.x * (off - 10),
-          y: (dim.p0.y + dim.p1.y) / 2 + perp.y * (off - 10)
+          x: (dim.p0.x + dim.p1.x) / 2 + perp.x * (off + 10),
+          y: (dim.p0.y + dim.p1.y) / 2 + perp.y * (off + 10)
         };
         dim.createdAt = Date.now();
         sh.markups.push(dim);
@@ -3525,7 +3524,7 @@ function openTextEditForMarkup(m){
    then it's fully adjustable via drag handles in the Select tool) ---- */
 function placeLeaderMarkup(kind, anchor){
   const defaultColor = kind === 'note' ? DEFAULT_NOTE_COLOR : DEFAULT_LABEL_COLOR;
-  const textPos = { x: anchor.x + 60, y: anchor.y - 50 };
+  const textPos = { x: anchor.x + 50, y: anchor.y - 50 };
   const bend = defaultBendPosition(anchor, textPos);
   const markup = {
     id: genId(), type: kind, color: defaultColor, text: '', anchor, bend, textPos,
@@ -3538,7 +3537,7 @@ function placeLeaderMarkup(kind, anchor){
 }
 
 function placeElevationMarkup(anchor){
-  const textPos = { x: anchor.x + 60, y: anchor.y - 50 };
+  const textPos = { x: anchor.x + 50, y: anchor.y - 50 };
   const bend = defaultBendPosition(anchor, textPos);
   const markup = {
     id: genId(), type: 'elevation', color: DEFAULT_ELEVATION_COLOR, textTop: '', textBottom: '',
@@ -3551,7 +3550,7 @@ function placeElevationMarkup(anchor){
 }
 
 function placeEquipmentMarkup(anchor){
-  const textPos = { x: anchor.x + 60, y: anchor.y - 50 };
+  const textPos = { x: anchor.x + 50, y: anchor.y - 50 };
   const bend = defaultBendPosition(anchor, textPos);
   const markup = {
     id: genId(), type: 'equipment', color: DEFAULT_EQUIPMENT_COLOR, eqType: '', eqNumber: '',
@@ -3845,8 +3844,7 @@ function handlePointsForMarkup(m){
     // Grips at measurement points (p0/p1), label (textPos), and dim-line midpoint (extOffset)
     const dv_h = normalizePt(m.p0, m.p1);
     const perp_h = { x: -dv_h.y, y: dv_h.x };
-    if(perp_h.y > 0 || (perp_h.y === 0 && perp_h.x < 0)){ perp_h.x = -perp_h.x; perp_h.y = -perp_h.y; }
-    const off_h = m.extOffset != null ? m.extOffset : 25;
+    const off_h = m.extOffset != null ? m.extOffset : 15;
     const dimMid = {
       x: (m.p0.x + m.p1.x) / 2 + perp_h.x * off_h,
       y: (m.p0.y + m.p1.y) / 2 + perp_h.y * off_h
@@ -3944,9 +3942,9 @@ function markupContainsPoint(m, p){
     const off = m.extOffset != null ? m.extOffset : 0;
     const dl0 = { x: m.p0.x + perp.x * off, y: m.p0.y + perp.y * off };
     const dl1 = { x: m.p1.x + perp.x * off, y: m.p1.y + perp.y * off };
-    return distToSegment(p, dl0, dl1) < 12
-        || distToSegment(p, m.p0, dl0) < 10
-        || distToSegment(p, m.p1, dl1) < 10
+    return distToSegment(p, dl0, dl1) < 18
+        || distToSegment(p, m.p0, dl0) < 18
+        || distToSegment(p, m.p1, dl1) < 18
         || (m.textPos && Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 24);
   }
   if(m.type === 'shape' || m.type === 'whiteoutRect'){
@@ -4059,7 +4057,6 @@ function applyDragHandle(drag, p){
     // Drag the dim-line midpoint grip perpendicular to the measurement axis
     const dv_e = normalizePt(m.p0, m.p1);
     const perp_e = { x: -dv_e.y, y: dv_e.x };
-    if(perp_e.y > 0 || (perp_e.y === 0 && perp_e.x < 0)){ perp_e.x = -perp_e.x; perp_e.y = -perp_e.y; }
     const mid_e = { x: (m.p0.x + m.p1.x) / 2, y: (m.p0.y + m.p1.y) / 2 };
     // Project the pointer onto the perp axis from the midpoint
     const dot = (p.x - mid_e.x) * perp_e.x + (p.y - mid_e.y) * perp_e.y;
@@ -4067,8 +4064,8 @@ function applyDragHandle(drag, p){
     // Recompute text position to track the new offset
     if(!m.textIsCustom){
       m.textPos = {
-        x: mid_e.x + perp_e.x * (m.extOffset - 10),
-        y: mid_e.y + perp_e.y * (m.extOffset - 10)
+        x: mid_e.x + perp_e.x * (m.extOffset + 10),
+        y: mid_e.y + perp_e.y * (m.extOffset + 10)
       };
     }
     return;
@@ -4084,14 +4081,13 @@ function applyDragHandle(drag, p){
       const suggestion = suggestDimensionLength(newDist);
       if(suggestion) m.text = suggestion;
     }
-    // Keep text label centered above dim line (normalized perp, off - 10)
+    // Keep text label centered above dim line at off + 10
     const dv2 = normalizePt(m.p0, m.p1);
     const perp2 = { x: -dv2.y, y: dv2.x };
-    if(perp2.y > 0 || (perp2.y === 0 && perp2.x < 0)){ perp2.x = -perp2.x; perp2.y = -perp2.y; }
-    const off2 = m.extOffset != null ? m.extOffset : 25;
+    const off2 = m.extOffset != null ? m.extOffset : 15;
     m.textPos = {
-      x: (m.p0.x + m.p1.x) / 2 + perp2.x * (off2 - 10),
-      y: (m.p0.y + m.p1.y) / 2 + perp2.y * (off2 - 10)
+      x: (m.p0.x + m.p1.x) / 2 + perp2.x * (off2 + 10),
+      y: (m.p0.y + m.p1.y) / 2 + perp2.y * (off2 + 10)
     };
     return;
   }
@@ -4731,7 +4727,7 @@ function drawAllMarkups(){
     ctx.save();
     ctx.globalAlpha = 0.4;
     const ga = state.ghostLeaderPos;
-    const gt = { x: ga.x + 60, y: ga.y - 50 };
+    const gt = { x: ga.x + 50, y: ga.y - 50 };
     const gb = defaultBendPosition(ga, gt);
     // Leader line
     const ghostColor = state.tool === 'note' ? DEFAULT_NOTE_COLOR
@@ -5532,8 +5528,6 @@ function drawDimension(m){
   const ctx = mCanvas.getContext('2d');
   const dv = normalizePt(m.p0, m.p1);
   const perp = { x: -dv.y, y: dv.x };
-  // Normalize so extension lines always go the same direction regardless of draw direction
-  if(perp.y > 0 || (perp.y === 0 && perp.x < 0)){ perp.x = -perp.x; perp.y = -perp.y; }
   const off = m.extOffset != null ? m.extOffset : 0;
   // Dim line endpoints (offset from measurement points along perp)
   const dl0 = { x: m.p0.x + perp.x * off, y: m.p0.y + perp.y * off };
@@ -5565,8 +5559,7 @@ function drawDimensionPreview(p0, p1){
   ctx.globalAlpha = 0.6;
   const dv = normalizePt(p0, p1);
   const perp = { x: -dv.y, y: dv.x };
-  if(perp.y > 0 || (perp.y === 0 && perp.x < 0)){ perp.x = -perp.x; perp.y = -perp.y; }
-  const off = 25;
+  const off = 15;
   const dl0 = { x: p0.x + perp.x * off, y: p0.y + perp.y * off };
   const dl1 = { x: p1.x + perp.x * off, y: p1.y + perp.y * off };
   const tip0 = { x: p0.x + perp.x * (off + 10), y: p0.y + perp.y * (off + 10) };
