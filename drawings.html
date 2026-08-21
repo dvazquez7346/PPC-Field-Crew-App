@@ -331,6 +331,19 @@ input,textarea{font-family:inherit;}
 .ao-table .ao-th-order,.ao-table .ao-td-order{width:48px;min-width:48px;padding:2px 2px;text-align:center;white-space:nowrap;}
 .takeoff-apply-order-btn{padding:5px 10px;font-size:11.5px;font-weight:600;border:1px solid #7A3E9D;border-radius:7px;background:#7A3E9D;color:#fff;cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .takeoff-apply-order-btn:hover{background:#6a3488;}
+/* ── Takeoffs dropdown menu ──────────────────────────────── */
+.takeoffs-btn-wrap{position:relative;display:inline-flex;flex-shrink:0;}
+.takeoffs-dd{position:absolute;top:calc(100% + 5px);left:0;min-width:188px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);z-index:90;overflow:hidden;}
+.takeoffs-dd-item{padding:10px 14px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:8px;}
+.takeoffs-dd-item:hover{background:var(--surface-2);}
+.takeoffs-dd-item .tdd-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+/* ── Damper category colors ──────────────────────────────── */
+.dmpr-cat-fire{color:#DC2626;}
+.dmpr-cat-smoke{color:#475569;}
+.dmpr-cat-combo{color:#D97706;}
+.ao-group-cat td{background:#2d1f1f;color:#fca5a5;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:5px 10px;}
+.ao-group-cat.smoke td{background:#1e2530;color:#94a3b8;}
+.ao-group-cat.combination td{background:#2b1f0e;color:#fcd34d;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -373,7 +386,13 @@ input,textarea{font-family:inherit;}
     <div class="tabs-row-sep"></div>
     <button class="tabs-row-btn" id="undoBtn" disabled title="Undo (last 5 steps, this sheet)" style="border-color:#8A9BB0;">Undo</button>
     <div class="tabs-row-sep"></div>
-    <button class="tabs-row-btn" id="takeoffToggle" style="border-color:#7A3E9D;color:#C084FC;">Takeoff</button>
+    <div class="takeoffs-btn-wrap">
+      <button class="tabs-row-btn" id="takeoffToggle" style="border-color:#7A3E9D;color:#C084FC;">Takeoffs ▾</button>
+      <div class="takeoffs-dd hidden" id="takeoffsDd">
+        <div class="takeoffs-dd-item" id="takeoffsDdAOT"><span class="tdd-dot" style="background:#7A3E9D;"></span>Air Terminals</div>
+        <div class="takeoffs-dd-item" id="takeoffsDdDamper"><span class="tdd-dot" style="background:#DC2626;"></span>Smoke &amp; Fire Dampers</div>
+      </div>
+    </div>
     <button class="tabs-row-btn" id="mobilePanelToggle" style="border-color:#166534;color:#4ade80;">Notes</button>
     <div class="tabs-row-sep"></div>
     <div class="sheet-tabs" id="sheetTabs"></div>
@@ -586,6 +605,34 @@ input,textarea{font-family:inherit;}
         <div class="panel-empty">No items yet.</div>
       </div>
     </div>
+
+    <!-- ── Smoke & Fire Damper Takeoff Panel ── -->
+    <div class="panel panel-hidden" id="damperTakeoffPanel">
+      <div class="panel-resize-handle" id="damperResizeHandle"></div>
+      <div class="panel-head">
+        <div>
+          <div class="disp">Smoke &amp; Fire Damper Takeoff</div>
+          <div class="count" id="damperTakeoffCount">0 items</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="takeoff-export-btn" id="damperTakeoffExportBtn" title="Export as PDF">⬇ Export PDF</button>
+          <button class="panel-close" id="damperTakeoffCloseBtn">✕</button>
+        </div>
+      </div>
+      <div class="takeoff-toolbar">
+        <button class="takeoff-add-btn" id="damperTakeoffAddBtn" style="background:#DC2626;">+ Add Damper</button>
+        <select id="damperCatFilter" class="takeoff-flow-filter">
+          <option value="all">All Categories</option>
+          <option value="fire">Fire</option>
+          <option value="smoke">Smoke</option>
+          <option value="combination">Combination (FSD)</option>
+        </select>
+        <button class="takeoff-apply-order-btn" id="damperApplyOrderBtn" style="display:none;">Apply Order</button>
+      </div>
+      <div class="panel-list takeoff-table-wrap" id="damperTakeoffList">
+        <div class="panel-empty">No items yet.</div>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -645,11 +692,16 @@ const state = {
   manufacturerDirectory: { manufacturers: [] }, manufacturerDirModified: null,
   catalogLoaded: false, takeoffCategory: 'supply', takeoffFilterText: '',
   takeoffCategoryFilter: 'all', // 'supply'|'return'|'exhaust'|'all'
+  damperCategoryFilter: 'all', // 'fire'|'smoke'|'combination'|'all'
+  damperCategory: 'fire',      // selected category for new add
+  damperReordered: false,
   mLastActionPoint: null,
   whiteoutsUnlocked: false,
   airOutletRunItem: null, // { lineId, catalogId, description, category } — active placement run
+  damperRunItem: null,    // { lineId, scheduleNum, tagLabel, category } — active damper tag placement run
   ghostDimPos: null, // pointer position when dim tool is active but first click not yet placed
   ghostLeaderPos: null, // pointer position when a leader tool is active but not yet placed
+  ghostDamperTagPos: null, // pointer pos during damperTag placement
   splitMode: false, splitMarkupId: null, // split-a-route mode: tap to split the selected multiline
 };
 
@@ -662,7 +714,7 @@ const LOCKED_SHAPES = ['circle', 'square', 'triangle', 'diamond', 'hexagon'];
 // naturally want to treat as one rigid unit (a symbol + the line it sits on,
 // several shapes marking one area); leader-based types (Callout, Note, etc.)
 // have their own mechanics that don't benefit from rigid grouping.
-const GROUPABLE_TYPES = ['line', 'multiline', 'freehand', 'shape', 'symbol', 'label', 'note', 'hatchline', 'hatcharea', 'dimension', 'elevation', 'equipment', 'photo', 'airOutletTag'];
+const GROUPABLE_TYPES = ['line', 'multiline', 'freehand', 'shape', 'symbol', 'label', 'note', 'hatchline', 'hatcharea', 'dimension', 'elevation', 'equipment', 'photo', 'airOutletTag', 'damperTag'];
 const AXIS_SNAP_THRESHOLD = 6; // degrees — Dimension tool snaps only near horizontal/vertical, else free angle
 const JOINT_RADIUS = 15; // fixed fillet radius for multi-segment corners (diagrammatic, not exact)
 const PALETTE = ['#FF0000', '#00FF00', '#0000FF', '#FF8000', '#FF00FF', '#000000'];
@@ -681,6 +733,12 @@ const LINE_TYPES = [
 ];
 const LINE_TYPE_MAP = Object.fromEntries(LINE_TYPES.map(t => [t.key, t]));
 const AIR_OUTLET_COLORS = { supply: '#1A56DB', return: '#C026D3', exhaust: '#16a34a' };
+const DAMPER_CATEGORY_COLORS = { fire: '#DC2626', smoke: '#475569', combination: '#D97706' };
+const DAMPER_CATEGORY_LABELS = { fire: 'Fire', smoke: 'Smoke', combination: 'Combination (FSD)' };
+const DAMPER_CATS = ['fire', 'smoke', 'combination'];
+const SYSTEM_COLORS = { SUPPLY: '#1A56DB', RETURN: '#C026D3', EXHAUST: '#16a34a' };
+const SYSTEM_LABELS = { SUPPLY: 'Supply', RETURN: 'Return', EXHAUST: 'Exhaust' };
+const SYSTEMS = ['SUPPLY', 'RETURN', 'EXHAUST'];
 const ANNOTATION_COLOR = '#0000FF'; // vivid blue — used by Callout and Dimension
 const DEFAULT_LABEL_COLOR = '#0000FF'; // Callout — blue
 const DEFAULT_NOTE_COLOR = '#FF0000'; // Note — red
@@ -1190,6 +1248,7 @@ function exitToBlankCanvas(){
   // Close Notes and Takeoff panels on job exit
   $('#panel').classList.add('panel-hidden');
   $('#takeoffPanel').classList.add('panel-hidden');
+  $('#damperTakeoffPanel').classList.add('panel-hidden');
   positionFloatingControls();
   renderSheetTabs();
   drawAllMarkups();
@@ -1560,6 +1619,7 @@ async function openJobById(jobId, initialJobName){
   // Close Notes and Takeoff panels when switching jobs
   $('#panel').classList.add('panel-hidden');
   $('#takeoffPanel').classList.add('panel-hidden');
+  $('#damperTakeoffPanel').classList.add('panel-hidden');
   positionFloatingControls();
   setStatus('loading', 'Loading job ' + jobId + '…');
   const fileName = `job-${jobId}-markup.json`;
@@ -1578,6 +1638,9 @@ async function openJobById(jobId, initialJobName){
     }
     if(!state.data.airTerminalTakeoff){
       state.data.airTerminalTakeoff = { supply: [], return: [], exhaust: [] };
+    }
+    if(!state.data.damperTakeoff){
+      state.data.damperTakeoff = { fire: [], smoke: [], combination: [] };
     }
     migrateOldMarkupData(state.data);
     state.loadedSnapshot = JSON.parse(JSON.stringify(state.data.sheets)); // baseline for save-conflict auto-merge
@@ -2715,21 +2778,60 @@ $('#panelCloseBtn').addEventListener('click', () => {
   $('#panel').classList.add('panel-hidden');
   positionFloatingControls();
 });
-$('#takeoffToggle').addEventListener('click', async () => {
+// Takeoffs ▾ button — toggles dropdown
+$('#takeoffToggle').addEventListener('click', (e) => {
+  e.stopPropagation();
+  $('#takeoffsDd').classList.toggle('hidden');
+});
+// Close dropdown when clicking outside
+document.addEventListener('click', () => { $('#takeoffsDd').classList.add('hidden'); });
+// Air Terminals item
+$('#takeoffsDdAOT').addEventListener('click', async () => {
+  $('#takeoffsDd').classList.add('hidden');
   const willShow = $('#takeoffPanel').classList.contains('panel-hidden');
-  $('#takeoffPanel').classList.toggle('panel-hidden');
+  $('#takeoffPanel').classList.remove('panel-hidden');
+  $('#damperTakeoffPanel').classList.add('panel-hidden');
   positionFloatingControls();
   if(willShow){
     await ensureCatalogLoaded();
-    // Sync filter select to current state
     const filterEl = $('#takeoffFlowFilter');
     if(filterEl) filterEl.value = state.takeoffCategoryFilter || 'all';
     renderTakeoffList();
   }
 });
+// Smoke & Fire Dampers item
+$('#takeoffsDdDamper').addEventListener('click', () => {
+  $('#takeoffsDd').classList.add('hidden');
+  const willShow = $('#damperTakeoffPanel').classList.contains('panel-hidden');
+  $('#damperTakeoffPanel').classList.remove('panel-hidden');
+  $('#takeoffPanel').classList.add('panel-hidden');
+  positionFloatingControls();
+  if(willShow){
+    const filterEl = $('#damperCatFilter');
+    if(filterEl) filterEl.value = state.damperCategoryFilter || 'all';
+    renderDamperTakeoffList();
+  }
+});
 $('#takeoffCloseBtn').addEventListener('click', () => {
   $('#takeoffPanel').classList.add('panel-hidden');
   positionFloatingControls();
+});
+$('#damperTakeoffCloseBtn').addEventListener('click', () => {
+  $('#damperTakeoffPanel').classList.add('panel-hidden');
+  positionFloatingControls();
+});
+$('#damperCatFilter').addEventListener('change', (e) => {
+  state.damperCategoryFilter = e.target.value;
+  renderDamperTakeoffList();
+});
+$('#damperTakeoffExportBtn').addEventListener('click', exportDamperTakeoffPDF);
+$('#damperTakeoffAddBtn').addEventListener('click', () => { showDamperCategoryPickerModal(); });
+$('#damperApplyOrderBtn').addEventListener('click', () => {
+  renumberDamperItems();
+  markDirty();
+  drawAllMarkups();
+  state.damperReordered = false;
+  renderDamperTakeoffList();
 });
 // Flow type filter dropdown
 $('#takeoffFlowFilter').addEventListener('change', (e) => {
@@ -2822,6 +2924,7 @@ document.addEventListener('click', (e) => {
   }
   addResizeHandle('panelResizeHandle', 'panel', 450);
   addResizeHandle('takeoffResizeHandle', 'takeoffPanel', 1100);
+  addResizeHandle('damperResizeHandle', 'damperTakeoffPanel', 1100);
 })();
 
 /* ============================================================
@@ -3025,6 +3128,8 @@ function onPointerDown(e){
     placeSymbolMarker(p);
   } else if(state.tool === 'airOutletTag'){
     handleAirOutletTagTap(p);
+  } else if(state.tool === 'damperTag'){
+    handleDamperTagTap(p);
   } else if(state.tool === 'erase'){
     eraseNear(p);
   }
@@ -3147,6 +3252,11 @@ function onPointerMove(e){
   // Ghost air outlet tag follows pointer in placement mode (unless frozen at pending anchor)
   if(state.tool === 'airOutletTag' && state.airOutletRunItem && !state.airOutletPendingAnchor){
     state.ghostAirOutletPos = p;
+    drawAllMarkups();
+  }
+  // Ghost damper tag follows pointer in placement mode
+  if(state.tool === 'damperTag' && state.damperRunItem && !state.damperPendingAnchor){
+    state.ghostDamperTagPos = p;
     drawAllMarkups();
   }
   // Ghost dim arrowhead — before first click
@@ -3382,8 +3492,8 @@ function showRunDoneBtn(){
   const rb = $('#runDoneBtn');
   rb.classList.remove('hidden');
   rb.textContent = (state.tool === 'hatcharea') ? 'Close ✓' : 'Done ✓';
-  // Hide the undo button during AO tag placement — it does nothing there
-  if(state.airOutletRunItem || state.tool === 'airOutletTag'){
+  // Hide the undo button during AO/damper tag placement — it does nothing there
+  if(state.airOutletRunItem || state.tool === 'airOutletTag' || state.damperRunItem || state.tool === 'damperTag'){
     $('#multilineUndoBtn').classList.add('hidden');
   } else {
     $('#multilineUndoBtn').classList.remove('hidden');
@@ -3399,6 +3509,15 @@ function hideRunDoneBtn(){
     clearAirOutletPending();
     state.ghostAirOutletPos = null;
     state.airOutletRunItem = null;
+    clearMarkupActionButtons();
+    drawAllMarkups();
+  }
+  // If we were in a damperTag placement run, end it and clear all ghost state
+  if(state.damperRunItem){
+    clearDamperSessionTimer();
+    clearDamperPending();
+    state.ghostDamperTagPos = null;
+    state.damperRunItem = null;
     clearMarkupActionButtons();
     drawAllMarkups();
   }
@@ -3457,6 +3576,12 @@ $('#runDoneBtn').addEventListener('click', () => {
   if(state.airOutletRunItem){
     // End air outlet placement run
     state.airOutletRunItem = null;
+    hideRunDoneBtn();
+    clearMarkupActionButtons();
+    switchToTool('select');
+  } else if(state.damperRunItem){
+    // End damper tag placement run
+    state.damperRunItem = null;
     hideRunDoneBtn();
     clearMarkupActionButtons();
     switchToTool('select');
@@ -3879,7 +4004,7 @@ function markupCenterPoint(m){
     const xs = m.points.map(pt => pt.x), ys = m.points.map(pt => pt.y);
     return { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 };
   }
-  if(m.type === 'photo' || m.type === 'symbol' || m.type === 'airOutletTag') return m.anchor;
+  if(m.type === 'photo' || m.type === 'symbol' || m.type === 'airOutletTag' || m.type === 'damperTag') return m.anchor;
   return { x: 0, y: 0 };
 }
 // Re-centers the visible canvas on a markup without changing the current
@@ -3957,6 +4082,7 @@ function markupContainsPoint(m, p){
   if(m.type === 'photo') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
   if(m.type === 'symbol') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 22;
   if(m.type === 'airOutletTag') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 40;
+  if(m.type === 'damperTag') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 40;
   return false;
 }
 function pointInPolygon(p, points){
@@ -4622,6 +4748,7 @@ function drawAllMarkups(){
     else if(m.type === 'hatchline') drawHatchLine(m);
     else if(m.type === 'hatcharea') drawHatchArea(m);
     else if(m.type === 'airOutletTag') drawAirOutletTag(m);
+    else if(m.type === 'damperTag') drawDamperTag(m);
   });
   if(state.selectedMarkupId){
     const m = sheet.markups.find(x => x.id === state.selectedMarkupId);
@@ -4704,6 +4831,11 @@ function drawAllMarkups(){
   if(state.tool === 'airOutletTag' && state.airOutletRunItem){
     const pos = state.airOutletPendingAnchor || state.ghostAirOutletPos;
     if(pos) drawAirOutletGhost(pos, !!state.airOutletPendingAnchor);
+  }
+  // Ghost damper tag preview (follows cursor or frozen at pending anchor)
+  if(state.tool === 'damperTag' && state.damperRunItem){
+    const pos = state.damperPendingAnchor || state.ghostDamperTagPos;
+    if(pos) drawDamperGhost(pos, !!state.damperPendingAnchor);
   }
   // Ghost dim arrowhead — shows before first click to indicate where p0 will be placed
   if(state.tool === 'dimension' && !state.drawing && state.ghostDimPos){
@@ -6756,6 +6888,786 @@ async function saveTakeoffPresets(newVals){
   }catch(err){ console.error('Could not save takeoff presets', err); }
 }
 
+/* ============================================================
+   SMOKE & FIRE DAMPER TAKEOFF
+   ============================================================ */
+
+/* ── Drawing: damper tag pill ── */
+function drawDamperTag(m){
+  const ctx = mCanvas.getContext('2d');
+  const { anchor } = m;
+  const color = DAMPER_CATEGORY_COLORS[m.category] || '#475569';
+  const label = `#${m.scheduleNum != null ? m.scheduleNum : '?'} / ${m.tagLabel || ''}`;
+  const font = 'bold 13px Inter, sans-serif';
+  ctx.font = font;
+  const textW = ctx.measureText(label).width;
+  const pillH = 22, pillR = 11, dotR = 5, dotGap = 8, paddingX = 10;
+  const pillW = paddingX + dotR * 2 + dotGap + textW + paddingX;
+  const x = anchor.x - pillW / 2, y = anchor.y - pillH / 2;
+  ctx.save();
+  ctx.fillStyle = '#fff';
+  roundRect(ctx, x, y, pillW, pillH, pillR); ctx.fill();
+  ctx.strokeStyle = color; ctx.lineWidth = 2;
+  roundRect(ctx, x, y, pillW, pillH, pillR); ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(x + paddingX + dotR, anchor.y, dotR, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#16202C'; ctx.font = font; ctx.textBaseline = 'middle';
+  ctx.fillText(label, x + paddingX + dotR * 2 + dotGap, anchor.y);
+  if(m.id === state.selectedMarkupId){
+    ctx.strokeStyle = '#3B82F6'; ctx.lineWidth = 2.5; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.arc(anchor.x, anchor.y, pillH / 2 + 8, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+
+/* ── Ghost pill for damper tag placement ── */
+function drawDamperGhost(anchor, isPending){
+  const run = state.damperRunItem;
+  if(!run) return;
+  const color = DAMPER_CATEGORY_COLORS[run.category] || '#475569';
+  const label = `#${run.scheduleNum != null ? run.scheduleNum : '?'} / ${run.tagLabel || ''}`;
+  const ctx = mCanvas.getContext('2d');
+  const font = 'bold 13px Inter, sans-serif';
+  ctx.save(); ctx.font = font;
+  const textW = ctx.measureText(label).width;
+  const pillH = 22, pillR = 11, dotR = 5, dotGap = 8, paddingX = 10;
+  const pillW = paddingX + dotR * 2 + dotGap + textW + paddingX;
+  const x = anchor.x - pillW / 2, y = anchor.y - pillH / 2;
+  ctx.globalAlpha = isPending ? 0.78 : 0.42;
+  ctx.fillStyle = '#fff';
+  roundRect(ctx, x, y, pillW, pillH, pillR); ctx.fill();
+  ctx.strokeStyle = color; ctx.lineWidth = isPending ? 2.5 : 2;
+  if(isPending) ctx.setLineDash([5, 4]);
+  roundRect(ctx, x, y, pillW, pillH, pillR); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(x + paddingX + dotR, anchor.y, dotR, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#16202C'; ctx.font = font; ctx.textBaseline = 'middle';
+  ctx.fillText(label, x + paddingX + dotR * 2 + dotGap, anchor.y);
+  if(isPending){
+    ctx.globalAlpha = 0.55; ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(anchor.x, anchor.y, pillH / 2 + 9, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ── Tag placement: two-step ghost flow ── */
+function placeDamperTag(){
+  const takeoff = state.data.damperTakeoff;
+  const allItems = DAMPER_CATS.flatMap(cat => (takeoff[cat] || []).map(li => ({ ...li, cat })));
+  if(allItems.length === 0){
+    showModal({ title: 'No damper items yet', sub: 'Add items to the Damper Takeoff list first, then use "Place tag" to place them on the drawing.', confirmLabel: 'OK', onConfirm: () => {} });
+    switchToTool('select');
+    return;
+  }
+  showDamperTagPickerModal();
+}
+
+function handleDamperTagTap(p){
+  if(!state.damperRunItem){ placeDamperTag(); return; }
+  if(state.damperPendingAnchor){
+    const dist = Math.hypot(p.x - state.damperPendingAnchor.x, p.y - state.damperPendingAnchor.y);
+    if(dist <= 35){
+      confirmDamperPlacement();
+    } else {
+      clearDamperPending();
+      state.damperPendingAnchor = p;
+      state.ghostDamperTagPos = p;
+      startDamperPendingTimer();
+      showDamperConfirmBar();
+      drawAllMarkups();
+    }
+  } else {
+    state.damperPendingAnchor = p;
+    state.ghostDamperTagPos = p;
+    startDamperPendingTimer();
+    showDamperConfirmBar();
+    drawAllMarkups();
+  }
+}
+
+function confirmDamperPlacement(){
+  const anchor = state.damperPendingAnchor;
+  if(!anchor || !state.damperRunItem) return;
+  clearDamperPending();
+  const run = state.damperRunItem;
+  const markup = {
+    id: genId(), type: 'damperTag',
+    lineId: run.lineId,
+    scheduleNum: run.scheduleNum || null,
+    tagLabel: run.tagLabel || '',
+    category: run.category,
+    color: DAMPER_CATEGORY_COLORS[run.category] || '#475569',
+    anchor, note: '', createdAt: Date.now(),
+  };
+  activeSheet().markups.push(markup);
+  markDirty();
+  renderNoteList();
+  renderDamperTakeoffList();
+  drawAllMarkups();
+  startDamperSessionTimer();
+  const bar = $('#actionBarDynamic');
+  bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(run.tagLabel || '')}</strong> — tap to aim, tap again to confirm</span>`;
+}
+
+function clearDamperPending(){
+  if(state.damperPendingTimer){ clearTimeout(state.damperPendingTimer); state.damperPendingTimer = null; }
+  state.damperPendingAnchor = null;
+}
+
+function startDamperSessionTimer(){
+  clearDamperSessionTimer();
+  state.damperSessionTimer = setTimeout(() => {
+    if(!state.damperRunItem) return;
+    clearDamperPending();
+    state.ghostDamperTagPos = null;
+    state.damperRunItem = null;
+    hideRunDoneBtn();
+    switchToTool('select');
+    clearMarkupActionButtons();
+    drawAllMarkups();
+  }, 20000);
+}
+function clearDamperSessionTimer(){
+  if(state.damperSessionTimer){ clearTimeout(state.damperSessionTimer); state.damperSessionTimer = null; }
+}
+
+function startDamperPendingTimer(){
+  if(state.damperPendingTimer) clearTimeout(state.damperPendingTimer);
+  state.damperPendingTimer = setTimeout(() => {
+    if(!state.damperPendingAnchor) return;
+    clearDamperPending();
+    drawAllMarkups();
+    if(state.damperRunItem){
+      const run = state.damperRunItem;
+      $('#actionBarDynamic').innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(run.tagLabel || '')}</strong> — tap to aim, tap again to confirm</span>`;
+    }
+  }, 4000);
+}
+
+function showDamperConfirmBar(){
+  $('#actionBarDynamic').innerHTML = `
+    <button id="dmprConfirmBtn" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:2px 10px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;line-height:20px;">&#10003; Place here</button>
+    <button id="dmprCancelBtn" style="background:none;border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;flex-shrink:0;line-height:20px;">&#10005; Cancel</button>
+    <span style="font-size:10px;color:var(--muted);margin-left:8px;">Tap near tag to confirm &bull; auto-cancels in 4s</span>`;
+  document.getElementById('dmprConfirmBtn').addEventListener('click', (e) => { e.stopPropagation(); confirmDamperPlacement(); });
+  document.getElementById('dmprCancelBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearDamperPending();
+    state.ghostDamperTagPos = null;
+    drawAllMarkups();
+    if(state.damperRunItem){
+      const run = state.damperRunItem;
+      $('#actionBarDynamic').innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(run.tagLabel || '')}</strong> — tap to aim, tap again to confirm</span>`;
+    }
+  });
+}
+
+function showDamperTagPickerModal(){
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  const takeoff = state.data.damperTakeoff;
+  const allItems = DAMPER_CATS.flatMap(cat => (takeoff[cat] || []).map(li => ({ ...li, cat })));
+  card.innerHTML = `
+    <div class="disp">Pick damper item to place</div>
+    <div class="modal-sub">Tap a row to start placing tags for that damper.</div>
+    <div id="dmprPickerList" style="max-height:280px;overflow-y:auto;margin-top:8px;"></div>
+    <div class="modal-row"><button type="button" class="cancel">Cancel</button></div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+  const list = card.querySelector('#dmprPickerList');
+  allItems.forEach(li => {
+    const col = DAMPER_CATEGORY_COLORS[li.cat] || '#475569';
+    const row = document.createElement('div');
+    row.style.cssText = `padding:8px 10px;border:2px solid ${col}30;border-radius:8px;margin-bottom:6px;cursor:pointer;display:flex;align-items:center;gap:10px;`;
+    row.innerHTML = `<span style="width:10px;height:10px;border-radius:50%;background:${col};flex-shrink:0;"></span>
+      <span><strong>${escapeHtml(li.scheduleTag || '(no tag)')}</strong> <span style="color:var(--muted);font-size:11px;">${escapeHtml(li.manufacturer || '')} ${escapeHtml(li.model || '')} &bull; ${DAMPER_CATEGORY_LABELS[li.cat] || li.cat}</span></span>`;
+    row.addEventListener('click', () => {
+      root.innerHTML = '';
+      state.damperRunItem = { lineId: li.lineId, scheduleNum: li.scheduleNum, tagLabel: li.scheduleTag || '', category: li.cat };
+      $('#actionBarDynamic').innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(li.scheduleTag || '')}</strong> — tap canvas to add, Done to finish</span>`;
+      updateScaleChip();
+      showRunDoneBtn();
+    });
+    list.appendChild(row);
+  });
+  card.querySelector('.cancel').addEventListener('click', () => { root.innerHTML = ''; switchToTool('select'); });
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop){ root.innerHTML = ''; switchToTool('select'); } });
+}
+
+/* ── Renumber + count helpers ── */
+function renumberDamperItems(){
+  const takeoff = state.data.damperTakeoff;
+  if(!takeoff) return;
+  let seq = 1;
+  DAMPER_CATS.forEach(cat => { (takeoff[cat] || []).forEach(li => { li.scheduleNum = seq++; }); });
+  (state.data.sheets || []).forEach(sheet => {
+    (sheet.markups || []).forEach(m => {
+      if(m.type !== 'damperTag') return;
+      const cat = DAMPER_CATS.find(c => (takeoff[c] || []).some(li => li.lineId === m.lineId));
+      if(!cat) return;
+      const li = takeoff[cat].find(li => li.lineId === m.lineId);
+      if(!li) return;
+      m.scheduleNum = li.scheduleNum;
+      m.tagLabel = li.scheduleTag || '';
+    });
+  });
+}
+
+function countDamperTagsForLine(lineId){
+  const sheet = activeSheet();
+  if(!sheet) return 0;
+  return sheet.markups.filter(m => m.type === 'damperTag' && m.lineId === lineId).length;
+}
+function countDamperTagsForLineAllSheets(lineId){
+  return (state.data.sheets || []).reduce((sum, sheet) => {
+    return sum + (sheet.markups || []).filter(m => m.type === 'damperTag' && m.lineId === lineId).length;
+  }, 0);
+}
+
+/* ── Render damper takeoff list ── */
+function renderDamperTakeoffList(){
+  const container = $('#damperTakeoffList');
+  const catFilter = state.damperCategoryFilter || 'all';
+  const takeoff = state.data.damperTakeoff || { fire: [], smoke: [], combination: [] };
+
+  const totalItems = DAMPER_CATS.reduce((s, c) => s + (takeoff[c] || []).length, 0);
+  $('#damperTakeoffCount').textContent = totalItems + ' item' + (totalItems === 1 ? '' : 's');
+
+  // Gather rows
+  const allRows = [];
+  DAMPER_CATS.forEach(cat => {
+    if(catFilter !== 'all' && catFilter !== cat) return;
+    (takeoff[cat] || []).forEach(li => allRows.push({ li, cat }));
+  });
+
+  if(allRows.length === 0){
+    container.innerHTML = '<div class="panel-empty">' + (catFilter !== 'all' ? 'No ' + DAMPER_CATEGORY_LABELS[catFilter] + ' items.' : 'No items yet.') + '</div>';
+    return;
+  }
+
+  // Group: category → manufacturer → system
+  const groups = {};
+  allRows.forEach(({ li, cat }) => {
+    const mfr = li.manufacturer || '(Unknown)';
+    const sys = li.system || 'SUPPLY';
+    if(!groups[cat]) groups[cat] = {};
+    if(!groups[cat][mfr]) groups[cat][mfr] = {};
+    if(!groups[cat][mfr][sys]) groups[cat][mfr][sys] = [];
+    groups[cat][mfr][sys].push({ li, cat });
+  });
+
+  const NCOLS = 19; // Edit|Dup|↕|#|Tag|Mfg|Model|Width|Height|Rating|Actuator|Mount|DuctAccessDoor|CeilingAccessDoor|SheetQty|Vendor|Notes|TotalQty|Del
+  const table = document.createElement('table');
+  table.className = 'ao-table';
+
+  const thead = table.createTHead();
+  const hdr = thead.insertRow();
+  [
+    { label: '' },{ label: '' },{ label: '' },
+    { label: '#', cls: 'ao-th-num' },
+    { label: 'Tag' },{ label: 'Mfg.' },{ label: 'Model' },
+    { label: 'W' },{ label: 'H' },
+    { label: 'Rating' },{ label: 'Actuator' },{ label: 'Mount' },
+    { label: 'Duct Door' },{ label: 'Ceil. Door' },
+    { label: 'Sheet Qty', cls: 'ao-th-num' },
+    { label: 'Vendor' },{ label: 'Notes' },
+    { label: 'Total Qty', cls: 'ao-th-num' },
+    { label: '' },
+  ].forEach(h => {
+    const th = document.createElement('th');
+    th.textContent = h.label || '';
+    if(h.cls) th.className = h.cls;
+    hdr.appendChild(th);
+  });
+
+  const tbody = table.createTBody();
+
+  DAMPER_CATS.forEach(cat => {
+    if(!groups[cat]) return;
+    const catColor = DAMPER_CATEGORY_COLORS[cat];
+    const catLabel = DAMPER_CATEGORY_LABELS[cat];
+
+    // Category row (fire/smoke/combo)
+    const catRow = tbody.insertRow();
+    catRow.className = 'ao-group-cat' + (cat === 'smoke' ? ' smoke' : cat === 'combination' ? ' combination' : '');
+    const catTd = catRow.insertCell();
+    catTd.colSpan = NCOLS;
+    catTd.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${catColor};margin-right:6px;vertical-align:middle;"></span>${escapeHtml(catLabel)}`;
+
+    Object.keys(groups[cat]).sort().forEach(mfr => {
+      // Manufacturer row
+      const mfrRow = tbody.insertRow();
+      mfrRow.className = 'ao-group-mfr';
+      const mfrTd = mfrRow.insertCell();
+      mfrTd.colSpan = NCOLS;
+      mfrTd.textContent = mfr;
+
+      SYSTEMS.forEach(sys => {
+        const items = groups[cat][mfr][sys];
+        if(!items || items.length === 0) return;
+        const sysColor = SYSTEM_COLORS[sys] || '#555';
+        const sysLabel = SYSTEM_LABELS[sys] || sys;
+
+        // System sub-header
+        const sysRow = tbody.insertRow();
+        sysRow.className = 'ao-group-flow';
+        const sysTd = sysRow.insertCell();
+        sysTd.colSpan = NCOLS;
+        sysTd.style.color = sysColor;
+        sysTd.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${sysColor};margin-right:5px;vertical-align:middle;"></span>${sysLabel}`;
+
+        items.forEach(({ li }) => {
+          const sheetQty = countDamperTagsForLine(li.lineId);
+          const totalQty = countDamperTagsForLineAllSheets(li.lineId);
+          const ceilCell = li.ceilingAccessDoor === 'YES' ? `YES · ${li.ceilingDoorSize || ''}` : 'NO';
+
+          const tr = tbody.insertRow();
+          tr.className = 'ao-data-row';
+          tr.dataset.lineId = li.lineId;
+          tr.dataset.cat = cat;
+
+          // Edit
+          const tdEdit = tr.insertCell(); tdEdit.className = 'ao-td-action';
+          const editBtn = document.createElement('button');
+          editBtn.className = 'ao-edit-btn dmpr-row-edit'; editBtn.dataset.lineId = li.lineId; editBtn.dataset.cat = cat;
+          editBtn.title = 'Edit'; editBtn.textContent = '✎'; tdEdit.appendChild(editBtn);
+
+          // Dup
+          const tdDup = tr.insertCell(); tdDup.className = 'ao-td-action';
+          const dupBtn = document.createElement('button');
+          dupBtn.className = 'ao-dup-btn dmpr-row-dup'; dupBtn.dataset.lineId = li.lineId; dupBtn.dataset.cat = cat;
+          dupBtn.title = 'Duplicate'; dupBtn.textContent = '⧉'; tdDup.appendChild(dupBtn);
+
+          // Reorder
+          const tdOrder = tr.insertCell(); tdOrder.className = 'ao-td-order';
+          const upBtn = document.createElement('button');
+          upBtn.className = 'ao-reorder-btn ao-up-btn dmpr-up'; upBtn.dataset.lineId = li.lineId; upBtn.dataset.cat = cat; upBtn.textContent = '↑';
+          const dnBtn = document.createElement('button');
+          dnBtn.className = 'ao-reorder-btn ao-down-btn dmpr-dn'; dnBtn.dataset.lineId = li.lineId; dnBtn.dataset.cat = cat; dnBtn.textContent = '↓';
+          tdOrder.appendChild(upBtn); tdOrder.appendChild(dnBtn);
+
+          // # Place
+          const tdNum = tr.insertCell(); tdNum.className = 'ao-td-num';
+          const placeBtn = document.createElement('button');
+          placeBtn.className = 'ao-place-btn dmpr-place-btn'; placeBtn.dataset.lineId = li.lineId; placeBtn.dataset.cat = cat;
+          placeBtn.title = 'Place tag on drawing';
+          placeBtn.style.cssText = `background:${catColor};color:#fff;border:none;border-radius:5px;padding:1px 6px;font-size:11px;font-weight:700;cursor:pointer;`;
+          placeBtn.textContent = li.scheduleNum != null ? '#' + li.scheduleNum : '#?';
+          tdNum.appendChild(placeBtn);
+
+          const vals = [
+            li.scheduleTag || '',
+            li.manufacturer || '',
+            li.model || '',
+            li.width || '',
+            li.height || '',
+            li.rating || '',
+            li.actuator || '',
+            li.mount || '',
+            li.ductAccessDoor || 'NO',
+            ceilCell,
+            sheetQty,
+            li.vendor || '',
+            li.notes || '',
+            totalQty,
+          ];
+          vals.forEach((v, i) => {
+            const td = tr.insertCell();
+            td.textContent = v;
+            if(i === 10 || i === 13) td.className = 'ao-td-num';
+            if(i === 10 && sheetQty > 0) td.style.color = sysColor;
+            if(i === 13 && totalQty > 0) td.style.color = catColor;
+          });
+
+          // Del
+          const tdDel = tr.insertCell(); tdDel.className = 'ao-td-del';
+          const delBtn = document.createElement('button');
+          delBtn.className = 'ao-del-btn dmpr-row-del'; delBtn.dataset.lineId = li.lineId; delBtn.dataset.cat = cat;
+          delBtn.title = 'Delete'; delBtn.textContent = '✕'; tdDel.appendChild(delBtn);
+        });
+      });
+    });
+  });
+
+  container.innerHTML = '';
+  container.appendChild(table);
+  wireDamperRowEvents();
+
+  const applyBtn = $('#damperApplyOrderBtn');
+  if(applyBtn) applyBtn.style.display = state.damperReordered ? '' : 'none';
+}
+
+/* ── Wire damper row events ── */
+function wireDamperRowEvents(){
+  document.querySelectorAll('.dmpr-row-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lineId = btn.dataset.lineId, cat = btn.dataset.cat;
+      showConfirmModal({ title: 'Delete Damper Item', sub: 'Delete this item and all its placed tags?', confirmLabel: 'Delete', cancelLabel: 'Cancel',
+        onConfirm: () => {
+          if(state.data.damperTakeoff[cat]){
+            state.data.damperTakeoff[cat] = state.data.damperTakeoff[cat].filter(x => x.lineId !== lineId);
+            (state.data.sheets || []).forEach(sheet => {
+              sheet.markups = (sheet.markups || []).filter(m => !(m.type === 'damperTag' && m.lineId === lineId));
+            });
+            renumberDamperItems();
+            markDirty(); drawAllMarkups(); renderNoteList(); renderDamperTakeoffList();
+          }
+        },
+        onCancel: () => {}
+      });
+    });
+  });
+
+  document.querySelectorAll('.dmpr-row-edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lineId = btn.dataset.lineId, cat = btn.dataset.cat;
+      const li = (state.data.damperTakeoff[cat] || []).find(x => x.lineId === lineId);
+      if(!li) return;
+      showDamperRowModal(cat, li);
+    });
+  });
+
+  document.querySelectorAll('.dmpr-row-dup').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lineId = btn.dataset.lineId, cat = btn.dataset.cat;
+      const src = (state.data.damperTakeoff[cat] || []).find(x => x.lineId === lineId);
+      if(!src) return;
+      const newLi = Object.assign({}, src, { lineId: genId() });
+      state.data.damperTakeoff[cat].push(newLi);
+      renumberDamperItems();
+      markDirty();
+      renderDamperTakeoffList();
+      showDamperRowModal(cat, newLi);
+    });
+  });
+
+  document.querySelectorAll('.dmpr-up').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lineId = btn.dataset.lineId, cat = btn.dataset.cat;
+      const arr = state.data.damperTakeoff[cat] || [];
+      const idx = arr.findIndex(x => x.lineId === lineId);
+      if(idx <= 0) return;
+      [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+      state.damperReordered = true; renderDamperTakeoffList();
+    });
+  });
+
+  document.querySelectorAll('.dmpr-dn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lineId = btn.dataset.lineId, cat = btn.dataset.cat;
+      const arr = state.data.damperTakeoff[cat] || [];
+      const idx = arr.findIndex(x => x.lineId === lineId);
+      if(idx < 0 || idx >= arr.length - 1) return;
+      [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+      state.damperReordered = true; renderDamperTakeoffList();
+    });
+  });
+
+  document.querySelectorAll('.dmpr-place-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lineId = btn.dataset.lineId, cat = btn.dataset.cat;
+      const li = (state.data.damperTakeoff[cat] || []).find(x => x.lineId === lineId);
+      if(!li) return;
+      if(!state.naturalWidth){
+        showModal({ title: 'No drawing open', sub: 'Open a sheet with a floor plan first.', confirmLabel: 'OK', onConfirm: () => {} });
+        return;
+      }
+      state.damperRunItem = { lineId: li.lineId, scheduleNum: li.scheduleNum, tagLabel: li.scheduleTag || '', category: cat };
+      state.ghostDamperTagPos = null;
+      clearDamperPending();
+      startDamperSessionTimer();
+      switchToTool('damperTag');
+      $('#actionBarDynamic').innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(li.scheduleTag || '')}</strong> — tap to aim, tap again to confirm</span>`;
+      updateScaleChip();
+      showRunDoneBtn();
+    });
+  });
+}
+
+/* ── Damper Takeoff PDF Export ── */
+function exportDamperTakeoffPDF(){
+  const jobName = state.jobName || 'Unknown Job';
+  const takeoff = state.data.damperTakeoff || { fire: [], smoke: [], combination: [] };
+  const logoImgEl = document.querySelector('.topbar-logo, #topbar img, img[alt="PPC"]');
+  const logoSrc = (logoImgEl && logoImgEl.src && logoImgEl.src.startsWith('data:')) ? logoImgEl.src : null;
+
+  const allRows = [];
+  DAMPER_CATS.forEach(cat => {
+    (takeoff[cat] || []).forEach(li => {
+      const qty = countDamperTagsForLine(li.lineId);
+      if(qty >= 1) allRows.push({ li, cat, qty, totalQty: countDamperTagsForLineAllSheets(li.lineId) });
+    });
+  });
+
+  if(allRows.length === 0){
+    showModal({ title: 'Nothing to export', sub: 'No items have tags placed on this sheet yet.', confirmLabel: 'OK', onConfirm: () => {} });
+    return;
+  }
+
+  const groups = {};
+  allRows.forEach(({ li, cat, qty, totalQty }) => {
+    const mfr = li.manufacturer || '(Unknown)', sys = li.system || 'SUPPLY';
+    if(!groups[cat]) groups[cat] = {};
+    if(!groups[cat][mfr]) groups[cat][mfr] = {};
+    if(!groups[cat][mfr][sys]) groups[cat][mfr][sys] = [];
+    groups[cat][mfr][sys].push({ li, cat, qty, totalQty });
+  });
+
+  function buildTableRows(){
+    let html = '';
+    DAMPER_CATS.forEach(cat => {
+      if(!groups[cat]) return;
+      const catColor = DAMPER_CATEGORY_COLORS[cat];
+      const catLabel = DAMPER_CATEGORY_LABELS[cat];
+      html += `<tr class="group-style" style="background:${catColor}20;color:${catColor};"><td colspan="14">&#9679; ${catLabel}</td></tr>`;
+      html += `<tr class="col-header"><td>#</td><td>Tag</td><td>Mfg.</td><td>Model</td><td>W</td><td>H</td><td>Rating</td><td>Actuator</td><td>Mount</td><td>Duct Door</td><td>Ceil. Door</td><td class="num">Sheet Qty</td><td>Vendor</td><td>Notes</td></tr>`;
+      Object.keys(groups[cat]).sort().forEach(mfr => {
+        html += `<tr class="group-mfr"><td colspan="14">${escapeHtml(mfr)}</td></tr>`;
+        SYSTEMS.forEach(sys => {
+          const items = groups[cat][mfr][sys];
+          if(!items || items.length === 0) return;
+          const sysColor = SYSTEM_COLORS[sys];
+          html += `<tr class="group-flow" style="color:${sysColor};border-left:3px solid ${sysColor};"><td colspan="14">&#9679; ${SYSTEM_LABELS[sys]}</td></tr>`;
+          items.forEach(({ li, qty }) => {
+            const ceil = li.ceilingAccessDoor === 'YES' ? `YES · ${li.ceilingDoorSize || ''}` : 'NO';
+            html += `<tr class="data-row">
+              <td>${li.scheduleNum != null ? li.scheduleNum : ''}</td>
+              <td>${escapeHtml(li.scheduleTag || '')}</td>
+              <td>${escapeHtml(li.manufacturer || '')}</td>
+              <td>${escapeHtml(li.model || '')}</td>
+              <td>${escapeHtml(li.width || '')}</td>
+              <td>${escapeHtml(li.height || '')}</td>
+              <td>${escapeHtml(li.rating || '')}</td>
+              <td>${escapeHtml(li.actuator || '')}</td>
+              <td>${escapeHtml(li.mount || '')}</td>
+              <td>${escapeHtml(li.ductAccessDoor || '')}</td>
+              <td>${escapeHtml(ceil)}</td>
+              <td class="num" style="color:${catColor};font-weight:700;">${qty}</td>
+              <td>${escapeHtml(li.vendor || '')}</td>
+              <td>${escapeHtml(li.notes || '')}</td>
+            </tr>`;
+          });
+        });
+      });
+    });
+    return html;
+  }
+
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const logoHtml = logoSrc ? `<img src="${logoSrc}" style="height:40px;object-fit:contain;margin-right:16px;">` : '';
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Damper Takeoff — ${escapeHtml(jobName)}</title>
+<style>
+  @page { size: landscape; margin: 14mm 10mm; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #16202C; }
+  .report-header { display: flex; align-items: center; border-bottom: 2px solid #16202C; padding-bottom: 8px; margin-bottom: 12px; }
+  .report-header h1 { font-size: 15px; margin: 0; }
+  .report-header .sub { font-size: 10px; color: #555; margin-top: 2px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  th { background: #16202C; color: #fff; font-size: 9px; padding: 3px 5px; text-align: left; }
+  td { padding: 3px 5px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  .num { text-align: center; }
+  tr.group-style td { font-size: 10px; font-weight: 700; padding: 5px 5px; }
+  tr.group-mfr td { background: #f1f5f9; font-weight: 700; font-size: 9px; padding: 3px 5px; }
+  tr.group-flow td { font-size: 9px; font-style: italic; padding: 2px 8px; }
+  tr.col-header td { background: #e2e8f0; font-weight: 700; font-size: 9px; }
+  tr.data-row:nth-child(even) td { background: #f8fafc; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style></head><body>
+<div class="report-header">${logoHtml}<div><h1>Smoke &amp; Fire Damper Takeoff</h1><div class="sub">${escapeHtml(jobName)} &mdash; ${dateStr}</div></div></div>
+<table><thead><tr>${['#','Tag','Mfg.','Model','W','H','Rating','Actuator','Mount','Duct Door','Ceil. Door','Sheet Qty','Vendor','Notes'].map(h => `<th>${h}</th>`).join('')}</tr></thead>
+<tbody>${buildTableRows()}</tbody></table>
+<script>window.onload=()=>window.print();<\/script>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  if(win){ win.document.write(html); win.document.close(); }
+}
+
+/* ── Category picker modal: step 1 ── */
+function showDamperCategoryPickerModal(){
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  card.innerHTML = `
+    <div class="disp">Add Damper Item</div>
+    <div class="modal-sub">Select the damper category:</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+      ${DAMPER_CATS.map(cat => `
+        <button class="dmpr-cat-pick" data-cat="${cat}" style="padding:10px 14px;border:2px solid ${DAMPER_CATEGORY_COLORS[cat]};border-radius:8px;background:transparent;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;">
+          <span style="width:12px;height:12px;border-radius:50%;background:${DAMPER_CATEGORY_COLORS[cat]};flex-shrink:0;"></span>
+          ${escapeHtml(DAMPER_CATEGORY_LABELS[cat])}
+        </button>`).join('')}
+    </div>
+    <div class="modal-row" style="margin-top:12px;"><button type="button" class="cancel">Cancel</button></div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+  card.querySelectorAll('.dmpr-cat-pick').forEach(btn => {
+    btn.addEventListener('click', () => {
+      root.innerHTML = '';
+      showDamperRowModal(btn.dataset.cat, null);
+    });
+  });
+  card.querySelector('.cancel').addEventListener('click', () => { root.innerHTML = ''; });
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) root.innerHTML = ''; });
+}
+
+/* ── Add / edit row modal ── */
+function showDamperRowModal(cat, existingLi){
+  const isEdit = !!existingLi;
+  const li = existingLi || {};
+  const catColor = DAMPER_CATEGORY_COLORS[cat] || '#DC2626';
+  const catLabel = DAMPER_CATEGORY_LABELS[cat] || cat;
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  card.style.maxWidth = '480px';
+  card.innerHTML = `
+    <div class="disp" style="display:flex;align-items:center;gap:8px;">
+      <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${catColor};flex-shrink:0;"></span>
+      ${isEdit ? 'Edit' : 'Add'} ${escapeHtml(catLabel)} Damper
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+      <div>
+        <label class="modal-field-label">Schedule Tag</label>
+        <input type="text" id="dmTag" placeholder="e.g. FD-1" value="${isEdit ? escapeAttr(li.scheduleTag || '') : ''}">
+      </div>
+      <div>
+        <label class="modal-field-label">System</label>
+        <select id="dmSystem">
+          ${SYSTEMS.map(s => `<option value="${s}" ${(li.system||'SUPPLY') === s ? 'selected' : ''}>${SYSTEM_LABELS[s]}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="modal-field-label">Manufacturer</label>
+        <input type="text" id="dmMfg" placeholder="e.g. RUSKIN" value="${isEdit ? escapeAttr(li.manufacturer || '') : ''}">
+      </div>
+      <div>
+        <label class="modal-field-label">Model</label>
+        <input type="text" id="dmModel" placeholder="e.g. MD35" value="${isEdit ? escapeAttr(li.model || '') : ''}">
+      </div>
+      <div>
+        <label class="modal-field-label">Width</label>
+        <input type="text" id="dmWidth" placeholder='e.g. 24"' value="${isEdit ? escapeAttr(li.width || '') : ''}">
+      </div>
+      <div>
+        <label class="modal-field-label">Height</label>
+        <input type="text" id="dmHeight" placeholder='e.g. 24"' value="${isEdit ? escapeAttr(li.height || '') : ''}">
+      </div>
+      <div>
+        <label class="modal-field-label">Rating</label>
+        <select id="dmRating">
+          ${['1.5-HR','3-HR'].map(r => `<option value="${r}" ${(li.rating||'1.5-HR') === r ? 'selected' : ''}>${r}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="modal-field-label">Actuator</label>
+        <select id="dmActuator">
+          ${['RIGHT','LEFT','BOTH'].map(a => `<option value="${a}" ${(li.actuator||'RIGHT') === a ? 'selected' : ''}>${a}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="modal-field-label">Mount</label>
+        <select id="dmMount">
+          ${['VERTICAL','HORIZONTAL','UNIVERSAL'].map(v => `<option value="${v}" ${(li.mount||'VERTICAL') === v ? 'selected' : ''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="modal-field-label">Duct Access Door</label>
+        <select id="dmDuctDoor">
+          ${['NO','YES'].map(v => `<option value="${v}" ${(li.ductAccessDoor||'NO') === v ? 'selected' : ''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label class="modal-field-label">Ceiling Access Door</label>
+        <select id="dmCeilDoor">
+          ${['NO','YES'].map(v => `<option value="${v}" ${(li.ceilingAccessDoor||'NO') === v ? 'selected' : ''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div id="dmCeilSizeWrap" style="${(li.ceilingAccessDoor||'NO') !== 'YES' ? 'display:none' : ''}">
+        <label class="modal-field-label">Ceiling Door Size</label>
+        <input type="text" id="dmCeilSize" placeholder="e.g. 12X12" value="${isEdit ? escapeAttr(li.ceilingDoorSize || '') : ''}">
+      </div>
+    </div>
+    <label class="modal-field-label" style="margin-top:8px;">Vendor</label>
+    <input type="text" id="dmVendor" placeholder="Vendor" value="${isEdit ? escapeAttr(li.vendor || '') : ''}">
+    <label class="modal-field-label" style="margin-top:8px;">Notes</label>
+    <input type="text" id="dmNotes" placeholder="Notes" value="${isEdit ? escapeAttr(li.notes || '') : ''}">
+    <div class="modal-row" style="margin-top:14px;">
+      <button type="button" class="cancel">Cancel</button>
+      <button type="button" class="confirm" id="dmSaveBtn">${isEdit ? 'Save' : 'Add'}</button>
+    </div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+
+  // Uppercase inputs
+  ['dmTag','dmMfg','dmModel','dmWidth','dmHeight','dmCeilSize','dmVendor'].forEach(id => forceUpperCaseInput(document.getElementById(id)));
+
+  // Show/hide ceiling door size
+  const ceilSel = document.getElementById('dmCeilDoor');
+  const ceilWrap = document.getElementById('dmCeilSizeWrap');
+  ceilSel.addEventListener('change', () => { ceilWrap.style.display = ceilSel.value === 'YES' ? '' : 'none'; });
+
+  document.getElementById('dmSaveBtn').addEventListener('click', () => {
+    const scheduleTag = document.getElementById('dmTag').value.trim();
+    const system = document.getElementById('dmSystem').value;
+    const manufacturer = document.getElementById('dmMfg').value.trim();
+    const model = document.getElementById('dmModel').value.trim();
+    const width = document.getElementById('dmWidth').value.trim();
+    const height = document.getElementById('dmHeight').value.trim();
+    const rating = document.getElementById('dmRating').value;
+    const actuator = document.getElementById('dmActuator').value;
+    const mount = document.getElementById('dmMount').value;
+    const ductAccessDoor = document.getElementById('dmDuctDoor').value;
+    const ceilingAccessDoor = document.getElementById('dmCeilDoor').value;
+    const ceilingDoorSize = ceilingAccessDoor === 'YES' ? document.getElementById('dmCeilSize').value.trim() : '';
+    const vendor = document.getElementById('dmVendor').value.trim();
+    const notes = document.getElementById('dmNotes').value.trim();
+
+    if(!scheduleTag){ document.getElementById('dmTag').focus(); return; }
+
+    if(isEdit){
+      Object.assign(li, { scheduleTag, system, manufacturer, model, width, height, rating, actuator, mount, ductAccessDoor, ceilingAccessDoor, ceilingDoorSize, vendor, notes });
+      // Update canvas markups with new tag label
+      (state.data.sheets || []).forEach(sheet => {
+        (sheet.markups || []).forEach(m => {
+          if(m.type === 'damperTag' && m.lineId === li.lineId) m.tagLabel = scheduleTag;
+        });
+      });
+    } else {
+      const newLi = {
+        lineId: genId(), scheduleTag, system, manufacturer, model, width, height,
+        rating, actuator, mount, ductAccessDoor, ceilingAccessDoor, ceilingDoorSize,
+        vendor, notes,
+      };
+      if(!state.data.damperTakeoff[cat]) state.data.damperTakeoff[cat] = [];
+      state.data.damperTakeoff[cat].push(newLi);
+    }
+    renumberDamperItems();
+    markDirty();
+    drawAllMarkups();
+    root.innerHTML = '';
+    renderDamperTakeoffList();
+  });
+
+  card.querySelector('.cancel').addEventListener('click', () => { root.innerHTML = ''; });
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) root.innerHTML = ''; });
+}
+
 // Checkpoint-style undo: every markDirty() call snapshots the sheet's
 // current (post-mutation) markups, keeping only the last 5 per sheet.
 // Undo discards the current checkpoint and restores the one before it —
@@ -6928,6 +7840,7 @@ document.addEventListener('keydown', (e) => {
   drawAllMarkups();
   renderNoteList();
   if(target.type === 'airOutletTag') renderTakeoffList();
+  if(target.type === 'damperTag') renderDamperTakeoffList();
   clearMarkupActionButtons();
 });
 
