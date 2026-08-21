@@ -201,11 +201,17 @@ input,textarea{font-family:inherit;}
 .save-btn:disabled{opacity:.5;cursor:default;}
 /* Toolbar color/thickness pickers rendered in the action bar (not toolrail) */
 .action-bar-pickers{display:flex;align-items:center;gap:6px;position:absolute;left:50%;transform:translateX(-50%);}
-.action-bar-pickers .color-dot{width:20px;height:20px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1.5px var(--line);cursor:pointer;flex-shrink:0;}
-.action-bar-pickers .color-dot.active{box-shadow:0 0 0 2.5px var(--navy);}
-.action-bar-pickers .thickness-dot{width:34px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;border:1px solid #DDE1E6;background:transparent;cursor:pointer;flex-shrink:0;}
-.action-bar-pickers .thickness-dot.active{background:rgba(0,0,0,0.07);}
 .action-bar-picker-sep{width:1px;height:26px;background:var(--line);margin:0 4px;flex-shrink:0;}
+/* Compact dropdown picker buttons (color, stroke, line-type) */
+.picker-dd-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border:1px solid #DDE1E6;border-radius:7px;background:var(--surface);cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:600;color:var(--ink);height:30px;flex-shrink:0;white-space:nowrap;}
+.picker-dd-btn:hover{background:var(--surface-2);}
+.picker-dd-arrow{font-size:10px;color:var(--muted);line-height:1;}
+.picker-dd-color-swatch{width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(0,0,0,0.15);flex-shrink:0;display:inline-block;}
+.picker-dd-panel{position:fixed;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);z-index:300;padding:5px;display:flex;flex-direction:column;gap:2px;min-width:130px;}
+.picker-dd-opt{display:flex;align-items:center;gap:8px;padding:6px 10px;border:none;background:none;cursor:pointer;font-family:inherit;font-size:12.5px;color:var(--ink);border-radius:6px;text-align:left;width:100%;}
+.picker-dd-opt:hover{background:var(--surface-2);}
+.picker-dd-opt svg{flex-shrink:0;color:var(--ink);}
+.picker-dd-stroke-preview{display:block;background:currentColor;border-radius:2px;}
 .status-dot{width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0;}
 .status-dot.dirty{background:var(--warn);}
 .action-bar-status-wrap{display:flex;align-items:center;gap:6px;flex-shrink:0;}
@@ -378,16 +384,30 @@ input,textarea{font-family:inherit;}
     <div class="action-bar-pickers hidden" id="actionBarPickers">
       <!-- Color/stroke group: only shown for tools that use them -->
       <div id="pickerColorGroup" class="hidden" style="display:contents;">
-        <div class="color-dot active" data-color="#FF0000" style="background:#FF0000"></div>
-        <div class="color-dot" data-color="#00FF00" style="background:#00FF00"></div>
-        <div class="color-dot" data-color="#0000FF" style="background:#0000FF"></div>
-        <div class="color-dot" data-color="#FF8000" style="background:#FF8000"></div>
-        <div class="color-dot" data-color="#FF00FF" style="background:#FF00FF"></div>
-        <div class="color-dot" data-color="#000000" style="background:#000000"></div>
+        <!-- Line-type dropdown: only shown for multiline tool -->
+        <div id="pickerLineTypeWrap" style="display:none;align-items:center;">
+          <button class="picker-dd-btn" id="pickerLineTypeBtn">
+            <svg id="pickerLineTypeSvg" width="40" height="12" viewBox="0 0 40 12" style="flex-shrink:0;color:var(--ink);"></svg>
+            <span id="pickerLineTypeLabel">Solid</span>
+            <span class="picker-dd-arrow">▾</span>
+          </button>
+        </div>
+        <div class="action-bar-picker-sep" id="pickerLineTypeSep" style="display:none;"></div>
+        <!-- Color dropdown -->
+        <button class="picker-dd-btn" id="pickerColorBtn">
+          <span class="picker-dd-color-swatch" id="pickerColorSwatch" style="background:#FF0000;"></span>
+          <span id="pickerColorLabel">Red</span>
+          <span class="picker-dd-arrow">▾</span>
+        </button>
         <div class="action-bar-picker-sep"></div>
-        <div class="thickness-dot active" data-thickness="2"><span style="width:14px;height:2px;"></span></div>
-        <div class="thickness-dot" data-thickness="4"><span style="width:14px;height:4px;"></span></div>
-        <div class="thickness-dot" data-thickness="7"><span style="width:14px;height:7px;"></span></div>
+        <!-- Stroke dropdown -->
+        <button class="picker-dd-btn" id="pickerStrokeBtn">
+          <svg id="pickerStrokeSvg" width="32" height="12" viewBox="0 0 32 12" style="flex-shrink:0;color:var(--ink);">
+            <line x1="0" y1="6" x2="32" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span id="pickerStrokeLabel">Thin</span>
+          <span class="picker-dd-arrow">▾</span>
+        </button>
         <div class="action-bar-picker-sep" id="pickerScaleSep"></div>
       </div>
       <!-- Scale chip: always shown when a job is open -->
@@ -588,7 +608,7 @@ const state = {
   lastModified: null,
   activeSheetIndex: 0,
   pdfDoc: null, pageViewport: null,
-  tool: 'pan', color: '#FF0000', thickness: 2, shapeType: 'circle', symbolType: 'flexduct',
+  tool: 'pan', color: '#FF0000', thickness: 2, lineType: 'solid', shapeType: 'circle', symbolType: 'flexduct',
   dirty: false,
   drawing: false, currentStroke: null,
   multiPoints: null, routeDragging: false, routeSegmentStart: null,
@@ -610,6 +630,7 @@ const state = {
   whiteoutsUnlocked: false,
   airOutletRunItem: null, // { lineId, catalogId, description, category } — active placement run
   ghostDimPos: null, // pointer position when dim tool is active but first click not yet placed
+  splitMode: false, splitMarkupId: null, // split-a-route mode: tap to split the selected multiline
 };
 
 const ANGLE_STEP = 15; // degrees — snap increment for Line/Run tools
@@ -625,6 +646,20 @@ const GROUPABLE_TYPES = ['line', 'multiline', 'freehand', 'shape', 'symbol', 'la
 const AXIS_SNAP_THRESHOLD = 6; // degrees — Dimension tool snaps only near horizontal/vertical, else free angle
 const JOINT_RADIUS = 15; // fixed fillet radius for multi-segment corners (diagrammatic, not exact)
 const PALETTE = ['#FF0000', '#00FF00', '#0000FF', '#FF8000', '#FF00FF', '#000000'];
+const COLOR_NAMES = { '#FF0000':'Red','#00FF00':'Green','#0000FF':'Blue','#FF8000':'Orange','#FF00FF':'Magenta','#000000':'Black' };
+const STROKE_NAMES = { 2:'Thin', 4:'Medium', 7:'Thick' };
+const LINE_TYPES = [
+  { key:'solid',    label:'Solid',     dash:[] },
+  { key:'dashed',   label:'Dashed',    dash:[8,6] },
+  { key:'longdash', label:'Long Dash', dash:[20,6] },
+  { key:'center',   label:'Center',    dash:[20,6,6,6] },
+  { key:'phantom',  label:'Phantom',   dash:[20,6,6,6,6,6] },
+  { key:'hidden',   label:'Hidden',    dash:[4,4] },
+  { key:'dotted',   label:'Dotted',    dash:[2,4] },
+  { key:'dashdot',  label:'Dash-Dot',  dash:[12,4,4,4] },
+  { key:'hatch',    label:'Hatch',     dash:null }, // special: tick marks
+];
+const LINE_TYPE_MAP = Object.fromEntries(LINE_TYPES.map(t => [t.key, t]));
 const AIR_OUTLET_COLORS = { supply: '#1A56DB', return: '#C026D3', exhaust: '#16a34a' };
 const ANNOTATION_COLOR = '#0000FF'; // vivid blue — used by Callout and Dimension
 const DEFAULT_LABEL_COLOR = '#0000FF'; // Callout — blue
@@ -2175,21 +2210,150 @@ $('#whiteoutLockBtn').addEventListener('click', () => {
   updateScaleChip();
   drawAllMarkups();
 });
-// Color and thickness pickers live in the action bar; wire them up
-document.querySelectorAll('#actionBarPickers .color-dot').forEach(dot => {
-  dot.addEventListener('click', () => {
-    document.querySelectorAll('#actionBarPickers .color-dot').forEach(d => d.classList.remove('active'));
-    dot.classList.add('active');
-    state.color = dot.dataset.color;
+// ---- Picker dropdown system ----
+// One floating panel at a time; clicking outside closes it.
+let _openPickerPanel = null;
+function _closePickerPanel(){
+  if(_openPickerPanel){ _openPickerPanel.remove(); _openPickerPanel = null; }
+}
+document.addEventListener('click', (e) => {
+  if(_openPickerPanel && !_openPickerPanel.contains(e.target) && !e.target.closest('.picker-dd-btn'))
+    _closePickerPanel();
+});
+
+function _openPickerDropdown(triggerBtn, items, onSelect){
+  _closePickerPanel();
+  const panel = document.createElement('div');
+  panel.className = 'picker-dd-panel';
+  items.forEach(item => {
+    const opt = document.createElement('button');
+    opt.className = 'picker-dd-opt';
+    opt.appendChild(item.preview.cloneNode ? item.preview.cloneNode(true) : item.preview);
+    const lbl = document.createElement('span');
+    lbl.textContent = item.label;
+    opt.appendChild(lbl);
+    opt.addEventListener('click', (e) => { e.stopPropagation(); _closePickerPanel(); onSelect(item.value); });
+    panel.appendChild(opt);
+  });
+  document.body.appendChild(panel);
+  _openPickerPanel = panel;
+  const r = triggerBtn.getBoundingClientRect();
+  panel.style.left = r.left + 'px';
+  panel.style.top = (r.bottom + 4) + 'px';
+  requestAnimationFrame(() => {
+    const pr = panel.getBoundingClientRect();
+    if(pr.right > window.innerWidth - 4) panel.style.left = (window.innerWidth - pr.width - 4) + 'px';
+  });
+}
+
+// Build an SVG line-type preview (40×12 by default)
+function makeLineTypeSvg(key, w=40, h=12){
+  const lt = LINE_TYPE_MAP[key] || LINE_TYPES[0];
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('width', String(w)); svg.setAttribute('height', String(h));
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.style.color = 'var(--ink)'; svg.style.flexShrink = '0';
+  const cy = h / 2;
+  if(lt.dash === null){ // hatch: main line + tick marks
+    const mainLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+    mainLine.setAttribute('x1','0'); mainLine.setAttribute('y1',cy);
+    mainLine.setAttribute('x2',String(w)); mainLine.setAttribute('y2',cy);
+    mainLine.setAttribute('stroke','currentColor'); mainLine.setAttribute('stroke-width','1.5');
+    svg.appendChild(mainLine);
+    for(let x = 6; x < w; x += 9){
+      const tick = document.createElementNS('http://www.w3.org/2000/svg','line');
+      tick.setAttribute('x1', String(x-3)); tick.setAttribute('y1', String(cy-4));
+      tick.setAttribute('x2', String(x+3)); tick.setAttribute('y2', String(cy+4));
+      tick.setAttribute('stroke','currentColor'); tick.setAttribute('stroke-width','1.5');
+      svg.appendChild(tick);
+    }
+  } else {
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1','2'); line.setAttribute('y1',cy);
+    line.setAttribute('x2', String(w-2)); line.setAttribute('y2',cy);
+    line.setAttribute('stroke','currentColor'); line.setAttribute('stroke-width','1.5');
+    line.setAttribute('stroke-linecap','round');
+    if(lt.dash.length > 0) line.setAttribute('stroke-dasharray', lt.dash.join(' '));
+    svg.appendChild(line);
+  }
+  return svg;
+}
+
+// Update the picker button SVG container from a fresh makeLineTypeSvg result
+function _populateSvgFromLineType(svgEl, key){
+  if(!svgEl) return;
+  svgEl.innerHTML = '';
+  const fresh = makeLineTypeSvg(key, +svgEl.getAttribute('width'), +svgEl.getAttribute('height'));
+  while(fresh.firstChild) svgEl.appendChild(fresh.firstChild);
+}
+
+// ---- Color picker dropdown ----
+function _buildColorItem(c){
+  const swatch = document.createElement('span');
+  swatch.className = 'picker-dd-color-swatch';
+  swatch.style.background = c;
+  return { value: c, label: COLOR_NAMES[c] || c, preview: swatch };
+}
+function _openColorDropdown(btn){
+  _openPickerDropdown(btn, PALETTE.map(_buildColorItem), (c) => {
+    state.color = c;
+    const sw = $('#pickerColorSwatch'); if(sw) sw.style.background = c;
+    const lb = $('#pickerColorLabel'); if(lb) lb.textContent = COLOR_NAMES[c] || c;
+  });
+}
+
+// ---- Stroke picker dropdown ----
+function _buildStrokeItem(t){
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('width','36'); svg.setAttribute('height','12');
+  svg.setAttribute('viewBox','0 0 36 12'); svg.style.color = 'var(--ink)'; svg.style.flexShrink = '0';
+  const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+  line.setAttribute('x1','0'); line.setAttribute('y1','6');
+  line.setAttribute('x2','36'); line.setAttribute('y2','6');
+  line.setAttribute('stroke','currentColor'); line.setAttribute('stroke-width', String(t));
+  line.setAttribute('stroke-linecap','round');
+  svg.appendChild(line);
+  return { value: t, label: STROKE_NAMES[t] || `${t}px`, preview: svg };
+}
+function _updateStrokePickerBtn(){
+  const t = state.thickness;
+  const svgEl = $('#pickerStrokeSvg');
+  if(svgEl){
+    const lineEl = svgEl.querySelector('line');
+    if(lineEl) lineEl.setAttribute('stroke-width', String(t));
+  }
+  const lb = $('#pickerStrokeLabel'); if(lb) lb.textContent = STROKE_NAMES[t] || `${t}px`;
+}
+function _openStrokeDropdown(btn){
+  _openPickerDropdown(btn, [2,4,7].map(_buildStrokeItem), (t) => {
+    state.thickness = t;
+    _updateStrokePickerBtn();
+  });
+}
+
+// ---- Line type picker dropdown ----
+function _openLineTypeDropdown(triggerBtn, onSelect){
+  const items = LINE_TYPES.map(lt => ({ value: lt.key, label: lt.label, preview: makeLineTypeSvg(lt.key) }));
+  _openPickerDropdown(triggerBtn, items, onSelect);
+}
+function _updatePickerLineTypeBtn(key){
+  const lt = LINE_TYPE_MAP[key] || LINE_TYPES[0];
+  const lb = $('#pickerLineTypeLabel'); if(lb) lb.textContent = lt.label;
+  _populateSvgFromLineType($('#pickerLineTypeSvg'), key);
+}
+
+// Wire up the new picker buttons
+$('#pickerColorBtn').addEventListener('click', (e) => { e.stopPropagation(); _openColorDropdown($('#pickerColorBtn')); });
+$('#pickerStrokeBtn').addEventListener('click', (e) => { e.stopPropagation(); _openStrokeDropdown($('#pickerStrokeBtn')); });
+$('#pickerLineTypeBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  _openLineTypeDropdown($('#pickerLineTypeBtn'), (key) => {
+    state.lineType = key;
+    _updatePickerLineTypeBtn(key);
   });
 });
-document.querySelectorAll('#actionBarPickers .thickness-dot').forEach(dot => {
-  dot.addEventListener('click', () => {
-    document.querySelectorAll('#actionBarPickers .thickness-dot').forEach(d => d.classList.remove('active'));
-    dot.classList.add('active');
-    state.thickness = parseInt(dot.dataset.thickness, 10);
-  });
-});
+// Init the picker button SVGs to match default state
+_populateSvgFromLineType($('#pickerLineTypeSvg'), state.lineType);
 
 // Which tools show color + thickness pickers in the action bar when nothing is selected
 const TOOLS_WITH_PICKERS = new Set(['draw','multiline','shape','symbol','label','note','hatchline','hatcharea','line']);
@@ -2244,11 +2408,16 @@ function updatePickersVisibility(){
   const hasJob = !!state.jobId;
   const noMarkup = !state.selectedMarkupId && state.multiSelectedIds.size === 0;
   const showPickers = TOOLS_WITH_PICKERS.has(state.tool) && noMarkup;
+  const showLineType = showPickers && state.tool === 'multiline';
   const showScale = hasJob && noMarkup;
   const colorGroup = $('#pickerColorGroup');
   const scaleSep = $('#pickerScaleSep');
+  const ltWrap = $('#pickerLineTypeWrap');
+  const ltSep = $('#pickerLineTypeSep');
   if(colorGroup) colorGroup.classList.toggle('hidden', !showPickers);
-  if(scaleSep) scaleSep.classList.toggle('hidden', !showPickers); // sep only needed when pickers also show
+  if(scaleSep) scaleSep.classList.toggle('hidden', !showPickers);
+  if(ltWrap) ltWrap.style.display = showLineType ? 'flex' : 'none';
+  if(ltSep) ltSep.style.display = showLineType ? '' : 'none';
   $('#actionBarPickers').classList.toggle('hidden', !showPickers && !showScale);
   updateScaleChip();
 }
@@ -2607,6 +2776,13 @@ function onPointerDown(e){
   if(!state.pageViewport || twoFingersActive()) return;
   const p = canvasPoint(e);
 
+  // Split-route mode: the next tap on the canvas is the split point
+  if(state.splitMode){
+    e.stopPropagation();
+    performSplit(p);
+    return;
+  }
+
   if(state.tool === 'mselect'){
     const hit = hitTestMarkup(p);
     if(hit){
@@ -2754,6 +2930,28 @@ function squareLock(p0, rawP){
 function onPointerMove(e){
   if(twoFingersActive()) return;
   const p = canvasPoint(e);
+
+  // In split mode: show a snap dot on the nearest point of the route
+  if(state.splitMode){
+    const sheet = activeSheet();
+    const m = sheet && sheet.markups.find(x => x.id === state.splitMarkupId);
+    drawAllMarkups(); // clear previous overlay
+    if(m && m.points){
+      const result = nearestPointOnPolyline(m.points, p);
+      if(result && result.dist < 60 / state.zoom){
+        const ctx = mCanvas.getContext('2d');
+        ctx.save();
+        ctx.fillStyle = '#FF0000';
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(result.pt.x, result.pt.y, 5 / state.zoom, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+    }
+    return;
+  }
 
   if(state.tool === 'mselect' && state.marqueeStart){
     state.marqueeCurrent = p;
@@ -3096,7 +3294,7 @@ function finishMultiline(){
       renderNoteList();
       createdId = markup.id;
     } else if(state.tool === 'multiline'){
-      const markup = { id: genId(), type: 'multiline', color: state.color, thickness: state.thickness, points: state.multiPoints, note: '', createdAt: Date.now() };
+      const markup = { id: genId(), type: 'multiline', color: state.color, thickness: state.thickness, lineType: state.lineType || 'solid', points: state.multiPoints, note: '', createdAt: Date.now() };
       activeSheet().markups.push(markup);
       markDirty();
       renderNoteList();
@@ -3949,17 +4147,43 @@ function showMarkupActionButtons(markupId){
     buttonRow.appendChild(pocBtn);
   }
   if(m.type === 'line' || m.type === 'multiline'){
-    const hatchBtn = document.createElement('button');
-    hatchBtn.textContent = m.hatched ? 'Un-hatch' : 'Hatch';
-    hatchBtn.addEventListener('click', (e) => {
+    // Line Type dropdown button (replaces old Hatch toggle)
+    const lt = m.lineType || (m.hatched ? 'hatch' : 'solid');
+    const ltBtn = document.createElement('button');
+    ltBtn.className = 'picker-dd-btn';
+    const ltSvg = makeLineTypeSvg(lt, 36, 12);
+    ltBtn.appendChild(ltSvg);
+    const ltLbl = document.createElement('span');
+    ltLbl.textContent = (LINE_TYPE_MAP[lt] || LINE_TYPES[0]).label;
+    ltBtn.appendChild(ltLbl);
+    const ltArr = document.createElement('span');
+    ltArr.className = 'picker-dd-arrow';
+    ltArr.textContent = '▾';
+    ltBtn.appendChild(ltArr);
+    ltBtn.title = 'Line type';
+    ltBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      m.hatched = !m.hatched;
-      markDirty();
-      drawAllMarkups();
-      renderNoteList();
-      showMarkupActionButtons(markupId);
+      _openLineTypeDropdown(ltBtn, (key) => {
+        m.lineType = key;
+        m.hatched = (key === 'hatch'); // keep backward compat flag in sync
+        markDirty();
+        drawAllMarkups();
+        renderNoteList();
+        showMarkupActionButtons(markupId);
+      });
     });
-    buttonRow.appendChild(hatchBtn);
+    buttonRow.appendChild(ltBtn);
+  }
+  // Split button — only for multiline with 2+ segments (3+ points)
+  if(m.type === 'multiline' && m.points && m.points.length >= 3){
+    const splitBtn = document.createElement('button');
+    splitBtn.textContent = 'Split';
+    splitBtn.title = 'Split this route into two at a point you tap';
+    splitBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      enterSplitMode(markupId);
+    });
+    buttonRow.appendChild(splitBtn);
   }
   if(m.type !== 'airOutletTag'){
     const dupBtn = document.createElement('button');
@@ -4355,11 +4579,15 @@ function drawLine(m){
   ctx.strokeStyle = m.color;
   ctx.lineWidth = m.thickness || 3;
   ctx.lineCap = 'round';
+  const lt = m.lineType || (m.hatched ? 'hatch' : 'solid');
+  const ltDef = LINE_TYPE_MAP[lt];
+  if(ltDef && ltDef.dash && ltDef.dash.length > 0) ctx.setLineDash(ltDef.dash);
   ctx.beginPath();
   ctx.moveTo(m.p0.x, m.p0.y);
   ctx.lineTo(m.p1.x, m.p1.y);
   ctx.stroke();
-  if(m.hatched) drawHatchTicksAlongPath(ctx, [m.p0, m.p1]);
+  ctx.setLineDash([]);
+  if(lt === 'hatch') drawHatchTicksAlongPath(ctx, [m.p0, m.p1]);
 }
 
 // Rounded-joint polyline: draws straight segments with a fixed-radius arc at
@@ -4371,8 +4599,13 @@ function drawMultiline(m){
   ctx.lineWidth = m.thickness || 3;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+  // Backward compat: old m.hatched bool maps to 'hatch' lineType
+  const lt = m.lineType || (m.hatched ? 'hatch' : 'solid');
+  const ltDef = LINE_TYPE_MAP[lt];
+  if(ltDef && ltDef.dash && ltDef.dash.length > 0) ctx.setLineDash(ltDef.dash);
   drawRoundedPolyline(ctx, m.points, JOINT_RADIUS);
-  if(m.hatched) drawHatchTicksAlongPath(ctx, m.points);
+  ctx.setLineDash([]);
+  if(lt === 'hatch') drawHatchTicksAlongPath(ctx, m.points);
 }
 function drawMultilinePreview(points){
   const ctx = mCanvas.getContext('2d');
@@ -4380,7 +4613,12 @@ function drawMultilinePreview(points){
   ctx.strokeStyle = state.color;
   ctx.lineWidth = state.thickness || 3;
   ctx.globalAlpha = 0.6;
+  const lt = state.lineType || 'solid';
+  const ltDef = LINE_TYPE_MAP[lt];
+  if(ltDef && ltDef.dash && ltDef.dash.length > 0) ctx.setLineDash(ltDef.dash);
   drawRoundedPolyline(ctx, points, JOINT_RADIUS);
+  ctx.setLineDash([]);
+  if(lt === 'hatch') drawHatchTicksAlongPath(ctx, points);
   ctx.restore();
 }
 function drawRoundedPolyline(ctx, points, radius){
@@ -4406,6 +4644,113 @@ function drawRoundedPolyline(ctx, points, radius){
   }
   ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
   ctx.stroke();
+}
+
+/* ============================================================
+   SPLIT-ROUTE HELPERS
+   ============================================================ */
+
+// Returns the closest point on segment a→b to point pt, plus t (0-1) and dist.
+function _nearestOnSegment(a, b, pt){
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const lenSq = dx*dx + dy*dy;
+  if(lenSq < 0.001) return { pt:{x:a.x,y:a.y}, t:0, dist: Math.hypot(pt.x-a.x, pt.y-a.y) };
+  const t = Math.max(0, Math.min(1, ((pt.x-a.x)*dx + (pt.y-a.y)*dy) / lenSq));
+  const cx = a.x + t*dx, cy = a.y + t*dy;
+  return { pt:{x:cx,y:cy}, t, dist: Math.hypot(pt.x-cx, pt.y-cy) };
+}
+
+// Nearest point on a polyline to pt. Returns {segIndex, t, pt, dist} or null.
+function nearestPointOnPolyline(points, pt){
+  if(!points || points.length < 2) return null;
+  let best = null;
+  for(let i = 0; i < points.length - 1; i++){
+    const res = _nearestOnSegment(points[i], points[i+1], pt);
+    if(!best || res.dist < best.dist) best = { segIndex: i, t: res.t, pt: res.pt, dist: res.dist };
+  }
+  return best;
+}
+
+// Enter split mode for the given multiline markup id.
+function enterSplitMode(markupId){
+  state.splitMode = true;
+  state.splitMarkupId = markupId;
+  state.selectedMarkupId = null;
+  const bar = $('#actionBarDynamic');
+  bar.innerHTML = '';
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:8px;';
+  const msg = document.createElement('span');
+  msg.style.cssText = 'font-size:12px;font-weight:600;color:var(--navy);white-space:nowrap;';
+  msg.textContent = 'Tap a point on the route to split it';
+  row.appendChild(msg);
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.style.cssText = 'font-family:inherit;font-size:11.5px;font-weight:600;padding:4px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);cursor:pointer;height:28px;flex-shrink:0;';
+  cancelBtn.addEventListener('click', () => exitSplitMode(false));
+  row.appendChild(cancelBtn);
+  bar.appendChild(row);
+  mCanvas.style.cursor = 'crosshair';
+  updatePickersVisibility(); // hides pickers while split mode is active
+}
+
+function exitSplitMode(selectId){
+  state.splitMode = false;
+  state.splitMarkupId = null;
+  mCanvas.style.cursor = '';
+  clearMarkupActionButtons();
+  updatePickersVisibility();
+  if(selectId) switchToSelectAndSelect(selectId);
+}
+
+// Called from onPointerDown when splitMode is active.
+function performSplit(pt){
+  const sheet = activeSheet();
+  if(!sheet) { exitSplitMode(false); return; }
+  const m = sheet.markups.find(x => x.id === state.splitMarkupId);
+  if(!m || m.type !== 'multiline' || m.points.length < 2){ exitSplitMode(false); return; }
+
+  const result = nearestPointOnPolyline(m.points, pt);
+  if(!result) { exitSplitMode(false); return; }
+
+  // Hit radius: 44 canvas pixels regardless of zoom so a fat finger can tap loosely
+  const hitRadius = 44 / state.zoom;
+  if(result.dist > hitRadius){
+    // Visual flash to tell the user the tap missed
+    const bar = $('#actionBarDynamic');
+    const hint = bar.querySelector('span');
+    if(hint){ const orig = hint.textContent; hint.textContent = 'Tap closer to the route line'; hint.style.color = 'var(--danger)';
+      setTimeout(() => { if(hint.isConnected){ hint.textContent = orig; hint.style.color = 'var(--navy)'; } }, 1400); }
+    return; // Stay in split mode so they can try again
+  }
+
+  const { segIndex, t, pt: splitPt } = result;
+
+  // Build the two halves. Insert the split point into both.
+  // If t ≈ 0, the split point coincides with points[segIndex]; avoid a 1-pt array.
+  // If t ≈ 1, split point coincides with points[segIndex+1].
+  const EPS = 0.02;
+  let pts1, pts2;
+  if(t < EPS){
+    pts1 = m.points.slice(0, segIndex + 1);
+    pts2 = m.points.slice(segIndex);
+  } else if(t > 1 - EPS){
+    pts1 = m.points.slice(0, segIndex + 2);
+    pts2 = m.points.slice(segIndex + 1);
+  } else {
+    pts1 = [...m.points.slice(0, segIndex + 1), { x: splitPt.x, y: splitPt.y }];
+    pts2 = [{ x: splitPt.x, y: splitPt.y }, ...m.points.slice(segIndex + 1)];
+  }
+  if(pts1.length < 2 || pts2.length < 2){ exitSplitMode(false); return; }
+
+  const base = { color: m.color, thickness: m.thickness, lineType: m.lineType, hatched: m.hatched, note: m.note };
+  const m1 = { ...base, id: genId(), type: 'multiline', points: pts1, createdAt: Date.now() };
+  const m2 = { ...base, id: genId(), type: 'multiline', points: pts2, createdAt: Date.now() };
+
+  const idx = sheet.markups.findIndex(x => x.id === m.id);
+  sheet.markups.splice(idx, 1, m1, m2);
+  markDirty(); drawAllMarkups(); renderNoteList(); renderTakeoffList();
+  exitSplitMode(m1.id); // select the first half
 }
 
 function drawShape(m){
@@ -5164,8 +5509,8 @@ function renderNoteList(){
       : (m.type === 'whiteoutRect') ? 'whiteout (rect)' + (m.locked ? ' \u2014 locked' : ' \u2014 unlocked')
       : (m.type === 'whiteoutFreeform') ? 'whiteout (freeform)' + (m.locked ? ' \u2014 locked' : ' \u2014 unlocked')
       : (m.type === 'airOutletTag') ? `#${m.catalogId} / ${m.description || ''} (${m.category || ''})`
-      : (m.type === 'line' && m.hatched) ? 'Line (hatched)'
-      : (m.type === 'multiline' && m.hatched) ? 'Route (hatched)'
+      : (m.type === 'line' && (m.lineType || (m.hatched ? 'hatch' : 'solid')) !== 'solid') ? `Line (${(LINE_TYPE_MAP[m.lineType || (m.hatched ? 'hatch' : 'solid')] || LINE_TYPES[0]).label})`
+      : (m.type === 'multiline' && (m.lineType || (m.hatched ? 'hatch' : 'solid')) !== 'solid') ? `Route (${(LINE_TYPE_MAP[m.lineType || (m.hatched ? 'hatch' : 'solid')] || LINE_TYPES[0]).label})`
       : null; // generic types with no distinguishing content — title line gets skipped below
     const isGeneric = label === null;
     const noteText = m.note ? escapeHtml(m.note) : '<span class="nc-empty">No note added</span>';
@@ -5199,7 +5544,10 @@ function markupTypeDisplayName(m){
     airOutletTag: 'Air Outlet Tag',
   };
   let name = map[m.type] || m.type;
-  if((m.type === 'line' || m.type === 'multiline') && m.hatched) name += ' (hatched)';
+  if(m.type === 'line' || m.type === 'multiline'){
+    const lt = m.lineType || (m.hatched ? 'hatch' : 'solid');
+    if(lt !== 'solid') name += ` (${(LINE_TYPE_MAP[lt] || {label:lt}).label})`;
+  }
   return name;
 }
 
@@ -6283,6 +6631,7 @@ document.addEventListener('keydown', (e) => {
   const tag = (document.activeElement && document.activeElement.tagName) || '';
   if(tag === 'INPUT' || tag === 'TEXTAREA') return;
   if($('#modalRoot').innerHTML.trim() !== '') return; // let modal handle its own Esc
+  if(state.splitMode){ exitSplitMode(false); return; }
   if(state.drawing){
     state.drawing = false;
     state.currentStroke = null;
