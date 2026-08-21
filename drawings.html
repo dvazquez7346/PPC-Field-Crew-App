@@ -4711,8 +4711,8 @@ function drawAllMarkups(){
     ctx.save();
     ctx.globalAlpha = 0.45;
     const gp = state.ghostDimPos;
-    // Draw the left arrowhead of a horizontal dim as a preview
-    drawArrowHead(ctx, { x: gp.x + 24, y: gp.y }, gp, DEFAULT_DIMENSION_COLOR);
+    // Draw a right-pointing arrowhead as the dim ghost preview
+    drawArrowHead(ctx, gp, { x: gp.x + 24, y: gp.y }, DEFAULT_DIMENSION_COLOR);
     ctx.strokeStyle = DEFAULT_DIMENSION_COLOR;
     ctx.lineWidth = 2;
     ctx.beginPath();
