@@ -3348,8 +3348,8 @@ function onPointerUp(e){
         const perp = { x: -dv.y, y: dv.x };
         const off = dim.extOffset != null ? dim.extOffset : 15;
         dim.textPos = {
-          x: (dim.p0.x + dim.p1.x) / 2 + perp.x * (off + 10),
-          y: (dim.p0.y + dim.p1.y) / 2 + perp.y * (off + 10)
+          x: (dim.p0.x + dim.p1.x) / 2 + perp.x * (off + 12),
+          y: (dim.p0.y + dim.p1.y) / 2 + perp.y * (off + 12)
         };
         dim.createdAt = Date.now();
         sh.markups.push(dim);
@@ -4064,8 +4064,8 @@ function applyDragHandle(drag, p){
     // Recompute text position to track the new offset
     if(!m.textIsCustom){
       m.textPos = {
-        x: mid_e.x + perp_e.x * (m.extOffset + 10),
-        y: mid_e.y + perp_e.y * (m.extOffset + 10)
+        x: mid_e.x + perp_e.x * (m.extOffset + 12),
+        y: mid_e.y + perp_e.y * (m.extOffset + 12)
       };
     }
     return;
@@ -4081,13 +4081,13 @@ function applyDragHandle(drag, p){
       const suggestion = suggestDimensionLength(newDist);
       if(suggestion) m.text = suggestion;
     }
-    // Keep text label centered above dim line at off + 10
+    // Keep text label centered above dim line at off + 12
     const dv2 = normalizePt(m.p0, m.p1);
     const perp2 = { x: -dv2.y, y: dv2.x };
     const off2 = m.extOffset != null ? m.extOffset : 15;
     m.textPos = {
-      x: (m.p0.x + m.p1.x) / 2 + perp2.x * (off2 + 10),
-      y: (m.p0.y + m.p1.y) / 2 + perp2.y * (off2 + 10)
+      x: (m.p0.x + m.p1.x) / 2 + perp2.x * (off2 + 12),
+      y: (m.p0.y + m.p1.y) / 2 + perp2.y * (off2 + 12)
     };
     return;
   }
@@ -5153,8 +5153,9 @@ function drawOutlineArrowHead(ctx, from, tip, color, size = 9, thickness = 2){
   ctx.stroke();
 }
 
-// borderColor: overrides the border stroke color (defaults to same as text color)
-function drawTextPill(ctx, text, pos, color, borderColor){
+/// borderColor: overrides the border stroke color (defaults to same as text color)
+// centered: if true, pos is the pill's center — grip sits at pill midpoint (used by dimensions)
+function drawTextPill(ctx, text, pos, color, borderColor, centered = false){
   const bc = borderColor !== undefined ? borderColor : color;
   const isEmpty = !text;
   ctx.font = isEmpty ? '600 italic 11px Inter, sans-serif' : '600 13px Inter, sans-serif';
@@ -5162,7 +5163,8 @@ function drawTextPill(ctx, text, pos, color, borderColor){
   const displayText = isEmpty ? 'Add text' : text;
   const textW = ctx.measureText(displayText).width;
   const boxW = textW + padX * 2, boxH = 17;
-  const bx = pos.x, by = pos.y - boxH / 2;
+  const bx = centered ? pos.x - boxW / 2 : pos.x;
+  const by = pos.y - boxH / 2;
   ctx.fillStyle = '#fff';
   ctx.strokeStyle = isEmpty ? 'rgba(20,30,50,0.35)' : bc;
   ctx.lineWidth = 1.5;
@@ -5172,7 +5174,14 @@ function drawTextPill(ctx, text, pos, color, borderColor){
   ctx.stroke();
   if(isEmpty) ctx.setLineDash([]);
   ctx.fillStyle = isEmpty ? 'rgba(20,30,50,0.45)' : color;
-  ctx.fillText(displayText, bx + padX, by + boxH / 2 + 4);
+  if(centered){
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.fillText(displayText, pos.x, by + boxH / 2 + 4);
+    ctx.restore();
+  } else {
+    ctx.fillText(displayText, bx + padX, by + boxH / 2 + 4);
+  }
   return { x: bx, y: by, w: boxW, h: boxH };
 }
 
@@ -5550,8 +5559,8 @@ function drawDimension(m){
   drawArrowHead(ctx, dl1, dl0, m.color);
   drawArrowHead(ctx, dl0, dl1, m.color);
 
-  // Text pill — neutral border (no color border per item 5)
-  if(m.text) drawTextPill(ctx, m.text, m.textPos, m.textIsCustom ? lightenHexColor(m.color) : m.color, '#ffffff');
+  // Text pill — centered on textPos grip
+  if(m.text) drawTextPill(ctx, m.text, m.textPos, m.textIsCustom ? lightenHexColor(m.color) : m.color, '#ffffff', true);
 }
 function drawDimensionPreview(p0, p1){
   const ctx = mCanvas.getContext('2d');
