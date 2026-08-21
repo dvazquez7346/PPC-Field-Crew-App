@@ -62,10 +62,9 @@ input,textarea{font-family:inherit;}
 .tabs-row-btn:hover{background:#243A56;}
 .tabs-row-btn:disabled{opacity:0.4;cursor:default;}
 .tabs-row-sep{width:1px;height:22px;background:#35496A;flex-shrink:0;margin:0 2px;}
-.crew-directory-btn{color:#CBD8EA;text-decoration:none;font-weight:600;font-size:13px;border:1px solid #35496A;padding:6px 10px;border-radius:8px;display:flex;align-items:center;flex-shrink:0;white-space:nowrap;background:transparent;}
+.crew-directory-btn{color:#CBD8EA;text-decoration:none;font-weight:600;font-size:13px;border:1px solid #35496A;padding:6px 12px;border-radius:8px;display:flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap;background:transparent;}
 .crew-directory-btn:hover{background:#243A56;}
-.crew-directory-btn .cd-text{max-width:0;opacity:0;overflow:hidden;display:inline-block;transition:max-width 0.2s ease, opacity 0.15s ease, margin-left 0.2s ease;}
-.crew-directory-btn:hover .cd-text{max-width:130px;opacity:1;margin-left:6px;}
+.crew-directory-btn .cd-text{display:inline;}
 .sheet-tabs{display:flex;align-items:center;gap:3px;overflow:hidden;flex:1;min-width:0;}
 .sheet-tab{padding:7px 8px 7px 10px;font-size:12px;font-weight:600;color:#B9C7DC;border:1px solid transparent;border-radius:7px 7px 0 0;cursor:pointer;display:flex;align-items:center;gap:4px;margin-bottom:-1px;flex-shrink:1;min-width:0;max-width:180px;}
 .sheet-tab:hover{border-color:#35496A;color:#fff;}
@@ -129,10 +128,17 @@ input,textarea{font-family:inherit;}
 .whiteout-label{max-width:46px;text-align:center;line-height:1;font-size:7.5px;}
 .whiteout-buttons{display:flex;flex-direction:column;gap:2px;align-items:center;}
 .whiteout-buttons .tool-btn{width:44px;height:44px;}
-.tool-sep{width:32px;height:1px;background:var(--line);margin:6px 0;}
+.tool-sep{width:32px;height:1px;background:#AAB3BE;margin:6px 0;}
 .tool-label{font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;margin-top:-2px;text-align:center;}
 .color-row,.thickness-row,.shape-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;padding:0 6px;}
 .tool-flyout{position:fixed;display:flex;flex-wrap:wrap;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:var(--shadow);z-index:60;max-width:172px;}
+.tool-flyout.flyout-vertical{flex-direction:column;flex-wrap:nowrap;gap:2px;max-width:none;width:80px;padding:6px;}
+.tool-flyout.flyout-vertical .flyout-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;border-radius:8px;cursor:pointer;}
+.tool-flyout.flyout-vertical .flyout-item:hover{background:var(--surface-2);}
+.tool-flyout.flyout-vertical .flyout-item .tool-btn{width:38px;height:38px;border-radius:8px;border:1px solid transparent;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:17px;pointer-events:none;}
+.tool-flyout.flyout-vertical .flyout-item.active .tool-btn{background:var(--navy);color:#fff;}
+.tool-flyout.flyout-vertical .flyout-item .fly-label{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;text-align:center;line-height:1;}
+.tool-btn-flyout-arrow{font-size:8px;color:var(--muted);line-height:1;margin-top:-2px;}
 .color-dot{width:20px;height:20px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);cursor:pointer;}
 .color-dot.active{box-shadow:0 0 0 2px var(--navy);}
 .thickness-dot{width:32px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer;}
@@ -203,8 +209,8 @@ input,textarea{font-family:inherit;}
 .action-bar-pickers{display:flex;align-items:center;gap:6px;position:absolute;left:50%;transform:translateX(-50%);}
 .action-bar-picker-sep{width:1px;height:26px;background:var(--line);margin:0 4px;flex-shrink:0;}
 /* Compact dropdown picker buttons (color, stroke, line-type) */
-.picker-dd-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border:1px solid #DDE1E6;border-radius:7px;background:var(--surface);cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:600;color:var(--ink);height:30px;flex-shrink:0;white-space:nowrap;}
-.picker-dd-btn:hover{background:var(--surface-2);}
+.picker-dd-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border:1.5px solid #B5BDC8;border-radius:7px;background:#EEF1F4;cursor:pointer;font-family:inherit;font-size:11.5px;font-weight:600;color:var(--ink);height:30px;flex-shrink:0;white-space:nowrap;}
+.picker-dd-btn:hover{background:#E2E6EA;border-color:#9CA5B0;}
 .picker-dd-arrow{font-size:10px;color:var(--muted);line-height:1;}
 .picker-dd-color-swatch{width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(0,0,0,0.15);flex-shrink:0;display:inline-block;}
 .picker-dd-panel{position:fixed;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);z-index:300;padding:5px;display:flex;flex-direction:column;gap:2px;min-width:130px;}
@@ -347,15 +353,11 @@ input,textarea{font-family:inherit;}
   </div>
 
   <div class="tabs-row">
-    <a class="crew-directory-btn" href="index.html" title="Crew Directory">
-      <span class="cd-arrow">←</span><span class="cd-text">Crew Directory</span>
-    </a>
-    <div class="tabs-row-sep"></div>
     <div class="file-menu-wrap">
-      <button class="tabs-row-btn" id="fileMenuBtn">File ▾</button>
+      <button class="tabs-row-btn" id="fileMenuBtn" style="min-width:72px;border-color:#8A9BB0;">File ▾</button>
       <div class="file-dropdown hidden" id="fileDropdown">
-        <div class="file-menu-item" id="fileNewJob">New Job</div>
-        <div class="file-menu-item" id="fileBrowse">Browse Existing</div>
+        <div class="file-menu-item" id="fileNewJob">New</div>
+        <div class="file-menu-item" id="fileBrowse">Open Existing</div>
         <div class="file-menu-sep"></div>
         <button class="file-menu-item" id="saveBtn" disabled>Save</button>
         <div class="file-menu-item" id="fileExport">Export</div>
@@ -369,11 +371,15 @@ input,textarea{font-family:inherit;}
       <div class="job-dropdown hidden" id="jobDropdown"></div>
     </div>
     <div class="tabs-row-sep"></div>
-    <button class="tabs-row-btn" id="undoBtn" disabled title="Undo (last 5 steps, this sheet)">Undo</button>
+    <button class="tabs-row-btn" id="undoBtn" disabled title="Undo (last 5 steps, this sheet)" style="border-color:#8A9BB0;">Undo</button>
     <div class="tabs-row-sep"></div>
     <button class="tabs-row-btn" id="takeoffToggle" style="border-color:#7A3E9D;color:#C084FC;">Takeoff</button>
     <button class="tabs-row-btn" id="mobilePanelToggle" style="border-color:#166534;color:#4ade80;">Notes</button>
+    <div class="tabs-row-sep"></div>
     <div class="sheet-tabs" id="sheetTabs"></div>
+    <a class="crew-directory-btn" href="index.html" title="Crew Directory" style="margin-left:auto;">
+      <span class="cd-arrow">←</span><span class="cd-text">Crew Directory</span>
+    </a>
   </div>
   <div class="action-bar" id="actionBar">
     <div class="action-bar-status-wrap">
@@ -437,9 +443,9 @@ input,textarea{font-family:inherit;}
       <div class="tool-label">Route</div>
       <button class="tool-btn" data-tool="dimension" title="Dimension line with arrowheads and text"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2"/><polygon points="4,12 8,9 8,15" fill="currentColor"/><polygon points="20,12 16,9 16,15" fill="currentColor"/></svg></button>
       <div class="tool-label">Dim</div>
-      <button class="tool-btn" data-tool="shape" title="Shapes">⬡</button>
+      <button class="tool-btn" data-tool="shape" title="Shapes">⬡<span class="tool-btn-flyout-arrow">▸</span></button>
       <div class="tool-label">Shape</div>
-      <button class="tool-btn" data-tool="symbol" title="Trade symbols (flex duct, valve, etc.)"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 12 L10 7 L10 17 Z M21 12 L14 7 L14 17 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+      <button class="tool-btn" data-tool="symbol" title="Trade symbols (flex duct, valve, etc.)"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 12 L10 7 L10 17 Z M21 12 L14 7 L14 17 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span class="tool-btn-flyout-arrow">▸</span></button>
       <div class="tool-label">Symbol</div>
       <div class="tool-sep"></div>
       <button class="tool-btn" data-tool="hatchline" title="Demo Line: cross-out a run"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="7" y1="8" x2="9" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="11" y1="8" x2="13" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="15" y1="8" x2="17" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
@@ -447,17 +453,30 @@ input,textarea{font-family:inherit;}
       <button class="tool-btn" data-tool="hatcharea" title="Hatch: freeform hatched area (demo'd zone)"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="4" y1="12" x2="12" y2="4" stroke="currentColor" stroke-width="1.2"/><line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="1.2"/><line x1="12" y1="20" x2="20" y2="12" stroke="currentColor" stroke-width="1.2"/></svg></button>
       <div class="tool-label">Hatch</div>
       <div class="tool-sep"></div>
-      <button class="tool-btn" data-tool="label" title="Callout with leader (dot tip)"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="4" width="12" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="15" y1="7.5" x2="19" y2="7.5" stroke="currentColor" stroke-width="1.6"/><line x1="19" y1="7.5" x2="21" y2="15" stroke="currentColor" stroke-width="1.6"/><circle cx="21" cy="15" r="1.6" fill="currentColor"/></svg></button>
-      <div class="tool-label">Callout</div>
-      <button class="tool-btn" data-tool="note" title="Note with leader (arrow tip)"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="7" y1="9" x2="17" y2="9" stroke="currentColor" stroke-width="1.3"/><line x1="7" y1="12.5" x2="17" y2="12.5" stroke="currentColor" stroke-width="1.3"/><line x1="7" y1="16" x2="13" y2="16" stroke="currentColor" stroke-width="1.3"/></svg></button>
-      <div class="tool-label">Note</div>
-      <button class="tool-btn" data-tool="elevation" title="Elevation callout with leader (divided pill)"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="2" y="3" width="12" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.3"/><line x1="14" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.6"/><line x1="18" y1="8" x2="21" y2="17" stroke="currentColor" stroke-width="1.6"/><circle cx="21" cy="17" r="1.6" fill="currentColor"/></svg></button>
-      <div class="tool-label">Elev</div>
-      <button class="tool-btn" data-tool="equipment" title="Equipment tag with leader (hexagon, type/number)"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 4h7l3 4-3 4H4L1 8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="1" y1="8" x2="10" y2="8" stroke="currentColor" stroke-width="1.2"/><line x1="14" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.6"/><line x1="18" y1="8" x2="21" y2="17" stroke="currentColor" stroke-width="1.6"/><circle cx="21" cy="17" r="1.6" fill="currentColor"/></svg></button>
-      <div class="tool-label">Equip</div>
-      <div class="tool-sep"></div>
-      <button class="tool-btn" data-tool="airOutletTag" title="Air Outlet Tag — place a supply/return/exhaust tag on the drawing"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="7" cy="12" r="2" fill="currentColor" opacity="0.5"/><line x1="10" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1.3"/></svg></button>
-      <div class="tool-label">A/O Tag</div>
+      <button class="tool-btn" id="tagsToolBtn" title="Tags — Callout, Note, Elev, Equip, A/O Tag"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 6h6l3 4-3 4H3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="9" y1="10" x2="13" y2="10" stroke="currentColor" stroke-width="1.6"/><line x1="13" y1="10" x2="16" y2="16" stroke="currentColor" stroke-width="1.6"/><circle cx="16" cy="16" r="1.6" fill="currentColor"/></svg><span class="tool-btn-flyout-arrow">▸</span></button>
+      <div class="tool-label">Tags</div>
+      <div class="tool-flyout flyout-vertical hidden" id="tagsRow">
+        <div class="flyout-item" data-tool="label" title="Callout">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="4" width="12" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="15" y1="7.5" x2="19" y2="7.5" stroke="currentColor" stroke-width="1.6"/><line x1="19" y1="7.5" x2="21" y2="15" stroke="currentColor" stroke-width="1.6"/><circle cx="21" cy="15" r="1.6" fill="currentColor"/></svg></button>
+          <span class="fly-label">Callout</span>
+        </div>
+        <div class="flyout-item" data-tool="note" title="Note">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="7" y1="9" x2="17" y2="9" stroke="currentColor" stroke-width="1.3"/><line x1="7" y1="12.5" x2="17" y2="12.5" stroke="currentColor" stroke-width="1.3"/><line x1="7" y1="16" x2="13" y2="16" stroke="currentColor" stroke-width="1.3"/></svg></button>
+          <span class="fly-label">Note</span>
+        </div>
+        <div class="flyout-item" data-tool="elevation" title="Elevation">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="2" y="3" width="12" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.3"/><line x1="14" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.6"/><line x1="18" y1="8" x2="21" y2="17" stroke="currentColor" stroke-width="1.6"/><circle cx="21" cy="17" r="1.6" fill="currentColor"/></svg></button>
+          <span class="fly-label">Elev</span>
+        </div>
+        <div class="flyout-item" data-tool="equipment" title="Equipment">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 4h7l3 4-3 4H4L1 8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="1" y1="8" x2="10" y2="8" stroke="currentColor" stroke-width="1.2"/><line x1="14" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.6"/><line x1="18" y1="8" x2="21" y2="17" stroke="currentColor" stroke-width="1.6"/><circle cx="21" cy="17" r="1.6" fill="currentColor"/></svg></button>
+          <span class="fly-label">Equip</span>
+        </div>
+        <div class="flyout-item" data-tool="airOutletTag" title="A/O Tag">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="7" cy="12" r="2" fill="currentColor" opacity="0.5"/><line x1="10" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1.3"/></svg></button>
+          <span class="fly-label">A/O Tag</span>
+        </div>
+      </div>
       <div class="tool-sep"></div>
       <button class="tool-btn" data-tool="erase" title="Erase a markup"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M2 4 L2 2 L14 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M22 22 L22 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L2 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><g transform="rotate(-45 12 12)"><rect x="4" y="8.5" width="16" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="12" y1="8.5" x2="12" y2="15.5" stroke="currentColor" stroke-width="1.8"/></g></svg></button>
       <div class="tool-label">Erase</div>
@@ -471,28 +490,28 @@ input,textarea{font-family:inherit;}
       </div>
       <button class="whiteout-lock-btn" id="whiteoutLockBtn" title="Unlock whiteouts to edit them (locks out every other tool until you lock again)"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></button>
       <div class="tool-label" id="whiteoutLockLabel">Unlock</div>
-      <div class="tool-flyout hidden" id="shapeRow">
-        <button class="shape-btn active" data-shape="circle" title="Circle"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
-        <button class="shape-btn" data-shape="square" title="Square"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
-        <button class="shape-btn" data-shape="rect" title="Rectangle"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
-        <button class="shape-btn" data-shape="triangle" title="Triangle"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 3l9 18H3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
-        <button class="shape-btn" data-shape="diamond" title="Diamond"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2l9 10-9 10-9-10z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
-        <button class="shape-btn" data-shape="hexagon" title="Hexagon"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M6 4h12l4 8-4 8H6l-4-8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
-        <button class="shape-btn" data-shape="arrowFilled" title="Arrow, filled head"><svg width="18" height="18" viewBox="0 0 24 24"><line x1="3" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.8"/><polygon points="16,7 22,12 16,17" fill="currentColor"/></svg></button>
-        <button class="shape-btn" data-shape="arrowOutline" title="Arrow, outline head"><svg width="18" height="18" viewBox="0 0 24 24"><line x1="3" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.8"/><polyline points="12,6 20,12 12,18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="tool-flyout flyout-vertical hidden" id="shapeRow">
+        <div class="flyout-item active" data-shape="circle" title="Circle"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button><span class="fly-label">Circle</span></div>
+        <div class="flyout-item" data-shape="square" title="Square"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button><span class="fly-label">Square</span></div>
+        <div class="flyout-item" data-shape="rect" title="Rectangle"><button class="tool-btn" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button><span class="fly-label">Rect</span></div>
+        <div class="flyout-item" data-shape="triangle" title="Triangle"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 3l9 18H3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button><span class="fly-label">Triangle</span></div>
+        <div class="flyout-item" data-shape="diamond" title="Diamond"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2l9 10-9 10-9-10z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button><span class="fly-label">Diamond</span></div>
+        <div class="flyout-item" data-shape="hexagon" title="Hexagon"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M6 4h12l4 8-4 8H6l-4-8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button><span class="fly-label">Hexagon</span></div>
+        <div class="flyout-item" data-shape="arrowFilled" title="Arrow filled"><button class="tool-btn" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24"><line x1="3" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.8"/><polygon points="16,7 22,12 16,17" fill="currentColor"/></svg></button><span class="fly-label">Arrow</span></div>
+        <div class="flyout-item" data-shape="arrowOutline" title="Arrow outline"><button class="tool-btn" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24"><line x1="3" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.8"/><polyline points="12,6 20,12 12,18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="fly-label">Arrow 2</span></div>
       </div>
-      <div class="tool-flyout hidden" id="symbolRow">
-        <button class="shape-btn active" data-symbol="flexduct" title="Flex duct"><svg width="24" height="18" viewBox="0 0 70 40"><path d="M24.2 10.8 A13 13 0 1 0 24.2 29.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M15 20 L30 20 L34 8 L38 32 L42 8 L46 32 L50 8 L54 20 L68 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg></button>
-        <button class="shape-btn" data-symbol="pipeup" title="Pipe up"><svg width="18" height="14" viewBox="0 0 34 24"><circle cx="6" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="11" y1="12" x2="30" y2="12" stroke="currentColor" stroke-width="1.6"/></svg></button>
-        <button class="shape-btn" data-symbol="pipedown" title="Pipe down"><svg width="18" height="14" viewBox="0 0 34 24"><path d="M9.3 7.2 A5 5 0 1 0 9.3 16.8" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="6" y1="12" x2="30" y2="12" stroke="currentColor" stroke-width="1.6"/></svg></button>
-        <button class="shape-btn" data-symbol="valve" title="Valve"><svg width="17" height="14" viewBox="0 0 30 24"><path d="M3 7 L3 17 L14 12 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M27 7 L27 17 L16 12 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
-        <button class="shape-btn" data-symbol="linebreak" title="Line break"><svg width="18" height="13" viewBox="0 0 34 24"><path d="M2 12 L12 12 L15 6 L19 18 L22 12 L32 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg></button>
-        <button class="shape-btn" data-symbol="thermostat" title="Thermostat"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="12" y="16" font-size="11" font-weight="700" fill="currentColor" text-anchor="middle">T</text></svg></button>
-        <button class="shape-btn" data-symbol="damper" title="Damper"><svg width="13" height="19" viewBox="0 0 24 36"><path d="M12 4 L12 30 L18 30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></button>
-        <button class="shape-btn" data-symbol="cap" title="Cap / end of line"><svg width="13" height="19" viewBox="0 0 24 36"><path d="M9 6 L17 6 L17 30 L9 30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter"/></svg></button>
-        <button class="shape-btn" data-symbol="union" title="Union / coupling"><svg width="16" height="16" viewBox="0 0 24 24"><line x1="2" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="9" y1="7" x2="9" y2="17" stroke="currentColor" stroke-width="1.6"/><line x1="15" y1="7" x2="15" y2="17" stroke="currentColor" stroke-width="1.6"/></svg></button>
-        <button class="shape-btn" data-symbol="flowarrow" title="Flow direction"><svg width="16" height="16" viewBox="0 0 24 24"><line x1="3" y1="12" x2="18" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><polygon points="18,7 23,12 18,17" fill="currentColor"/></svg></button>
-        <button class="shape-btn" data-symbol="poc" title="POC / POD tick"><svg width="16" height="16" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M13 13 L13 2.5 A10.5 10.5 0 0 1 23.5 13 Z" fill="currentColor"/><path d="M13 13 L13 23.5 A10.5 10.5 0 0 1 2.5 13 Z" fill="currentColor"/></svg></button>
+      <div class="tool-flyout flyout-vertical hidden" id="symbolRow">
+        <div class="flyout-item active" data-symbol="flexduct" title="Flex duct"><button class="tool-btn" tabindex="-1"><svg width="24" height="18" viewBox="0 0 70 40"><path d="M24.2 10.8 A13 13 0 1 0 24.2 29.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M15 20 L30 20 L34 8 L38 32 L42 8 L46 32 L50 8 L54 20 L68 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg></button><span class="fly-label">Flex Duct</span></div>
+        <div class="flyout-item" data-symbol="pipeup" title="Pipe up"><button class="tool-btn" tabindex="-1"><svg width="18" height="14" viewBox="0 0 34 24"><circle cx="6" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="11" y1="12" x2="30" y2="12" stroke="currentColor" stroke-width="1.6"/></svg></button><span class="fly-label">Pipe Up</span></div>
+        <div class="flyout-item" data-symbol="pipedown" title="Pipe down"><button class="tool-btn" tabindex="-1"><svg width="18" height="14" viewBox="0 0 34 24"><path d="M9.3 7.2 A5 5 0 1 0 9.3 16.8" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="6" y1="12" x2="30" y2="12" stroke="currentColor" stroke-width="1.6"/></svg></button><span class="fly-label">Pipe Dn</span></div>
+        <div class="flyout-item" data-symbol="valve" title="Valve"><button class="tool-btn" tabindex="-1"><svg width="17" height="14" viewBox="0 0 30 24"><path d="M3 7 L3 17 L14 12 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M27 7 L27 17 L16 12 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button><span class="fly-label">Valve</span></div>
+        <div class="flyout-item" data-symbol="linebreak" title="Line break"><button class="tool-btn" tabindex="-1"><svg width="18" height="13" viewBox="0 0 34 24"><path d="M2 12 L12 12 L15 6 L19 18 L22 12 L32 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg></button><span class="fly-label">Break</span></div>
+        <div class="flyout-item" data-symbol="thermostat" title="Thermostat"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="12" y="16" font-size="11" font-weight="700" fill="currentColor" text-anchor="middle">T</text></svg></button><span class="fly-label">Therm.</span></div>
+        <div class="flyout-item" data-symbol="damper" title="Damper"><button class="tool-btn" tabindex="-1"><svg width="13" height="19" viewBox="0 0 24 36"><path d="M12 4 L12 30 L18 30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg></button><span class="fly-label">Damper</span></div>
+        <div class="flyout-item" data-symbol="cap" title="Cap"><button class="tool-btn" tabindex="-1"><svg width="13" height="19" viewBox="0 0 24 36"><path d="M9 6 L17 6 L17 30 L9 30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter"/></svg></button><span class="fly-label">Cap</span></div>
+        <div class="flyout-item" data-symbol="union" title="Union"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24"><line x1="2" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="9" y1="7" x2="9" y2="17" stroke="currentColor" stroke-width="1.6"/><line x1="15" y1="7" x2="15" y2="17" stroke="currentColor" stroke-width="1.6"/></svg></button><span class="fly-label">Union</span></div>
+        <div class="flyout-item" data-symbol="flowarrow" title="Flow direction"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24"><line x1="3" y1="12" x2="18" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><polygon points="18,7 23,12 18,17" fill="currentColor"/></svg></button><span class="fly-label">Flow</span></div>
+        <div class="flyout-item" data-symbol="poc" title="POC"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M13 13 L13 2.5 A10.5 10.5 0 0 1 23.5 13 Z" fill="currentColor"/><path d="M13 13 L13 23.5 A10.5 10.5 0 0 1 2.5 13 Z" fill="currentColor"/></svg></button><span class="fly-label">POC</span></div>
       </div>
     </div>
 
@@ -625,7 +644,7 @@ const state = {
   airTerminalCatalog: { items: [], nextId: 1 }, catalogModified: null,
   manufacturerDirectory: { manufacturers: [] }, manufacturerDirModified: null,
   catalogLoaded: false, takeoffCategory: 'supply', takeoffFilterText: '',
-  takeoffCategoryFilter: 'supply', // 'supply'|'return'|'exhaust'|'all'
+  takeoffCategoryFilter: 'all', // 'supply'|'return'|'exhaust'|'all'
   mLastActionPoint: null,
   whiteoutsUnlocked: false,
   airOutletRunItem: null, // { lineId, catalogId, description, category } — active placement run
@@ -2392,7 +2411,7 @@ function updateScaleChip(){
   if(!scaleGroup) return;
   const aoTagPlacing = state.tool === 'airOutletTag' && !!state.airOutletRunItem;
   const mselActive = state.tool === 'mselect';
-  if(!hasJob || !noMarkup || aoTagPlacing || mselActive || state.whiteoutsUnlocked){ scaleGroup.classList.add('hidden'); return; }
+  if(!hasJob || !noMarkup || aoTagPlacing || mselActive || state.whiteoutsUnlocked || state.splitMode){ scaleGroup.classList.add('hidden'); return; }
   scaleGroup.classList.remove('hidden');
   const txt = $('#scaleChipText'), btn = $('#scaleChipBtn');
   if(sheet && sheet.scaleCalibration){
@@ -2560,35 +2579,101 @@ document.querySelectorAll('#symbolRow .shape-btn').forEach(btn => {
 // right of its tool button (or the left, if that would run off-screen), and
 // auto-closes once something is picked or you tap anywhere else — same
 // dismiss pattern as the job dropdown.
-function openToolFlyout(toolName, flyoutId){
-  const btn = document.querySelector(`.tool-btn[data-tool="${toolName}"]`);
+function openToolFlyout(toolName, flyoutId, btnEl){
+  const btn = btnEl || document.querySelector(`.tool-btn[data-tool="${toolName}"]`);
   const flyout = document.getElementById(flyoutId);
-  if(!btn || !flyout) return;
+  if(!flyout) return;
   flyout.classList.remove('hidden');
-  const rect = btn.getBoundingClientRect();
+  // Align left edge to zoom controls (canvasArea left + 10), 4px gap from toolrail
+  const canvasArea = $('#canvasArea');
+  const caRect = canvasArea ? canvasArea.getBoundingClientRect() : null;
   const flyoutW = flyout.offsetWidth || 172, flyoutH = flyout.offsetHeight || 200;
-  let left = rect.right + 8;
-  if(left + flyoutW > window.innerWidth - 8) left = rect.left - flyoutW - 8;
-  let top = rect.top;
+  // Prefer: align with zoom controls left
+  let left = caRect ? (caRect.left + 10) : (btn ? (btn.getBoundingClientRect().right + 4) : 74);
+  if(left + flyoutW > window.innerWidth - 8) left = window.innerWidth - flyoutW - 8;
+  // Vertical: align top with the button
+  const rect = btn ? btn.getBoundingClientRect() : null;
+  let top = rect ? rect.top : 120;
   if(top + flyoutH > window.innerHeight - 8) top = window.innerHeight - flyoutH - 8;
   flyout.style.left = Math.max(8, left) + 'px';
   flyout.style.top = Math.max(8, top) + 'px';
 }
-function setupToolFlyoutToggle(toolName, flyoutId){
-  const btn = document.querySelector(`.tool-btn[data-tool="${toolName}"]`);
+function setupToolFlyoutToggle(toolName, flyoutId, btnEl){
+  const btn = btnEl || document.querySelector(`.tool-btn[data-tool="${toolName}"]`);
   if(!btn) return;
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
     const flyout = document.getElementById(flyoutId);
-    if(flyout.classList.contains('hidden')) openToolFlyout(toolName, flyoutId);
+    if(flyout.classList.contains('hidden')) openToolFlyout(toolName, flyoutId, btn);
     else flyout.classList.add('hidden');
   });
 }
 setupToolFlyoutToggle('shape', 'shapeRow');
 setupToolFlyoutToggle('symbol', 'symbolRow');
+// Tags flyout setup
+(function(){
+  const tagsBtn = $('#tagsToolBtn');
+  if(!tagsBtn) return;
+  tagsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const flyout = $('#tagsRow');
+    if(!flyout) return;
+    if(flyout.classList.contains('hidden')) openToolFlyout(null, 'tagsRow', tagsBtn);
+    else flyout.classList.add('hidden');
+  });
+  // Vertical flyout items for tags
+  document.querySelectorAll('#tagsRow .flyout-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const tool = item.dataset.tool;
+      if(!tool) return;
+      // Activate via the same mechanism as tool buttons
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+      tagsBtn.classList.add('active');
+      $('#tagsRow .flyout-item').forEach ? null : null;
+      document.querySelectorAll('#tagsRow .flyout-item').forEach(it => it.classList.remove('active'));
+      item.classList.add('active');
+      $('#tagsRow').classList.add('hidden');
+      // Dispatch a synthetic click on a virtual tool btn to use the existing tool-switching logic
+      switchToTool(tool);
+    });
+  });
+  // Update Tags button active state when tool changes
+  const origSwitchToTool = window._origSwitchToTool;
+})();
+// Vertical flyout items for shapes
+document.querySelectorAll('#shapeRow .flyout-item').forEach(item => {
+  item.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const shape = item.dataset.shape;
+    if(!shape) return;
+    document.querySelectorAll('#shapeRow .flyout-item').forEach(it => it.classList.remove('active'));
+    item.classList.add('active');
+    state.shapeType = shape;
+    $('#shapeRow').classList.add('hidden');
+    switchToTool('shape');
+  });
+});
+// Vertical flyout items for symbols
+document.querySelectorAll('#symbolRow .flyout-item').forEach(item => {
+  item.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const symbol = item.dataset.symbol;
+    if(!symbol) return;
+    document.querySelectorAll('#symbolRow .flyout-item').forEach(it => it.classList.remove('active'));
+    item.classList.add('active');
+    state.symbolType = symbol;
+    $('#symbolRow').classList.add('hidden');
+    switchToTool('symbol');
+  });
+});
 document.addEventListener('click', (e) => {
-  [['shape', 'shapeRow'], ['symbol', 'symbolRow']].forEach(([toolName, flyoutId]) => {
+  [['shape', 'shapeRow'], ['symbol', 'symbolRow'], [null, 'tagsRow']].forEach(([toolName, flyoutId]) => {
     const flyout = document.getElementById(flyoutId);
-    if(!flyout.classList.contains('hidden') && !e.target.closest(`#${flyoutId}`) && !e.target.closest(`.tool-btn[data-tool="${toolName}"]`)){
+    if(!flyout || flyout.classList.contains('hidden')) return;
+    const isTagsFlyout = flyoutId === 'tagsRow';
+    const triggerBtn = isTagsFlyout ? $('#tagsToolBtn') : (toolName ? document.querySelector(`.tool-btn[data-tool="${toolName}"]`) : null);
+    if(!e.target.closest(`#${flyoutId}`) && (!triggerBtn || !e.target.closest('#tagsToolBtn')) && !e.target.closest(`[data-tool="${toolName}"]`)){
       flyout.classList.add('hidden');
     }
   });
@@ -2611,6 +2696,9 @@ $('#takeoffToggle').addEventListener('click', async () => {
   positionFloatingControls();
   if(willShow){
     await ensureCatalogLoaded();
+    // Sync filter select to current state
+    const filterEl = $('#takeoffFlowFilter');
+    if(filterEl) filterEl.value = state.takeoffCategoryFilter || 'all';
     renderTakeoffList();
   }
 });
@@ -3261,7 +3349,12 @@ function showRunDoneBtn(){
   const rb = $('#runDoneBtn');
   rb.classList.remove('hidden');
   rb.textContent = (state.tool === 'hatcharea') ? 'Close ✓' : 'Done ✓';
-  $('#multilineUndoBtn').classList.remove('hidden');
+  // Hide the undo button during AO tag placement — it does nothing there
+  if(state.airOutletRunItem || state.tool === 'airOutletTag'){
+    $('#multilineUndoBtn').classList.add('hidden');
+  } else {
+    $('#multilineUndoBtn').classList.remove('hidden');
+  }
   positionRunDoneBtn();
 }
 function hideRunDoneBtn(){
@@ -3674,6 +3767,7 @@ function showAirOutletTagPickerModal(){
       state.airOutletRunItem = { lineId: li.lineId, catalogId: li.catalogId, description: li.description, category: li.cat };
       const bar = $('#actionBarDynamic');
       bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(li.description || '')}</strong> — tap canvas to add, Done to finish</span>`;
+      updateScaleChip();
       showRunDoneBtn();
     });
     list.appendChild(row);
@@ -4684,6 +4778,12 @@ function enterSplitMode(markupId){
   _showSplitBar();
   mCanvas.style.cursor = 'crosshair';
   updatePickersVisibility();
+  updateScaleChip();
+  // 5-second idle timeout — auto-exit if no tap is made
+  if(state._splitTimeout) clearTimeout(state._splitTimeout);
+  state._splitTimeout = setTimeout(() => {
+    if(state.splitMode){ exitSplitMode(); }
+  }, 5000);
 }
 
 function _showSplitBar(){
@@ -4707,9 +4807,11 @@ function _showSplitBar(){
 function exitSplitMode(){
   state.splitMode = false;
   state.splitMarkupId = null;
+  if(state._splitTimeout){ clearTimeout(state._splitTimeout); state._splitTimeout = null; }
   mCanvas.style.cursor = '';
   clearMarkupActionButtons();
   updatePickersVisibility();
+  updateScaleChip();
   drawAllMarkups();
 }
 
@@ -4758,7 +4860,9 @@ function performSplit(pt){
   const idx = sheet.markups.findIndex(x => x.id === bestM.id);
   sheet.markups.splice(idx, 1, m1, m2);
   markDirty(); drawAllMarkups(); renderNoteList(); renderTakeoffList();
-  // Stay in split mode — bar already showing, cursor stays crosshair
+  // Stay in split mode — reset the 5s idle timeout after each successful split
+  if(state._splitTimeout) clearTimeout(state._splitTimeout);
+  state._splitTimeout = setTimeout(() => { if(state.splitMode) exitSplitMode(); }, 5000);
 }
 
 function drawShape(m){
@@ -5715,7 +5819,7 @@ function renderTakeoffList(){
     groups[style][mfr][row.cat].push(row);
   });
 
-  const NCOLS = 15; // Edit | Dup | ↕ | # (place) | Tag | Mfg. | Model | SizeA | SizeB | Frame | Color | Sheet Qty | Notes | Total Qty | Del
+  const NCOLS = 16; // Edit | Dup | ↕ | # (place) | Schedule Tag | Manufacturer | Model | SizeA | SizeB | Frame | Color | Sheet Qty | Vendor | Notes | Total Qty | Del
   const table = document.createElement('table');
   table.className = 'ao-table';
 
@@ -5723,21 +5827,22 @@ function renderTakeoffList(){
   const thead = table.createTHead();
   const hdr = thead.insertRow();
   [
-    { label:'',           cls:'ao-th-action' },
-    { label:'',           cls:'ao-th-action' },
-    { label:'',           cls:'ao-th-order' },
-    { label:'#',          cls:'ao-th-num' },
-    { label:'Tag' },
-    { label:'Mfg.' },
+    { label:'',                cls:'ao-th-action' },
+    { label:'',                cls:'ao-th-action' },
+    { label:'',                cls:'ao-th-order' },
+    { label:'#',               cls:'ao-th-num' },
+    { label:'Schedule Tag' },
+    { label:'Manufacturer' },
     { label:'Model' },
-    { label:'Neck Size',  id:'aoThSizeA' },
-    { label:'Face Size',  id:'aoThSizeB' },
+    { label:'Neck Size',       id:'aoThSizeA' },
+    { label:'Face Size',       id:'aoThSizeB' },
     { label:'Frame Type' },
     { label:'Color' },
-    { label:'Sheet Qty',  cls:'ao-th-num' },
+    { label:'Sheet Qty',       cls:'ao-th-num' },
+    { label:'Vendor' },
     { label:'Notes' },
-    { label:'Total Qty',  cls:'ao-th-num' },
-    { label:'',           cls:'ao-th-del' },
+    { label:'Total Qty',       cls:'ao-th-num' },
+    { label:'',                cls:'ao-th-del' },
   ].forEach(h => {
     const th = document.createElement('th');
     th.textContent = h.label || '';
@@ -5857,7 +5962,9 @@ function renderTakeoffList(){
           numBtn.textContent = li.scheduleNum != null ? String(li.scheduleNum) : '#';
           tdNum.appendChild(numBtn);
 
-          // Cols 4–13: data (Tag, Mfg., Model, SizeA, SizeB, Frame, Color, Sheet Qty, Notes, Total Qty)
+          // Cols 4–14: data (Schedule Tag, Manufacturer, Model, SizeA, SizeB, Frame, Color, Sheet Qty, Vendor, Notes, Total Qty)
+          const vendor = (state.manufacturerDirectory && state.manufacturerDirectory.manufacturers || [])
+            .find(m => m.name === c.manufacturer)?.vendor || '';
           [
             li.scheduleTag || li.description || '',
             c.manufacturer || '',
@@ -5867,13 +5974,14 @@ function renderTakeoffList(){
             li.frameType || '',
             li.color || '',
             sheetQty > 0 ? String(sheetQty) : '—',
+            vendor,
             li.notes || '',
             totalQty > 0 ? String(totalQty) : '—',
           ].forEach((val, i) => {
             const td = tr.insertCell();
             td.textContent = val;
-            if(i === 7) { td.className = 'ao-td-num'; if(sheetQty > 0) td.style.color = color; }
-            if(i === 9) { td.className = 'ao-td-num'; if(totalQty > 0) td.style.color = color; }
+            if(i === 7)  { td.className = 'ao-td-num'; if(sheetQty > 0) td.style.color = color; }
+            if(i === 10) { td.className = 'ao-td-num'; if(totalQty > 0) td.style.color = color; }
           });
 
           // Col 14: Delete button (far right)
@@ -6014,6 +6122,7 @@ function wireTakeoffRowEvents(){
       switchToTool('airOutletTag');
       const bar = $('#actionBarDynamic');
       bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(li.scheduleTag || li.description || '')}</strong> — tap to aim, tap again to confirm</span>`;
+      updateScaleChip();
       showRunDoneBtn();
     });
   });
@@ -6068,27 +6177,29 @@ function exportTakeoffPDF(){
       const sizeALabel = isLinear ? 'Length'   : 'Neck Size';
       const sizeBLabel = isLinear ? 'Slots'    : 'Face Size';
 
-      html += `<tr class="group-style"><td colspan="12">${styleLabel}</td></tr>`;
+      html += `<tr class="group-style"><td colspan="11">${styleLabel}</td></tr>`;
       html += `<tr class="col-header">
         <td>ID</td><td>Schedule Tag</td><td>Manufacturer</td><td>Model</td>
         <td>${sizeALabel}</td><td>${sizeBLabel}</td><td>Frame Type</td><td>Color</td>
-        <td class="num">Sheet Qty</td><td>Location</td><td>Notes</td>
+        <td class="num">Sheet Qty</td><td>Vendor</td><td>Notes</td>
       </tr>`;
 
       Object.keys(groups[style]).sort().forEach(mfr => {
-        html += `<tr class="group-mfr"><td colspan="12">${mfr}</td></tr>`;
+        html += `<tr class="group-mfr"><td colspan="11">${mfr}</td></tr>`;
         FLOW_TYPES.forEach(cat => {
           const items = groups[style][mfr][cat];
           if(!items || items.length === 0) return;
           const col = catColors[cat];
           html += `<tr class="group-flow" style="color:${col};border-left:3px solid ${col}">
-            <td colspan="12">&#9679; ${catLabels[cat]}</td></tr>`;
+            <td colspan="11">&#9679; ${catLabels[cat]}</td></tr>`;
           items.forEach(({ li, c, qty, totalQty }) => {
             const isL  = c.terminalStyle === 'LINEAR';
             const sizeA = isL ? (c.length  || '') : (li.neckSize  || c.neckSize  || '');
             const sizeB = isL ? (c.numSlots ? c.numSlots + ' slots' : '') : (li.faceSize  || c.faceSize  || '');
             const frameType = li.frameType || c.frameType || '';
             const itemColor = li.color     || c.color     || '';
+            const vendor = (state.manufacturerDirectory && state.manufacturerDirectory.manufacturers || [])
+              .find(m => m.name === c.manufacturer)?.vendor || '';
             html += `<tr class="data-row">
               <td>${li.scheduleNum != null ? li.scheduleNum : (c.id != null ? c.id : '')}</td>
               <td>${escapeHtml(li.scheduleTag || li.description || '')}</td>
@@ -6099,7 +6210,7 @@ function exportTakeoffPDF(){
               <td>${escapeHtml(frameType)}</td>
               <td>${escapeHtml(itemColor)}</td>
               <td class="num" style="color:${col};font-weight:700;">${qty}</td>
-              <td>${escapeHtml(li.location || '')}</td>
+              <td>${escapeHtml(vendor)}</td>
               <td>${escapeHtml(li.notes || '')}</td>
             </tr>`;
           });
@@ -6377,8 +6488,6 @@ function showTakeoffJobDetailsModal(catalogItem, existingLineItem, existingCat, 
     <label class="modal-field-label">Color</label>
     <input type="text" id="tColor" list="dlColor" placeholder="e.g. WHITE" value="${isEdit ? escapeAttr(li.color || '') : ''}">
     <datalist id="dlColor">${(presets.color||[]).map(v=>`<option value="${escapeAttr(v)}">`).join('')}</datalist>
-    <label class="modal-field-label">Location / Area</label>
-    <input type="text" id="tLoc" value="${isEdit ? escapeAttr(li.location || '') : ''}">
     <label class="modal-field-label">Notes</label>
     <input type="text" id="tNotes" value="${isEdit ? escapeAttr(li.notes || '') : ''}">
     <p style="font-size:11px;color:#888;margin:4px 0 8px;">Qty is tracked automatically from tags placed on the drawing.</p>
@@ -6399,7 +6508,6 @@ function showTakeoffJobDetailsModal(catalogItem, existingLineItem, existingCat, 
     const faceSize    = card.querySelector('#tFace').value.trim().toUpperCase();
     const frameType   = card.querySelector('#tFrame').value.trim().toUpperCase();
     const color       = card.querySelector('#tColor').value.trim().toUpperCase();
-    const location    = card.querySelector('#tLoc').value.trim().toUpperCase();
     const notes       = card.querySelector('#tNotes').value.trim().toUpperCase();
     close();
     if(isEdit){
@@ -6409,7 +6517,6 @@ function showTakeoffJobDetailsModal(catalogItem, existingLineItem, existingCat, 
       existingLineItem.faceSize    = faceSize;
       existingLineItem.frameType   = frameType;
       existingLineItem.color       = color;
-      existingLineItem.location    = location;
       existingLineItem.notes       = notes;
       // Sync tagLabel on all matching canvas markups
       (state.data.sheets || []).forEach(sheet => {
@@ -6424,7 +6531,7 @@ function showTakeoffJobDetailsModal(catalogItem, existingLineItem, existingCat, 
       const lineItem = {
         lineId: genId(), catalogId: catalogItem.id,
         scheduleTag, description: scheduleTag,
-        neckSize, faceSize, frameType, color, location, notes,
+        neckSize, faceSize, frameType, color, notes,
       };
       if(!state.data.airTerminalTakeoff) state.data.airTerminalTakeoff = { supply: [], return: [], exhaust: [] };
       state.data.airTerminalTakeoff[cat].push(lineItem);
