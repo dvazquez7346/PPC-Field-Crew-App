@@ -2931,21 +2931,25 @@ function onPointerMove(e){
   if(twoFingersActive()) return;
   const p = canvasPoint(e);
 
-  // In split mode: show a snap dot on the nearest point of the route
+  // In split mode: show a snap dot on the nearest point of any route
   if(state.splitMode){
     const sheet = activeSheet();
-    const m = sheet && sheet.markups.find(x => x.id === state.splitMarkupId);
     drawAllMarkups(); // clear previous overlay
-    if(m && m.points){
-      const result = nearestPointOnPolyline(m.points, p);
-      if(result && result.dist < 60 / state.zoom){
+    if(sheet){
+      let bestResult = null;
+      sheet.markups.forEach(m => {
+        if(m.type !== 'multiline' || !m.points || m.points.length < 2) return;
+        const res = nearestPointOnPolyline(m.points, p);
+        if(res && (!bestResult || res.dist < bestResult.dist)) bestResult = res;
+      });
+      if(bestResult && bestResult.dist < 60 / state.zoom){
         const ctx = mCanvas.getContext('2d');
         ctx.save();
         ctx.fillStyle = '#FF0000';
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(result.pt.x, result.pt.y, 5 / state.zoom, 0, Math.PI * 2);
+        ctx.arc(bestResult.pt.x, bestResult.pt.y, 5 / state.zoom, 0, Math.PI * 2);
         ctx.fill(); ctx.stroke();
         ctx.restore();
       }
@@ -4174,8 +4178,8 @@ function showMarkupActionButtons(markupId){
     });
     buttonRow.appendChild(ltBtn);
   }
-  // Split button — only for multiline with 2+ segments (3+ points)
-  if(m.type === 'multiline' && m.points && m.points.length >= 3){
+  // Split button — any multiline with at least 2 points (one segment)
+  if(m.type === 'multiline' && m.points && m.points.length >= 2){
     const splitBtn = document.createElement('button');
     splitBtn.textContent = 'Split';
     splitBtn.title = 'Split this route into two at a point you tap';
@@ -4198,52 +4202,52 @@ function showMarkupActionButtons(markupId){
     });
     buttonRow.appendChild(dupBtn);
   }
-  // ---- Color section (left of stroke, right of edit buttons) ----
+  // ---- Color dropdown ----
   if(m.type !== 'whiteoutRect' && m.type !== 'whiteoutFreeform' && m.type !== 'airOutletTag'){
-    const divColor = document.createElement('span');
-    divColor.className = 'action-bar-divider';
-    buttonRow.appendChild(divColor);
-    PALETTE.forEach(c => {
-      const dot = document.createElement('button');
-      dot.className = 'markup-color-dot' + (m.color === c ? ' active' : '');
-      dot.style.background = c;
-      dot.title = c;
-      dot.addEventListener('click', (e) => {
-        e.stopPropagation();
+    buttonRow.appendChild(Object.assign(document.createElement('span'), {className:'action-bar-divider'}));
+    const colorBtn = document.createElement('button');
+    colorBtn.className = 'picker-dd-btn';
+    const colorSwatch = document.createElement('span');
+    colorSwatch.className = 'picker-dd-color-swatch';
+    colorSwatch.style.background = m.color || PALETTE[0];
+    const colorLabel = document.createElement('span');
+    colorLabel.textContent = COLOR_NAMES[m.color] || m.color || 'Color';
+    const colorArrow = document.createElement('span');
+    colorArrow.className = 'picker-dd-arrow'; colorArrow.textContent = '▾';
+    colorBtn.append(colorSwatch, colorLabel, colorArrow);
+    colorBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _openPickerDropdown(colorBtn, PALETTE.map(_buildColorItem), (c) => {
         m.color = c;
-        if(m.groupId){
-          sheet.markups.forEach(gm => { if(gm.groupId === m.groupId) gm.color = c; });
-        }
-        markDirty();
-        drawAllMarkups();
-        renderNoteList();
+        if(m.groupId) sheet.markups.forEach(gm => { if(gm.groupId === m.groupId) gm.color = c; });
+        markDirty(); drawAllMarkups(); renderNoteList();
         showMarkupActionButtons(markupId);
       });
-      buttonRow.appendChild(dot);
     });
+    buttonRow.appendChild(colorBtn);
   }
 
-  // ---- Stroke section — visual line-thickness dots matching the no-selection picker ----
+  // ---- Stroke dropdown ----
   if(['line', 'multiline', 'freehand', 'shape', 'symbol'].includes(m.type)){
-    const divStroke = document.createElement('span');
-    divStroke.className = 'action-bar-divider';
-    buttonRow.appendChild(divStroke);
-    [2, 4, 7].forEach(t => {
-      const btn = document.createElement('button');
-      btn.className = 'action-bar-stroke-btn' + ((m.thickness || 3) === t ? ' active' : '');
-      btn.title = t === 2 ? 'Thin' : t === 4 ? 'Medium' : 'Thick';
-      const line = document.createElement('span');
-      line.style.cssText = `display:block;width:16px;height:${t}px;background:#16202C;border-radius:1px;`;
-      btn.appendChild(line);
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
+    buttonRow.appendChild(Object.assign(document.createElement('span'), {className:'action-bar-divider'}));
+    const strokeBtn = document.createElement('button');
+    strokeBtn.className = 'picker-dd-btn';
+    const curT = m.thickness || 2;
+    const strokeSvg = _buildStrokeItem(curT).preview;
+    const strokeLabel = document.createElement('span');
+    strokeLabel.textContent = STROKE_NAMES[curT] || `${curT}px`;
+    const strokeArrow = document.createElement('span');
+    strokeArrow.className = 'picker-dd-arrow'; strokeArrow.textContent = '▾';
+    strokeBtn.append(strokeSvg, strokeLabel, strokeArrow);
+    strokeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _openPickerDropdown(strokeBtn, [2,4,7].map(_buildStrokeItem), (t) => {
         m.thickness = t;
-        markDirty();
-        drawAllMarkups();
+        markDirty(); drawAllMarkups();
         showMarkupActionButtons(markupId);
       });
-      buttonRow.appendChild(btn);
     });
+    buttonRow.appendChild(strokeBtn);
   }
 
   // ---- Delete button — right after stroke ----
@@ -4671,86 +4675,90 @@ function nearestPointOnPolyline(points, pt){
   return best;
 }
 
-// Enter split mode for the given multiline markup id.
+// Enter split mode. splitMarkupId is unused after entry — we find the nearest
+// multiline dynamically so the user can split any route any number of times.
 function enterSplitMode(markupId){
   state.splitMode = true;
-  state.splitMarkupId = markupId;
+  state.splitMarkupId = markupId; // kept only as a hint for the first tap
   state.selectedMarkupId = null;
+  _showSplitBar();
+  mCanvas.style.cursor = 'crosshair';
+  updatePickersVisibility();
+}
+
+function _showSplitBar(){
   const bar = $('#actionBarDynamic');
   bar.innerHTML = '';
   const row = document.createElement('div');
   row.style.cssText = 'display:flex;align-items:center;gap:8px;';
   const msg = document.createElement('span');
+  msg.id = 'splitBarMsg';
   msg.style.cssText = 'font-size:12px;font-weight:600;color:var(--navy);white-space:nowrap;';
-  msg.textContent = 'Tap a point on the route to split it';
+  msg.textContent = 'Tap any route to split — tap again to keep splitting';
   row.appendChild(msg);
-  const cancelBtn = document.createElement('button');
-  cancelBtn.textContent = 'Cancel';
-  cancelBtn.style.cssText = 'font-family:inherit;font-size:11.5px;font-weight:600;padding:4px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);cursor:pointer;height:28px;flex-shrink:0;';
-  cancelBtn.addEventListener('click', () => exitSplitMode(false));
-  row.appendChild(cancelBtn);
+  const doneBtn = document.createElement('button');
+  doneBtn.textContent = 'Done';
+  doneBtn.style.cssText = 'font-family:inherit;font-size:11.5px;font-weight:600;padding:4px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);cursor:pointer;height:28px;flex-shrink:0;';
+  doneBtn.addEventListener('click', () => exitSplitMode());
+  row.appendChild(doneBtn);
   bar.appendChild(row);
-  mCanvas.style.cursor = 'crosshair';
-  updatePickersVisibility(); // hides pickers while split mode is active
 }
 
-function exitSplitMode(selectId){
+function exitSplitMode(){
   state.splitMode = false;
   state.splitMarkupId = null;
   mCanvas.style.cursor = '';
   clearMarkupActionButtons();
   updatePickersVisibility();
-  if(selectId) switchToSelectAndSelect(selectId);
+  drawAllMarkups();
 }
 
 // Called from onPointerDown when splitMode is active.
+// Finds the nearest multiline to the tap point and splits it there.
+// Stays in split mode so the user can keep splitting.
 function performSplit(pt){
   const sheet = activeSheet();
-  if(!sheet) { exitSplitMode(false); return; }
-  const m = sheet.markups.find(x => x.id === state.splitMarkupId);
-  if(!m || m.type !== 'multiline' || m.points.length < 2){ exitSplitMode(false); return; }
+  if(!sheet) { exitSplitMode(); return; }
 
-  const result = nearestPointOnPolyline(m.points, pt);
-  if(!result) { exitSplitMode(false); return; }
+  // Find nearest multiline to the tap
+  let bestM = null, bestResult = null;
+  sheet.markups.forEach(m => {
+    if(m.type !== 'multiline' || !m.points || m.points.length < 2) return;
+    const res = nearestPointOnPolyline(m.points, pt);
+    if(res && (!bestResult || res.dist < bestResult.dist)){ bestM = m; bestResult = res; }
+  });
 
-  // Hit radius: 44 canvas pixels regardless of zoom so a fat finger can tap loosely
   const hitRadius = 44 / state.zoom;
-  if(result.dist > hitRadius){
-    // Visual flash to tell the user the tap missed
-    const bar = $('#actionBarDynamic');
-    const hint = bar.querySelector('span');
-    if(hint){ const orig = hint.textContent; hint.textContent = 'Tap closer to the route line'; hint.style.color = 'var(--danger)';
-      setTimeout(() => { if(hint.isConnected){ hint.textContent = orig; hint.style.color = 'var(--navy)'; } }, 1400); }
-    return; // Stay in split mode so they can try again
+  if(!bestM || bestResult.dist > hitRadius){
+    const msg = $('#splitBarMsg');
+    if(msg){ const orig = msg.textContent; msg.textContent = 'Tap closer to a route line'; msg.style.color = 'var(--danger)';
+      setTimeout(() => { if(msg.isConnected){ msg.textContent = orig; msg.style.color = 'var(--navy)'; } }, 1400); }
+    return; // stay in split mode
   }
 
-  const { segIndex, t, pt: splitPt } = result;
-
-  // Build the two halves. Insert the split point into both.
-  // If t ≈ 0, the split point coincides with points[segIndex]; avoid a 1-pt array.
-  // If t ≈ 1, split point coincides with points[segIndex+1].
+  const { segIndex, t, pt: splitPt } = bestResult;
   const EPS = 0.02;
   let pts1, pts2;
   if(t < EPS){
-    pts1 = m.points.slice(0, segIndex + 1);
-    pts2 = m.points.slice(segIndex);
+    pts1 = bestM.points.slice(0, segIndex + 1);
+    pts2 = bestM.points.slice(segIndex);
   } else if(t > 1 - EPS){
-    pts1 = m.points.slice(0, segIndex + 2);
-    pts2 = m.points.slice(segIndex + 1);
+    pts1 = bestM.points.slice(0, segIndex + 2);
+    pts2 = bestM.points.slice(segIndex + 1);
   } else {
-    pts1 = [...m.points.slice(0, segIndex + 1), { x: splitPt.x, y: splitPt.y }];
-    pts2 = [{ x: splitPt.x, y: splitPt.y }, ...m.points.slice(segIndex + 1)];
+    pts1 = [...bestM.points.slice(0, segIndex + 1), { x: splitPt.x, y: splitPt.y }];
+    pts2 = [{ x: splitPt.x, y: splitPt.y }, ...bestM.points.slice(segIndex + 1)];
   }
-  if(pts1.length < 2 || pts2.length < 2){ exitSplitMode(false); return; }
+  if(pts1.length < 2 || pts2.length < 2) return; // degenerate — ignore
 
-  const base = { color: m.color, thickness: m.thickness, lineType: m.lineType, hatched: m.hatched, note: m.note };
+  const base = { color: bestM.color, thickness: bestM.thickness, lineType: bestM.lineType, hatched: bestM.hatched, note: bestM.note };
   const m1 = { ...base, id: genId(), type: 'multiline', points: pts1, createdAt: Date.now() };
   const m2 = { ...base, id: genId(), type: 'multiline', points: pts2, createdAt: Date.now() };
 
-  const idx = sheet.markups.findIndex(x => x.id === m.id);
+  const idx = sheet.markups.findIndex(x => x.id === bestM.id);
   sheet.markups.splice(idx, 1, m1, m2);
   markDirty(); drawAllMarkups(); renderNoteList(); renderTakeoffList();
-  exitSplitMode(m1.id); // select the first half
+  // Stay in split mode — bar already showing, cursor stays crosshair
 }
 
 function drawShape(m){
@@ -6631,7 +6639,7 @@ document.addEventListener('keydown', (e) => {
   const tag = (document.activeElement && document.activeElement.tagName) || '';
   if(tag === 'INPUT' || tag === 'TEXTAREA') return;
   if($('#modalRoot').innerHTML.trim() !== '') return; // let modal handle its own Esc
-  if(state.splitMode){ exitSplitMode(false); return; }
+  if(state.splitMode){ exitSplitMode(); return; }
   if(state.drawing){
     state.drawing = false;
     state.currentStroke = null;
