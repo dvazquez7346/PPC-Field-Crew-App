@@ -2200,8 +2200,8 @@ function positionRunDoneBtn(){
     const last = state.multiPoints[state.multiPoints.length - 1];
     const mRect = mCanvas.getBoundingClientRect();
     const scaleX = mRect.width / mCanvas.width, scaleY = mRect.height / mCanvas.height;
-    anchorLeft = mRect.left + last.x * scaleX - 20;
-    anchorTop = mRect.top + last.y * scaleY - 80;
+    anchorLeft = mRect.left + last.x * scaleX + 110;
+    anchorTop = mRect.top + last.y * scaleY - 110;
   } else {
     anchorLeft = rect.right - 116;
     anchorTop = rect.top + 16;
