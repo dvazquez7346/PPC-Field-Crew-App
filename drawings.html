@@ -573,6 +573,7 @@ input,textarea{font-family:inherit;}
       <button class="run-done-btn hidden" id="runDoneBtn">Done ✓</button>
       <button class="run-done-btn hidden" id="mSelectGroupBtn" style="display:none!important;"></button>
       <button class="run-done-btn hidden" id="mSelectUngroupBtn" style="display:none!important;"></button>
+      <button class="run-done-btn hidden" id="mSelectClearBtn" style="background:#2F5D8A;border:none;color:#fff;">Clear Selection</button>
     </div>
 
     <div class="panel panel-hidden" id="panel">
@@ -2194,6 +2195,7 @@ window.addEventListener('orientationchange', () => setTimeout(positionFloatingCo
 function positionRunDoneBtn(){
   const rb = $('#runDoneBtn');
   const ub = $('#multilineUndoBtn');
+  const cb = $('#mSelectClearBtn');
   const rect = $('#canvasArea').getBoundingClientRect();
   let anchorLeft, anchorTop;
   if(state.multiPoints && state.multiPoints.length > 0 && state.pageViewport){
@@ -2202,6 +2204,11 @@ function positionRunDoneBtn(){
     const scaleX = mRect.width / mCanvas.width, scaleY = mRect.height / mCanvas.height;
     anchorLeft = mRect.left + last.x * scaleX + 110;
     anchorTop = mRect.top + last.y * scaleY - 110;
+  } else if(state.tool === 'mselect' && state.mLastActionPoint && state.pageViewport){
+    const mRect = mCanvas.getBoundingClientRect();
+    const scaleX = mRect.width / mCanvas.width, scaleY = mRect.height / mCanvas.height;
+    anchorLeft = mRect.left + state.mLastActionPoint.x * scaleX + 110;
+    anchorTop  = mRect.top  + state.mLastActionPoint.y * scaleY - 110;
   } else {
     anchorLeft = rect.right - 116;
     anchorTop = rect.top + 16;
@@ -2216,6 +2223,11 @@ function positionRunDoneBtn(){
   } else {
     rb.style.top = anchorTop + 'px';
     rb.style.left = anchorLeft + 'px';
+  }
+  // Clear Selection button — shown when mselect has items, stacked below anchor
+  if(cb && !cb.classList.contains('hidden')){
+    cb.style.top  = (anchorTop + 44) + 'px';
+    cb.style.left = anchorLeft + 'px';
   }
 }
 
@@ -3539,9 +3551,25 @@ function showRunDoneBtn(){
   }
   positionRunDoneBtn();
 }
+function showMSelectClearBtn(){
+  $('#mSelectClearBtn').classList.remove('hidden');
+  positionRunDoneBtn();
+}
+function hideMSelectClearBtn(){
+  $('#mSelectClearBtn').classList.add('hidden');
+}
+$('#mSelectClearBtn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  state.multiSelectedIds.clear();
+  drawAllMarkups();
+  updateMSelectActionBar();
+  hideMSelectClearBtn();
+  positionRunDoneBtn();
+});
 function hideRunDoneBtn(){
   $('#runDoneBtn').classList.add('hidden');
   $('#multilineUndoBtn').classList.add('hidden');
+  hideMSelectClearBtn();
   // If we were in an airOutletTag placement run, end it and clear all ghost state
   if(state.airOutletRunItem){
     clearAirOutletSessionTimer();
@@ -4802,8 +4830,14 @@ function updateMSelectActionBar(){
   bar.appendChild(row);
 }
 
-// Group/Ungroup are now inline in updateMSelectActionBar — this is a no-op stub.
-function positionMSelectButtons(){ /* no-op — buttons live in the action bar */ }
+// Show/hide the floating Clear Selection button based on whether items are selected.
+function positionMSelectButtons(){
+  if(state.tool === 'mselect' && state.multiSelectedIds.size > 0){
+    showMSelectClearBtn();
+  } else {
+    hideMSelectClearBtn();
+  }
+}
 
 /* ============================================================
    RENDERING
