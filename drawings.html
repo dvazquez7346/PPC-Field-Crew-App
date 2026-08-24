@@ -7141,7 +7141,6 @@ function showDamperTagPickerModal(){
     list.appendChild(row);
   });
   card.querySelector('.cancel').addEventListener('click', () => { root.innerHTML = ''; switchToTool('select'); });
-  backdrop.addEventListener('click', (e) => { if(e.target === backdrop){ root.innerHTML = ''; switchToTool('select'); } });
 }
 
 /* ── Renumber + count helpers ── */
@@ -7564,7 +7563,6 @@ function showDamperCategoryPickerModal(){
     });
   });
   card.querySelector('.cancel').addEventListener('click', () => { root.innerHTML = ''; });
-  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) root.innerHTML = ''; });
 }
 
 /* ── Add / edit row modal ── */
@@ -7709,7 +7707,6 @@ function showDamperRowModal(cat, existingLi){
   });
 
   card.querySelector('.cancel').addEventListener('click', () => { root.innerHTML = ''; });
-  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) root.innerHTML = ''; });
 }
 
 // Checkpoint-style undo: every markDirty() call snapshots the sheet's
