@@ -7587,6 +7587,7 @@ function showDamperRowModal(cat, existingLi){
   const li = existingLi || {};
   const catColor = DAMPER_CATEGORY_COLORS[cat] || '#DC2626';
   const catLabel = DAMPER_CATEGORY_LABELS[cat] || cat;
+  const ceilOpen = (li.ceilingAccessDoor || 'NO') === 'YES';
   const root = $('#modalRoot');
   root.innerHTML = '';
   const backdrop = document.createElement('div');
@@ -7594,12 +7595,18 @@ function showDamperRowModal(cat, existingLi){
   const card = document.createElement('div');
   card.className = 'modal-card';
   card.style.maxWidth = '480px';
+
+  const sideOpts = (cur) => ['RIGHT','LEFT'].map(s => `<option value="${s}" ${cur === s ? 'selected' : ''}>${s}</option>`).join('');
+  const ynOpts  = (cur, def='NO') => ['NO','YES'].map(v => `<option value="${v}" ${(cur||def) === v ? 'selected' : ''}>${v}</option>`).join('');
+
   card.innerHTML = `
     <div class="disp" style="display:flex;align-items:center;gap:8px;">
       <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${catColor};flex-shrink:0;"></span>
       ${isEdit ? 'Edit' : 'Add'} ${escapeHtml(catLabel)} Damper
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+
+      <!-- Schedule Tag | System -->
       <div>
         <label class="modal-field-label">Schedule Tag</label>
         <input type="text" id="dmTag" placeholder="e.g. FD-1" value="${isEdit ? escapeAttr(li.scheduleTag || '') : ''}">
@@ -7610,6 +7617,8 @@ function showDamperRowModal(cat, existingLi){
           ${SYSTEMS.map(s => `<option value="${s}" ${(li.system||'SUPPLY') === s ? 'selected' : ''}>${SYSTEM_LABELS[s]}</option>`).join('')}
         </select>
       </div>
+
+      <!-- Manufacturer | Model -->
       <div>
         <label class="modal-field-label">Manufacturer</label>
         <input type="text" id="dmMfg" placeholder="e.g. RUSKIN" value="${isEdit ? escapeAttr(li.manufacturer || '') : ''}">
@@ -7618,14 +7627,28 @@ function showDamperRowModal(cat, existingLi){
         <label class="modal-field-label">Model</label>
         <input type="text" id="dmModel" placeholder="e.g. MD35" value="${isEdit ? escapeAttr(li.model || '') : ''}">
       </div>
+
+      <!-- Vendor | Sleeve Length -->
       <div>
-        <label class="modal-field-label">Width</label>
-        <input type="text" id="dmWidth" placeholder='e.g. 24"' value="${isEdit ? escapeAttr(li.width || '') : ''}">
+        <label class="modal-field-label">Vendor</label>
+        <input type="text" id="dmVendor" placeholder="e.g. PRICE" value="${isEdit ? escapeAttr(li.vendor || '') : ''}">
       </div>
+      <div>
+        <label class="modal-field-label">Sleeve Length</label>
+        <input type="text" id="dmSleeveLength" placeholder='e.g. 16"' value="${isEdit ? escapeAttr(li.sleeveLength || '') : ''}">
+      </div>
+
+      <!-- Height | Width -->
       <div>
         <label class="modal-field-label">Height</label>
         <input type="text" id="dmHeight" placeholder='e.g. 24"' value="${isEdit ? escapeAttr(li.height || '') : ''}">
       </div>
+      <div>
+        <label class="modal-field-label">Width</label>
+        <input type="text" id="dmWidth" placeholder='e.g. 24"' value="${isEdit ? escapeAttr(li.width || '') : ''}">
+      </div>
+
+      <!-- Rating | Actuator -->
       <div>
         <label class="modal-field-label">Rating</label>
         <select id="dmRating">
@@ -7635,9 +7658,11 @@ function showDamperRowModal(cat, existingLi){
       <div>
         <label class="modal-field-label">Actuator</label>
         <select id="dmActuator">
-          ${['RIGHT','LEFT','BOTH'].map(a => `<option value="${a}" ${(li.actuator||'RIGHT') === a ? 'selected' : ''}>${a}</option>`).join('')}
+          ${['RIGHT','LEFT'].map(a => `<option value="${a}" ${(li.actuator||'RIGHT') === a ? 'selected' : ''}>${a}</option>`).join('')}
         </select>
       </div>
+
+      <!-- Mount | Duct Access Door -->
       <div>
         <label class="modal-field-label">Mount</label>
         <select id="dmMount">
@@ -7647,24 +7672,66 @@ function showDamperRowModal(cat, existingLi){
       <div>
         <label class="modal-field-label">Duct Access Door</label>
         <select id="dmDuctDoor">
-          ${['NO','YES'].map(v => `<option value="${v}" ${(li.ductAccessDoor||'NO') === v ? 'selected' : ''}>${v}</option>`).join('')}
+          ${ynOpts(li.ductAccessDoor)}
         </select>
       </div>
-      <div>
-        <label class="modal-field-label">Ceiling Access Door</label>
-        <select id="dmCeilDoor">
-          ${['NO','YES'].map(v => `<option value="${v}" ${(li.ceilingAccessDoor||'NO') === v ? 'selected' : ''}>${v}</option>`).join('')}
-        </select>
+
+      <!-- Ceiling Access Door — full width -->
+      <div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div>
+          <label class="modal-field-label">Ceiling Access Door</label>
+          <select id="dmCeilDoor">
+            ${ynOpts(li.ceilingAccessDoor)}
+          </select>
+        </div>
+        <div></div>
       </div>
-      <div id="dmCeilSizeWrap" style="${(li.ceilingAccessDoor||'NO') !== 'YES' ? 'display:none' : ''}">
-        <label class="modal-field-label">Ceiling Door Size</label>
-        <input type="text" id="dmCeilSize" placeholder="e.g. 12X12" value="${isEdit ? escapeAttr(li.ceilingDoorSize || '') : ''}">
+
+      <!-- Conditional: Qty. | Ceiling Door Size -->
+      <div id="dmCeilSubWrap" style="grid-column:1/-1;${ceilOpen ? '' : 'display:none;'}display:${ceilOpen ? 'grid' : 'none'};grid-template-columns:1fr 1fr;gap:8px;">
+        <div>
+          <label class="modal-field-label">Qty.</label>
+          <input type="number" id="dmCeilQty" min="1" placeholder="1" value="${isEdit && li.ceilingDoorQty ? escapeAttr(String(li.ceilingDoorQty)) : ''}">
+        </div>
+        <div>
+          <label class="modal-field-label">Ceiling Door Size</label>
+          <input type="text" id="dmCeilSize" placeholder="e.g. 12X12" value="${isEdit ? escapeAttr(li.ceilingDoorSize || '') : ''}">
+        </div>
       </div>
+
+      <!-- Controls & Devices section -->
+      <div style="grid-column:1/-1;margin-top:4px;padding-top:10px;border-top:1px solid var(--line);">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">Controls &amp; Devices</div>
+
+        <!-- RRL -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="min-width:72px;font-size:12.5px;font-weight:600;color:var(--ink);">RRL</span>
+          <select id="dmRRL" style="width:80px;">${ynOpts(li.rrl)}</select>
+          <select id="dmRRLSide" style="width:80px;${(li.rrl||'NO') !== 'YES' ? 'display:none' : ''}">${sideOpts(li.rrlSide||'RIGHT')}</select>
+        </div>
+
+        <!-- RRL/OCI -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="min-width:72px;font-size:12.5px;font-weight:600;color:var(--ink);">RRL/OCI</span>
+          <select id="dmRRLOCI" style="width:80px;">${ynOpts(li.rrlOci)}</select>
+          <select id="dmRRLOCISide" style="width:80px;${(li.rrlOci||'NO') !== 'YES' ? 'display:none' : ''}">${sideOpts(li.rrlOciSide||'RIGHT')}</select>
+        </div>
+
+        <!-- TOR -->
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="min-width:72px;font-size:12.5px;font-weight:600;color:var(--ink);">TOR</span>
+          <select id="dmTOR" style="width:80px;">${ynOpts(li.tor)}</select>
+          <select id="dmTORSide" style="width:80px;${(li.tor||'NO') !== 'YES' ? 'display:none' : ''}">${sideOpts(li.torSide||'RIGHT')}</select>
+        </div>
+      </div>
+
+      <!-- Notes — full width -->
+      <div style="grid-column:1/-1;margin-top:4px;">
+        <label class="modal-field-label">Notes</label>
+        <input type="text" id="dmNotes" placeholder="Notes" value="${isEdit ? escapeAttr(li.notes || '') : ''}">
+      </div>
+
     </div>
-    <label class="modal-field-label" style="margin-top:8px;">Vendor</label>
-    <input type="text" id="dmVendor" placeholder="Vendor" value="${isEdit ? escapeAttr(li.vendor || '') : ''}">
-    <label class="modal-field-label" style="margin-top:8px;">Notes</label>
-    <input type="text" id="dmNotes" placeholder="Notes" value="${isEdit ? escapeAttr(li.notes || '') : ''}">
     <div class="modal-row" style="margin-top:14px;">
       <button type="button" class="cancel">Cancel</button>
       <button type="button" class="confirm" id="dmSaveBtn">${isEdit ? 'Save' : 'Add'}</button>
@@ -7672,46 +7739,68 @@ function showDamperRowModal(cat, existingLi){
   backdrop.appendChild(card);
   root.appendChild(backdrop);
 
-  // Uppercase inputs
-  ['dmTag','dmMfg','dmModel','dmWidth','dmHeight','dmCeilSize','dmVendor'].forEach(id => forceUpperCaseInput(document.getElementById(id)));
+  // Uppercase all text inputs
+  ['dmTag','dmMfg','dmModel','dmVendor','dmSleeveLength','dmHeight','dmWidth','dmCeilSize','dmNotes'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) forceUpperCaseInput(el);
+  });
 
-  // Show/hide ceiling door size
+  // Ceiling Access Door — show/hide sub-fields
   const ceilSel = document.getElementById('dmCeilDoor');
-  const ceilWrap = document.getElementById('dmCeilSizeWrap');
-  ceilSel.addEventListener('change', () => { ceilWrap.style.display = ceilSel.value === 'YES' ? '' : 'none'; });
+  const ceilSub = document.getElementById('dmCeilSubWrap');
+  ceilSel.addEventListener('change', () => {
+    const show = ceilSel.value === 'YES';
+    ceilSub.style.display = show ? 'grid' : 'none';
+  });
+
+  // Controls & Devices — show/hide side selects
+  [['dmRRL','dmRRLSide'],['dmRRLOCI','dmRRLOCISide'],['dmTOR','dmTORSide']].forEach(([ynId, sideId]) => {
+    const yn = document.getElementById(ynId);
+    const side = document.getElementById(sideId);
+    yn.addEventListener('change', () => { side.style.display = yn.value === 'YES' ? '' : 'none'; });
+  });
 
   document.getElementById('dmSaveBtn').addEventListener('click', () => {
-    const scheduleTag = document.getElementById('dmTag').value.trim();
-    const system = document.getElementById('dmSystem').value;
-    const manufacturer = document.getElementById('dmMfg').value.trim();
-    const model = document.getElementById('dmModel').value.trim();
-    const width = document.getElementById('dmWidth').value.trim();
-    const height = document.getElementById('dmHeight').value.trim();
-    const rating = document.getElementById('dmRating').value;
-    const actuator = document.getElementById('dmActuator').value;
-    const mount = document.getElementById('dmMount').value;
+    const scheduleTag    = document.getElementById('dmTag').value.trim();
+    const system         = document.getElementById('dmSystem').value;
+    const manufacturer   = document.getElementById('dmMfg').value.trim();
+    const model          = document.getElementById('dmModel').value.trim();
+    const vendor         = document.getElementById('dmVendor').value.trim();
+    const sleeveLength   = document.getElementById('dmSleeveLength').value.trim();
+    const height         = document.getElementById('dmHeight').value.trim();
+    const width          = document.getElementById('dmWidth').value.trim();
+    const rating         = document.getElementById('dmRating').value;
+    const actuator       = document.getElementById('dmActuator').value;
+    const mount          = document.getElementById('dmMount').value;
     const ductAccessDoor = document.getElementById('dmDuctDoor').value;
     const ceilingAccessDoor = document.getElementById('dmCeilDoor').value;
+    const ceilingDoorQty  = ceilingAccessDoor === 'YES' ? (parseInt(document.getElementById('dmCeilQty').value) || 1) : null;
     const ceilingDoorSize = ceilingAccessDoor === 'YES' ? document.getElementById('dmCeilSize').value.trim() : '';
-    const vendor = document.getElementById('dmVendor').value.trim();
-    const notes = document.getElementById('dmNotes').value.trim();
+    const rrl     = document.getElementById('dmRRL').value;
+    const rrlSide = rrl === 'YES' ? document.getElementById('dmRRLSide').value : '';
+    const rrlOci     = document.getElementById('dmRRLOCI').value;
+    const rrlOciSide = rrlOci === 'YES' ? document.getElementById('dmRRLOCISide').value : '';
+    const tor     = document.getElementById('dmTOR').value;
+    const torSide = tor === 'YES' ? document.getElementById('dmTORSide').value : '';
+    const notes   = document.getElementById('dmNotes').value.trim();
 
     if(!scheduleTag){ document.getElementById('dmTag').focus(); return; }
 
+    const fields = { scheduleTag, system, manufacturer, model, vendor, sleeveLength,
+      height, width, rating, actuator, mount, ductAccessDoor,
+      ceilingAccessDoor, ceilingDoorQty, ceilingDoorSize,
+      rrl, rrlSide, rrlOci, rrlOciSide, tor, torSide, notes };
+
     if(isEdit){
-      Object.assign(li, { scheduleTag, system, manufacturer, model, width, height, rating, actuator, mount, ductAccessDoor, ceilingAccessDoor, ceilingDoorSize, vendor, notes });
-      // Update canvas markups with new tag label
+      Object.assign(li, fields);
+      // Sync canvas tag labels
       (state.data.sheets || []).forEach(sheet => {
         (sheet.markups || []).forEach(m => {
           if(m.type === 'damperTag' && m.lineId === li.lineId) m.tagLabel = scheduleTag;
         });
       });
     } else {
-      const newLi = {
-        lineId: genId(), scheduleTag, system, manufacturer, model, width, height,
-        rating, actuator, mount, ductAccessDoor, ceilingAccessDoor, ceilingDoorSize,
-        vendor, notes,
-      };
+      const newLi = { lineId: genId(), ...fields };
       if(!state.data.damperTakeoff[cat]) state.data.damperTakeoff[cat] = [];
       state.data.damperTakeoff[cat].push(newLi);
     }
