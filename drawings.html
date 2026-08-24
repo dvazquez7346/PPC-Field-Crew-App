@@ -7676,7 +7676,7 @@ function showDamperRowModal(cat, existingLi){
         </select>
       </div>
 
-      <!-- Ceiling Access Door — full width -->
+      <!-- Ceiling Access Door | Qty. -->
       <div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <div>
           <label class="modal-field-label">Ceiling Access Door</label>
@@ -7684,19 +7684,19 @@ function showDamperRowModal(cat, existingLi){
             ${ynOpts(li.ceilingAccessDoor)}
           </select>
         </div>
-        <div></div>
-      </div>
-
-      <!-- Conditional: Qty. | Ceiling Door Size -->
-      <div id="dmCeilSubWrap" style="grid-column:1/-1;${ceilOpen ? '' : 'display:none;'}display:${ceilOpen ? 'grid' : 'none'};grid-template-columns:1fr 1fr;gap:8px;">
-        <div>
+        <div id="dmCeilQtyWrap" style="${ceilOpen ? '' : 'display:none;'}">
           <label class="modal-field-label">Qty.</label>
           <input type="number" id="dmCeilQty" min="1" placeholder="1" value="${isEdit && li.ceilingDoorQty ? escapeAttr(String(li.ceilingDoorQty)) : ''}">
         </div>
+      </div>
+
+      <!-- Conditional: Ceiling Door Size -->
+      <div id="dmCeilSubWrap" style="grid-column:1/-1;display:${ceilOpen ? 'grid' : 'none'};grid-template-columns:1fr 1fr;gap:8px;">
         <div>
           <label class="modal-field-label">Ceiling Door Size</label>
           <input type="text" id="dmCeilSize" placeholder="e.g. 12X12" value="${isEdit ? escapeAttr(li.ceilingDoorSize || '') : ''}">
         </div>
+        <div></div>
       </div>
 
       <!-- Controls & Devices section -->
@@ -7707,21 +7707,21 @@ function showDamperRowModal(cat, existingLi){
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
           <span style="min-width:72px;font-size:12.5px;font-weight:600;color:var(--ink);">RRL</span>
           <select id="dmRRL" style="width:80px;">${ynOpts(li.rrl)}</select>
-          <select id="dmRRLSide" style="width:80px;${(li.rrl||'NO') !== 'YES' ? 'display:none' : ''}">${sideOpts(li.rrlSide||'RIGHT')}</select>
+          <select id="dmRRLSide" style="width:100px;${(li.rrl||'NO') !== 'YES' ? 'display:none' : ''}">${sideOpts(li.rrlSide||'RIGHT')}</select>
         </div>
 
         <!-- RRL/OCI -->
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
           <span style="min-width:72px;font-size:12.5px;font-weight:600;color:var(--ink);">RRL/OCI</span>
           <select id="dmRRLOCI" style="width:80px;">${ynOpts(li.rrlOci)}</select>
-          <select id="dmRRLOCISide" style="width:80px;${(li.rrlOci||'NO') !== 'YES' ? 'display:none' : ''}">${sideOpts(li.rrlOciSide||'RIGHT')}</select>
+          <select id="dmRRLOCISide" style="width:100px;${(li.rrlOci||'NO') !== 'YES' ? 'display:none' : ''}">${sideOpts(li.rrlOciSide||'RIGHT')}</select>
         </div>
 
         <!-- TOR -->
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="min-width:72px;font-size:12.5px;font-weight:600;color:var(--ink);">TOR</span>
           <select id="dmTOR" style="width:80px;">${ynOpts(li.tor)}</select>
-          <select id="dmTORSide" style="width:80px;${(li.tor||'NO') !== 'YES' ? 'display:none' : ''}">${sideOpts(li.torSide||'RIGHT')}</select>
+          <select id="dmTORSide" style="width:100px;${(li.tor||'NO') !== 'YES' ? 'display:none' : ''}">${sideOpts(li.torSide||'RIGHT')}</select>
         </div>
       </div>
 
@@ -7748,8 +7748,10 @@ function showDamperRowModal(cat, existingLi){
   // Ceiling Access Door — show/hide sub-fields
   const ceilSel = document.getElementById('dmCeilDoor');
   const ceilSub = document.getElementById('dmCeilSubWrap');
+  const ceilQtyWrap = document.getElementById('dmCeilQtyWrap');
   ceilSel.addEventListener('change', () => {
     const show = ceilSel.value === 'YES';
+    ceilQtyWrap.style.display = show ? '' : 'none';
     ceilSub.style.display = show ? 'grid' : 'none';
   });
 
