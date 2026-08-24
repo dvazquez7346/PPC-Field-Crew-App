@@ -4061,8 +4061,8 @@ function handlePointsForMarkup(m){
     const cornerCount = isClosed ? n - 1 : n;
     const handles = [];
     for(let i = 0; i < cornerCount; i++) handles.push({ key: 'pt' + i, p: pts[i] });
-    // Midpoint segment grips — hatch area only
-    if(m.type === 'hatcharea'){
+    // Midpoint segment grips — hatch area and multiline
+    if(m.type === 'hatcharea' || m.type === 'multiline'){
       for(let i = 0; i < n - 1; i++){
         const a = pts[i], b = pts[i + 1];
         handles.push({ key: 'mid' + i, p: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } });
