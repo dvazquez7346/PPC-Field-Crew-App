@@ -2749,6 +2749,13 @@ setupToolFlyoutToggle('symbol', 'symbolRow');
       $('#tagsRow').classList.add('hidden');
       // Dispatch a synthetic click on a virtual tool btn to use the existing tool-switching logic
       switchToTool(tool);
+      // Immediately open picker for tag tools — no canvas click required
+      if(tool === 'airOutletTag'){
+        setTimeout(() => { if(state.tool === 'airOutletTag') placeAirOutletTag(); }, 10);
+      }
+      if(tool === 'damperTag'){
+        setTimeout(() => { if(state.tool === 'damperTag') placeDamperTag(); }, 10);
+      }
     });
   });
   // Update Tags button active state when tool changes
@@ -4018,7 +4025,21 @@ function handlePointsForMarkup(m){
     return handles;
   }
   if(m.type === 'multiline' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform' || m.type === 'hatchline'){
-    const handles = m.points.map((p, i) => ({ key: 'pt' + i, p }));
+    const pts = m.points, n = pts.length;
+    // For closed hatch areas the last point == first point (fused corner).
+    // Show only one handle for that shared vertex so they don't overlap.
+    const isClosed = m.type === 'hatcharea' && n >= 2 &&
+      Math.hypot(pts[0].x - pts[n-1].x, pts[0].y - pts[n-1].y) < 1;
+    const cornerCount = isClosed ? n - 1 : n;
+    const handles = [];
+    for(let i = 0; i < cornerCount; i++) handles.push({ key: 'pt' + i, p: pts[i] });
+    // Midpoint segment grips — hatch area only
+    if(m.type === 'hatcharea'){
+      for(let i = 0; i < n - 1; i++){
+        const a = pts[i], b = pts[i + 1];
+        handles.push({ key: 'mid' + i, p: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } });
+      }
+    }
     const c = markupCenterPoint(m);
     handles.push({ key: 'move', p: c });
     return handles;
@@ -4187,6 +4208,23 @@ function applyDragHandle(drag, p){
     m.textPos = p;
     return;
   }
+  if(drag.key.startsWith('mid')){
+    // Segment grip: move both adjacent corner points by the same delta
+    const i = parseInt(drag.key.slice(3), 10);
+    const dx = p.x - drag.startPoint.x, dy = p.y - drag.startPoint.y;
+    m.points[i]     = { x: drag.origins.points[i].x     + dx, y: drag.origins.points[i].y     + dy };
+    m.points[i + 1] = { x: drag.origins.points[i + 1].x + dx, y: drag.origins.points[i + 1].y + dy };
+    // Keep fused corner in sync for closed hatch areas
+    if(m.type === 'hatcharea'){
+      const last = m.points.length - 1;
+      const o0 = drag.origins.points[0], oLast = drag.origins.points[last];
+      if(Math.hypot(o0.x - oLast.x, o0.y - oLast.y) < 1){
+        if(i === 0)          m.points[last] = { ...m.points[0] };
+        if(i + 1 === last)   m.points[0]    = { ...m.points[last] };
+      }
+    }
+    return;
+  }
   if(drag.key.startsWith('pt')){
     const idx = parseInt(drag.key.slice(2), 10);
     if(m.type === 'multiline' && m.points.length >= 2){
@@ -4209,6 +4247,14 @@ function applyDragHandle(drag, p){
       }
     }
     m.points[idx] = p;
+    // Sync fused corner for closed hatch areas
+    if(m.type === 'hatcharea'){
+      const last = m.points.length - 1;
+      const o0 = drag.origins.points[0], oLast = drag.origins.points[last];
+      if(Math.hypot(o0.x - oLast.x, o0.y - oLast.y) < 1 && idx === 0){
+        m.points[last] = { ...p };
+      }
+    }
     return;
   }
   if(m.type === 'dimension' && drag.key === 'extOffset'){
@@ -5015,6 +5061,22 @@ function drawHandles(m){
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = 1.5;
       ctx.stroke();
+      return;
+    }
+    if(h.key.startsWith('mid')){
+      // Blue outlined diamond — drag to slide both adjacent corners together
+      ctx.save();
+      ctx.translate(h.p.x, h.p.y);
+      ctx.rotate(Math.PI / 4);
+      const s = 5;
+      ctx.beginPath();
+      ctx.rect(-s, -s, s * 2, s * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.strokeStyle = '#2F5D8A';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+      ctx.restore();
       return;
     }
     ctx.beginPath();
