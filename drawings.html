@@ -153,6 +153,9 @@ input,textarea{font-family:inherit;}
 .panel-resize-handle:hover{background:rgba(0,0,0,0.08);}
 .panel{background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;position:relative;}
 .panel.panel-hidden{display:none;}
+#takeoffPanelsWrap{display:none;flex-direction:column;flex-shrink:0;background:var(--surface);border-left:1px solid var(--line);position:relative;}
+#takeoffPanelsWrap>.panel{flex:1;min-height:0;border-left:none;}
+#damperTakeoffPanel:not(.panel-hidden){border-top:1px solid var(--line);}
 .panel-head{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
 .panel-filter-row{display:flex;gap:6px;padding:8px 16px;border-bottom:1px solid var(--line);}
 /* Takeoff panel – category buttons (Supply/Return/Exhaust) */
@@ -590,59 +593,62 @@ input,textarea{font-family:inherit;}
       </div>
     </div>
 
-    <div class="panel panel-hidden" id="takeoffPanel">
-      <div class="panel-resize-handle" id="takeoffResizeHandle"></div>
-      <div class="panel-head">
-        <div>
-          <div class="disp">Air Outlet Takeoff</div>
-          <div class="count" id="takeoffCount">0 items</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <button class="takeoff-export-btn" id="takeoffRefreshBtn" title="Refresh takeoff data">↻ Refresh</button>
-          <button class="takeoff-export-btn" id="takeoffExportBtn" title="Export takeoff as PDF">⬇ Export PDF</button>
-          <button class="panel-close" id="takeoffCloseBtn">✕</button>
-        </div>
-      </div>
-      <div class="takeoff-toolbar">
-        <button class="takeoff-add-btn" id="takeoffAddBtn">+ Add Air Outlet</button>
-        <select id="takeoffFlowFilter" class="takeoff-flow-filter">
-          <option value="all">All</option>
-          <option value="supply">Supply</option>
-          <option value="return">Return</option>
-          <option value="exhaust">Exhaust</option>
-        </select>
-        <button class="takeoff-apply-order-btn" id="takeoffApplyOrderBtn" style="display:none;">Apply Order</button>
-      </div>
-      <div class="panel-list takeoff-table-wrap" id="takeoffList">
-        <div class="panel-empty">No items yet.</div>
-      </div>
-    </div>
+    <!-- ── Stacked takeoff panels wrapper ── -->
+    <div id="takeoffPanelsWrap">
+      <div class="panel-resize-handle" id="takeoffWrapResizeHandle"></div>
 
-    <!-- ── Smoke & Fire Damper Takeoff Panel ── -->
-    <div class="panel panel-hidden" id="damperTakeoffPanel">
-      <div class="panel-resize-handle" id="damperResizeHandle"></div>
-      <div class="panel-head">
-        <div>
-          <div class="disp">Smoke &amp; Fire Damper Takeoff</div>
-          <div class="count" id="damperTakeoffCount">0 items</div>
+      <div class="panel panel-hidden" id="takeoffPanel">
+        <div class="panel-head">
+          <div>
+            <div class="disp">Air Outlet Takeoff</div>
+            <div class="count" id="takeoffCount">0 items</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="takeoff-export-btn" id="takeoffRefreshBtn" title="Refresh takeoff data">↻ Refresh</button>
+            <button class="takeoff-export-btn" id="takeoffExportBtn" title="Export takeoff as PDF">⬇ Export PDF</button>
+            <button class="panel-close" id="takeoffCloseBtn">✕</button>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <button class="takeoff-export-btn" id="damperTakeoffExportBtn" title="Export as PDF">⬇ Export PDF</button>
-          <button class="panel-close" id="damperTakeoffCloseBtn">✕</button>
+        <div class="takeoff-toolbar">
+          <button class="takeoff-add-btn" id="takeoffAddBtn">+ Add Air Outlet</button>
+          <select id="takeoffFlowFilter" class="takeoff-flow-filter">
+            <option value="all">All</option>
+            <option value="supply">Supply</option>
+            <option value="return">Return</option>
+            <option value="exhaust">Exhaust</option>
+          </select>
+          <button class="takeoff-apply-order-btn" id="takeoffApplyOrderBtn" style="display:none;">Apply Order</button>
+        </div>
+        <div class="panel-list takeoff-table-wrap" id="takeoffList">
+          <div class="panel-empty">No items yet.</div>
         </div>
       </div>
-      <div class="takeoff-toolbar">
-        <button class="takeoff-add-btn" id="damperTakeoffAddBtn" style="background:#DC2626;">+ Add Damper</button>
-        <select id="damperCatFilter" class="takeoff-flow-filter">
-          <option value="all">All Categories</option>
-          <option value="fire">Fire</option>
-          <option value="smoke">Smoke</option>
-          <option value="combination">Combination (FSD)</option>
-        </select>
-        <button class="takeoff-apply-order-btn" id="damperApplyOrderBtn" style="display:none;">Apply Order</button>
-      </div>
-      <div class="panel-list takeoff-table-wrap" id="damperTakeoffList">
-        <div class="panel-empty">No items yet.</div>
+
+      <!-- ── Smoke & Fire Damper Takeoff Panel ── -->
+      <div class="panel panel-hidden" id="damperTakeoffPanel">
+        <div class="panel-head">
+          <div>
+            <div class="disp">Smoke &amp; Fire Damper Takeoff</div>
+            <div class="count" id="damperTakeoffCount">0 items</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="takeoff-export-btn" id="damperTakeoffExportBtn" title="Export as PDF">⬇ Export PDF</button>
+            <button class="panel-close" id="damperTakeoffCloseBtn">✕</button>
+          </div>
+        </div>
+        <div class="takeoff-toolbar">
+          <button class="takeoff-add-btn" id="damperTakeoffAddBtn" style="background:#DC2626;">+ Add Damper</button>
+          <select id="damperCatFilter" class="takeoff-flow-filter">
+            <option value="all">All Categories</option>
+            <option value="fire">Fire</option>
+            <option value="smoke">Smoke</option>
+            <option value="combination">Combination (FSD)</option>
+          </select>
+          <button class="takeoff-apply-order-btn" id="damperApplyOrderBtn" style="display:none;">Apply Order</button>
+        </div>
+        <div class="panel-list takeoff-table-wrap" id="damperTakeoffList">
+          <div class="panel-empty">No items yet.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -1262,6 +1268,7 @@ function exitToBlankCanvas(){
   $('#panel').classList.add('panel-hidden');
   $('#takeoffPanel').classList.add('panel-hidden');
   $('#damperTakeoffPanel').classList.add('panel-hidden');
+  if(typeof updateTakeoffWrapperVisibility === 'function') updateTakeoffWrapperVisibility();
   positionFloatingControls();
   renderSheetTabs();
   drawAllMarkups();
@@ -1633,6 +1640,7 @@ async function openJobById(jobId, initialJobName){
   $('#panel').classList.add('panel-hidden');
   $('#takeoffPanel').classList.add('panel-hidden');
   $('#damperTakeoffPanel').classList.add('panel-hidden');
+  if(typeof updateTakeoffWrapperVisibility === 'function') updateTakeoffWrapperVisibility();
   positionFloatingControls();
   setStatus('loading', 'Loading job ' + jobId + '…');
   const fileName = `job-${jobId}-markup.json`;
@@ -2794,6 +2802,12 @@ $('#panelCloseBtn').addEventListener('click', () => {
   $('#panel').classList.add('panel-hidden');
   positionFloatingControls();
 });
+// Keeps the wrapper visible iff at least one child panel is open
+function updateTakeoffWrapperVisibility(){
+  const aotHidden  = $('#takeoffPanel').classList.contains('panel-hidden');
+  const dmprHidden = $('#damperTakeoffPanel').classList.contains('panel-hidden');
+  $('#takeoffPanelsWrap').style.display = (aotHidden && dmprHidden) ? 'none' : 'flex';
+}
 // Takeoffs ▾ button — toggles dropdown
 $('#takeoffToggle').addEventListener('click', (e) => {
   e.stopPropagation();
@@ -2801,12 +2815,12 @@ $('#takeoffToggle').addEventListener('click', (e) => {
 });
 // Close dropdown when clicking outside
 document.addEventListener('click', () => { $('#takeoffsDd').classList.add('hidden'); });
-// Air Terminals item
+// Air Terminals item — toggles independently (both panels can be open at once)
 $('#takeoffsDdAOT').addEventListener('click', async () => {
   $('#takeoffsDd').classList.add('hidden');
   const willShow = $('#takeoffPanel').classList.contains('panel-hidden');
-  $('#takeoffPanel').classList.remove('panel-hidden');
-  $('#damperTakeoffPanel').classList.add('panel-hidden');
+  $('#takeoffPanel').classList.toggle('panel-hidden');
+  updateTakeoffWrapperVisibility();
   positionFloatingControls();
   if(willShow){
     await ensureCatalogLoaded();
@@ -2815,12 +2829,12 @@ $('#takeoffsDdAOT').addEventListener('click', async () => {
     renderTakeoffList();
   }
 });
-// Smoke & Fire Dampers item
+// Smoke & Fire Dampers item — toggles independently
 $('#takeoffsDdDamper').addEventListener('click', () => {
   $('#takeoffsDd').classList.add('hidden');
   const willShow = $('#damperTakeoffPanel').classList.contains('panel-hidden');
-  $('#damperTakeoffPanel').classList.remove('panel-hidden');
-  $('#takeoffPanel').classList.add('panel-hidden');
+  $('#damperTakeoffPanel').classList.toggle('panel-hidden');
+  updateTakeoffWrapperVisibility();
   positionFloatingControls();
   if(willShow){
     const filterEl = $('#damperCatFilter');
@@ -2830,10 +2844,12 @@ $('#takeoffsDdDamper').addEventListener('click', () => {
 });
 $('#takeoffCloseBtn').addEventListener('click', () => {
   $('#takeoffPanel').classList.add('panel-hidden');
+  updateTakeoffWrapperVisibility();
   positionFloatingControls();
 });
 $('#damperTakeoffCloseBtn').addEventListener('click', () => {
   $('#damperTakeoffPanel').classList.add('panel-hidden');
+  updateTakeoffWrapperVisibility();
   positionFloatingControls();
 });
 $('#damperCatFilter').addEventListener('change', (e) => {
@@ -2939,8 +2955,7 @@ document.addEventListener('click', (e) => {
     });
   }
   addResizeHandle('panelResizeHandle', 'panel', 450);
-  addResizeHandle('takeoffResizeHandle', 'takeoffPanel', 1100);
-  addResizeHandle('damperResizeHandle', 'damperTakeoffPanel', 1100);
+  addResizeHandle('takeoffWrapResizeHandle', 'takeoffPanelsWrap', 1100);
 })();
 
 /* ============================================================
