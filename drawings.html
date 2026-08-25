@@ -86,6 +86,8 @@ input,textarea{font-family:inherit;}
 .zoom-controls button:hover{background:var(--surface-2);}
 #zoomFitBtn{font-size:14px;}
 .run-done-btn{position:fixed;background:var(--success);color:#fff;border:none;font-weight:600;font-size:13px;padding:9px 16px;border-radius:9px;box-shadow:var(--shadow);z-index:45;}
+#axisLockChip{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1B2A41;color:#fff;font-size:11.5px;font-weight:700;letter-spacing:0.04em;padding:5px 13px;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.28);z-index:60;pointer-events:none;display:none;white-space:nowrap;}
+#axisLockChip.visible{display:block;}
 .run-done-btn:hover{background:#256e46;}
 .action-bar{background:var(--surface);border-bottom:1px solid var(--line);padding:0 10px;display:flex;align-items:center;height:42px;overflow:hidden;flex-wrap:nowrap;position:relative;}
 .action-bar-hint{font-size:12px;color:var(--danger);font-weight:600;}
@@ -671,6 +673,7 @@ input,textarea{font-family:inherit;}
 </div>
 
 <div id="modalRoot"></div>
+<div id="axisLockChip">⇧ Axis Lock — H / V only</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2/lib/msal-browser.min.js"></script>
 <script src="shared-app-core.js?v=3"></script>
@@ -750,6 +753,7 @@ const state = {
   offsetGhost: null,        // [{x,y}] — offset polyline to preview
   offsetSide: 1,            // +1 or -1, determined by cursor position relative to nearest segment
   offsetSourceMarkupId: null, // id of markup being hovered (for highlight)
+  shiftDown: false, // tracks Shift key for axis-lock in angle snap
 };
 
 const ANGLE_STEP = 15; // degrees — snap increment for Line/Run tools
@@ -3050,7 +3054,8 @@ function angleSnap(from, to){
   const dist = Math.hypot(dx, dy);
   if(dist < 1) return to;
   let angle = Math.atan2(dy, dx) * (180 / Math.PI);
-  angle = Math.round(angle / ANGLE_STEP) * ANGLE_STEP;
+  const step = state.shiftDown ? 90 : ANGLE_STEP; // Shift = axis-lock (H/V only)
+  angle = Math.round(angle / step) * step;
   const rad = angle * (Math.PI / 180);
   return { x: from.x + Math.cos(rad) * dist, y: from.y + Math.sin(rad) * dist };
 }
@@ -9034,6 +9039,37 @@ document.addEventListener('keydown', (e) => {
   state.ghostDimPos = null;
   switchToTool('select');
   drawAllMarkups();
+});
+
+// Shift key — axis lock for angleSnap (H/V only while held).
+// Redraws the live preview so the ghost snaps immediately on key press.
+function _refreshDrawPreview(){
+  if(state.tool === 'line' && state.drawing && state.currentStroke){
+    drawAllMarkups(); drawLine(state.currentStroke);
+  } else if((state.tool === 'multiline' || state.tool === 'hatchline') && state.routeDragging){
+    drawAllMarkups();
+    if(state.tool === 'hatchline') drawHatchLinePreview(state.multiPoints);
+    else drawMultilinePreview(state.multiPoints);
+  } else if(state.tool === 'multiline' && state.multilineGhostPos){
+    drawAllMarkups();
+  }
+}
+document.addEventListener('keydown', (e) => {
+  if(e.key !== 'Shift') return;
+  const tag = (document.activeElement && document.activeElement.tagName) || '';
+  if(tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if(state.shiftDown) return;
+  state.shiftDown = true;
+  const chip = document.getElementById('axisLockChip');
+  if(chip) chip.classList.add('visible');
+  _refreshDrawPreview();
+});
+document.addEventListener('keyup', (e) => {
+  if(e.key !== 'Shift') return;
+  state.shiftDown = false;
+  const chip = document.getElementById('axisLockChip');
+  if(chip) chip.classList.remove('visible');
+  _refreshDrawPreview();
 });
 
 // Periodic silent auto-save — every 2 minutes, if there's unsaved work,
