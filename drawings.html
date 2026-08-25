@@ -3492,9 +3492,10 @@ function onPointerMove(e){
     drawAllMarkups();
     drawShape(state.currentStroke);
   } else if(state.tool === 'dimension' && state.drawing){
-    const dimSn = findSnapPoint(canvasPointClearFingertip(e));
-    state.snapPoint = dimSn || null;
     const dimRaw = canvasPointClearFingertip(e);
+    state._lastDimRawP1 = dimRaw;
+    const dimSn = findSnapPoint(dimRaw);
+    state.snapPoint = dimSn || null;
     state.currentStroke.p1 = dimSn ? dimSn.pt : (state.shiftDown ? axisSnap(state.currentStroke.p0, dimRaw) : dimRaw);
     drawAllMarkups();
     drawDimensionPreview(state.currentStroke.p0, state.currentStroke.p1);
@@ -3602,7 +3603,7 @@ function switchToTool(toolName){
   if(toolName !== 'multiline') state.multilineGhostPos = null;
   if(toolName !== 'symbol') state.ghostSymbolPos = null;
   state.tool = toolName;
-  if(toolName !== 'dimension') state.ghostDimPos = null; // clear ghost when leaving dim tool
+  if(toolName !== 'dimension'){ state.ghostDimPos = null; state._lastDimRawP1 = null; } // clear ghost when leaving dim tool
   if(!['label','note','elevation','equipment'].includes(toolName)) state.ghostLeaderPos = null;
 }
 
@@ -9660,6 +9661,7 @@ document.addEventListener('keydown', (e) => {
     state.currentStroke = null;
   }
   state.ghostDimPos = null;
+  state._lastDimRawP1 = null;
   switchToTool('select');
   drawAllMarkups();
 });
@@ -9669,6 +9671,15 @@ document.addEventListener('keydown', (e) => {
 function _refreshDrawPreview(){
   if(state.tool === 'line' && state.drawing && state.currentStroke){
     drawAllMarkups(); drawLine(state.currentStroke);
+  } else if(state.tool === 'dimension' && state.drawing && state.currentStroke){
+    // Recompute p1 from last known raw position respecting updated shiftDown
+    if(state._lastDimRawP1){
+      const sn = state.snapPoint;
+      const p0 = state.currentStroke.p0;
+      state.currentStroke.p1 = sn ? sn.pt : (state.shiftDown ? axisSnap(p0, state._lastDimRawP1) : state._lastDimRawP1);
+    }
+    drawAllMarkups();
+    drawDimensionPreview(state.currentStroke.p0, state.currentStroke.p1);
   } else if((state.tool === 'multiline' || state.tool === 'hatchline') && state.routeDragging){
     drawAllMarkups();
     if(state.tool === 'hatchline') drawHatchLinePreview(state.multiPoints);
