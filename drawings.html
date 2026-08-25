@@ -6100,6 +6100,9 @@ function drawSymbolMarker(m){
   ctx.restore();
 }
 function drawSymFlexDuct(ctx, mode){
+  // Opaque white background so the symbol reads cleanly over drawing lines
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(-33, -13, 66, 26);
   ctx.beginPath();
   ctx.arc(-20, 0, 13, Math.PI * 0.25, Math.PI * 1.75);
   ctx.stroke();
