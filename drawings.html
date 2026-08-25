@@ -725,7 +725,7 @@ const state = {
   multiPoints: null, routeDragging: false, routeSegmentStart: null,
   lastTapTime: 0, lastTapX: 0, lastTapY: 0,
   panState: null,
-  selectedMarkupId: null, dragHandle: null,
+  selectedMarkupId: null, dragHandle: null, selectPanFallback: null,
   jobsIndexCache: null,
   zoom: 1, naturalWidth: 0, naturalHeight: 0,
   activePointers: new Map(), pinchState: null,
@@ -2287,7 +2287,7 @@ $('#canvasArea').addEventListener('pointerdown', (e) => {
       startZoom: state.zoom,
     };
     // A second finger just landed — cancel any single-pointer draw/select in progress.
-    state.drawing = false; state.currentStroke = null; state.dragHandle = null; state.panState = null; state.routeDragging = false;
+    state.drawing = false; state.currentStroke = null; state.dragHandle = null; state.selectPanFallback = null; state.panState = null; state.routeDragging = false;
   }
 });
 $('#canvasArea').addEventListener('pointermove', (e) => {
@@ -3180,7 +3180,10 @@ function onPointerDown(e){
       // real space shifts the canvas down) — re-read the pointer's position
       // AFTER that shift settles, so the drag's reference point matches the
       // canvas's new on-screen position instead of its pre-shift one.
-      state.dragHandle = { markupId: hit.markup.id, key: hit.key, startPoint: canvasPoint(e), origins: cloneMarkupPoints(hit.markup) };
+      const isTouch = e.pointerType === 'touch';
+      state.dragHandle = { markupId: hit.markup.id, key: hit.key, startPoint: canvasPoint(e), startClientX: e.clientX, startClientY: e.clientY, committed: !isTouch, origins: cloneMarkupPoints(hit.markup) };
+      // Touch only: pan fallback so accidental finger landings on markups don't block scrolling
+      state.selectPanFallback = isTouch ? { startX: e.clientX, startY: e.clientY, scrollLeft: $('#canvasArea').scrollLeft, scrollTop: $('#canvasArea').scrollTop } : null;
       if(hit.markup.groupId){
         const sheet = activeSheet();
         state.dragGroupOrigins = {};
@@ -3383,9 +3386,21 @@ function onPointerMove(e){
     return;
   }
   if(state.tool === 'select' && state.dragHandle){
-    // Dead zone: ignore tiny tremors — only start moving after 4px of travel
-    const dragDist = Math.hypot(p.x - state.dragHandle.startPoint.x, p.y - state.dragHandle.startPoint.y);
-    if(dragDist < 4) return;
+    if(!state.dragHandle.committed){
+      const clientDist = Math.hypot(e.clientX - state.dragHandle.startClientX, e.clientY - state.dragHandle.startClientY);
+      if(clientDist < 10){
+        // Below threshold — pan as fallback so accidental markup touches don't block scrolling
+        if(state.selectPanFallback){
+          const dx = e.clientX - state.selectPanFallback.startX, dy = e.clientY - state.selectPanFallback.startY;
+          $('#canvasArea').scrollLeft = state.selectPanFallback.scrollLeft - dx;
+          $('#canvasArea').scrollTop = state.selectPanFallback.scrollTop - dy;
+        }
+        return;
+      }
+      // Threshold crossed — commit to dragging the markup
+      state.dragHandle.committed = true;
+      state.selectPanFallback = null;
+    }
     applyDragHandle(state.dragHandle, p);
     drawAllMarkups();
     return;
@@ -3591,9 +3606,22 @@ function onPointerUp(e){
   if(state.tool === 'select' && state.dragHandle){
     const p = canvasPoint(e);
     const dragDist = Math.hypot(p.x - state.dragHandle.startPoint.x, p.y - state.dragHandle.startPoint.y);
+    const wasCommitted = state.dragHandle.committed;
     const markupId = state.dragHandle.markupId;
     state.dragHandle = null;
+    state.selectPanFallback = null;
     try{ mCanvas.releasePointerCapture(e.pointerId); }catch(err){}
+    if(!wasCommitted){
+      // Finger lifted before drag threshold — it was a tap, not a drag; no dirty mark needed
+      drawAllMarkups();
+      if(state.selectedMarkupId) showMarkupActionButtons(state.selectedMarkupId);
+      if(checkDoubleTap(e)){
+        const sheet = activeSheet();
+        const m = sheet && sheet.markups.find(x => x.id === markupId);
+        if(m) openTextEditForMarkup(m);
+      }
+      return;
+    }
     markDirty();
     renderNoteList();
     if(state.selectedMarkupId) showMarkupActionButtons(state.selectedMarkupId);
