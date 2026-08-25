@@ -493,7 +493,7 @@ input,textarea{font-family:inherit;}
       <div class="tool-label">Offset</div>
       <button class="tool-btn" data-tool="fillet" title="Fillet: join two line endpoints with a smooth radius arc">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3,20 L13,20 A7,7 0 0 1 20,13 L20,3"/>
+          <path d="M3,20 L13,20 Q20,20 20,13 L20,3"/>
         </svg>
       </button>
       <div class="tool-label">Fillet</div>
@@ -6454,41 +6454,45 @@ function _lineIntersect(p1, d1, p2, d2){
 // Compute fillet geometry between two endpoint picks.
 // Returns { C, radius, startAngle, endAngle, anticlockwise, T1, T2 } or null.
 function computeFillet(pick1, pick2, radiusPx){
-  // Each pick has .pt (endpoint) and .dir (unit vector pointing inward).
+  // Each pick has .pt (endpoint) and .dir (unit vector pointing inward along the line).
   const { pt: A, dir: d1 } = pick1;
   const { pt: B, dir: d2 } = pick2;
 
-  // Find the virtual intersection of the two line directions
-  const I = _lineIntersect(A, d1, B, d2);
-  if(!I) return null; // parallel lines — no fillet possible
+  // Find the virtual intersection of the two line directions.
+  const inter = _lineIntersect(A, d1, B, d2);
+  if(!inter) return null; // parallel lines — no fillet possible
 
-  // Half-angle between the two directions
-  // angle between d1 and d2
+  const I = inter; // {x, y, t}
+
+  // Determine sign based on whether the intersection is ahead of A (extend case)
+  // or at/behind A (trim case — endpoint already at the corner).
+  //   t > 0  → I is in front of A along d1 (extend): T1 goes from I back toward A → use -d1
+  //   t ≤ 0  → I is at or behind A (trim / endpoint at corner): T1 goes from I into the line → use +d1
+  const dir = inter.t > 1e-3 ? -1 : 1;
+
+  // Half-angle between the two inward directions
   const cosA = d1.x * d2.x + d1.y * d2.y;
-  const halfAngle = Math.acos(Math.max(-1, Math.min(1, cosA))) / 2;
+  const angle = Math.acos(Math.max(-1, Math.min(1, cosA)));
+  const halfAngle = angle / 2;
   if(halfAngle < 1e-4) return null; // collinear — skip
 
-  // Tangent length from intersection to tangent point
-  const tanLen = radiusPx / Math.tan(halfAngle);
-
-  // Tangent points along each ray from the intersection back toward A/B
-  // Direction from I toward A is -d1; from I toward B is -d2
-  const T1 = { x: I.x - d1.x * tanLen, y: I.y - d1.y * tanLen };
-  const T2 = { x: I.x - d2.x * tanLen, y: I.y - d2.y * tanLen };
-
-  // Arc center: on the bisector from I, at distance r/sin(halfAngle)
-  const bx = d1.x + d2.x, by = d1.y + d2.y; // unnormalized bisector (pointing away from corner)
-  const bLen = Math.hypot(bx, by) || 1;
-  // We want the center on the inward side (toward the interior)
-  // The inward bisector points toward A and B from I, i.e. -(d1+d2) direction
+  const tanLen      = radiusPx / Math.tan(halfAngle);
   const distToCenter = radiusPx / Math.sin(halfAngle);
-  const C = { x: I.x - (bx / bLen) * distToCenter, y: I.y - (by / bLen) * distToCenter };
+
+  // Tangent points: on their respective lines at tanLen from I
+  const T1 = { x: I.x + dir * d1.x * tanLen, y: I.y + dir * d1.y * tanLen };
+  const T2 = { x: I.x + dir * d2.x * tanLen, y: I.y + dir * d2.y * tanLen };
+
+  // Arc center: on the bisector of d1 and d2, at distToCenter from I
+  const bx = d1.x + d2.x, by = d1.y + d2.y;
+  const bLen = Math.hypot(bx, by) || 1;
+  const C = { x: I.x + dir * (bx / bLen) * distToCenter, y: I.y + dir * (by / bLen) * distToCenter };
 
   // Arc angles
   const startAngle = Math.atan2(T1.y - C.y, T1.x - C.x);
   const endAngle   = Math.atan2(T2.y - C.y, T2.x - C.x);
 
-  // Determine winding: cross product of (T1-C) × (T2-C)
+  // Winding: cross product of (T1−C) × (T2−C)
   const cross = (T1.x - C.x) * (T2.y - C.y) - (T1.y - C.y) * (T2.x - C.x);
   const anticlockwise = cross < 0;
 
