@@ -474,6 +474,16 @@ input,textarea{font-family:inherit;}
       <div class="tool-label">Route</div>
       <button class="tool-btn" data-tool="ductrun" title="Duct Run: place air terminal + flex duct + route in sequence"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="12" width="10" height="10"/><line x1="1" y1="12" x2="11" y2="22"/><line x1="1" y1="22" x2="11" y2="12"/><line x1="6" y1="17" x2="20" y2="17"/><line x1="20" y1="17" x2="20" y2="3"/><polyline points="17,7 20,3 23,7"/></svg></button>
       <div class="tool-label">DctRun</div>
+      <button class="tool-btn" data-tool="offset" title="Offset: copy a line segment parallel at a set distance">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="8" x2="21" y2="8"/>
+          <line x1="3" y1="16" x2="21" y2="16"/>
+          <line x1="12" y1="8" x2="12" y2="16" stroke-width="1.3" stroke-dasharray="1.5,2"/>
+          <polyline points="10,10 12,8 14,10" stroke-width="1.4"/>
+          <polyline points="10,14 12,16 14,14" stroke-width="1.4"/>
+        </svg>
+      </button>
+      <div class="tool-label">Offset</div>
       <button class="tool-btn" data-tool="dimension" title="Dimension line with arrowheads and text"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2"/><polygon points="4,12 8,9 8,15" fill="currentColor"/><polygon points="20,12 16,9 16,15" fill="currentColor"/></svg></button>
       <div class="tool-label">Dim</div>
       <button class="tool-btn" data-tool="shape" title="Shapes">⬡</button>
@@ -734,6 +744,12 @@ const state = {
   ghostLeaderPos: null, // pointer position when a leader tool is active but not yet placed
   ghostDamperTagPos: null, // pointer pos during damperTag placement
   splitMode: false, splitMarkupId: null, // split-a-route mode: tap to split the selected multiline
+  removePointMode: false, removePointMarkupId: null, // remove-a-corner mode: tap a corner to delete it
+  offsetMode: false,        // offset tool — picker phase after distance is set
+  offsetDistPx: 0,          // offset distance in canvas pixels
+  offsetGhost: null,        // [{x,y}] — offset polyline to preview
+  offsetSide: 1,            // +1 or -1, determined by cursor position relative to nearest segment
+  offsetSourceMarkupId: null, // id of markup being hovered (for highlight)
 };
 
 const ANGLE_STEP = 15; // degrees — snap increment for Line/Run tools
@@ -2305,6 +2321,9 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     state.routeSegmentStart = null;
     state.selectedMarkupId = null;
     if(state.ductRunPhase && btn.dataset.tool !== 'ductrun') clearDuctRunState();
+    if(state.splitMode) exitSplitMode();
+    if(state.removePointMode) exitRemovePointMode();
+    if(state.offsetMode && btn.dataset.tool !== 'offset') exitOffsetMode();
     if(state.tool !== 'shape') $('#shapeRow').classList.add('hidden');
     if(state.tool !== 'symbol') $('#symbolRow').classList.add('hidden');
     if(state.tool !== 'mselect'){
@@ -2327,6 +2346,9 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     }
     if(state.tool === 'ductrun'){
       setTimeout(() => { if(state.tool === 'ductrun') showDuctRunModePicker(); }, 10);
+    }
+    if(state.tool === 'offset'){
+      setTimeout(() => { if(state.tool === 'offset') showOffsetDistanceModal(); }, 10);
     }
     // Erase cursor
     const mCv = document.getElementById('markupCanvas');
@@ -2551,7 +2573,7 @@ function updateScaleChip(){
   if(!scaleGroup) return;
   const aoTagPlacing = (state.tool === 'airOutletTag' && !!state.airOutletRunItem) || (state.tool === 'damperTag' && !!state.damperRunItem);
   const mselActive = state.tool === 'mselect';
-  if(!hasJob || !noMarkup || aoTagPlacing || mselActive || state.whiteoutsUnlocked || state.splitMode){ scaleGroup.classList.add('hidden'); return; }
+  if(!hasJob || !noMarkup || aoTagPlacing || mselActive || state.whiteoutsUnlocked || state.splitMode || state.removePointMode || state.offsetMode){ scaleGroup.classList.add('hidden'); return; }
   scaleGroup.classList.remove('hidden');
   const txt = $('#scaleChipText'), btn = $('#scaleChipBtn');
   if(sheet && sheet.scaleCalibration){
@@ -3067,6 +3089,20 @@ function onPointerDown(e){
   if(!state.pageViewport || twoFingersActive()) return;
   const p = canvasPoint(e);
 
+  // Offset mode: tap places the ghost polyline as a new markup
+  if(state.offsetMode){
+    e.stopPropagation();
+    performOffsetPlace(p);
+    return;
+  }
+
+  // Remove-point mode: the next tap on the canvas picks a corner to delete
+  if(state.removePointMode){
+    e.stopPropagation();
+    performRemovePoint(p);
+    return;
+  }
+
   // Split-route mode: the next tap on the canvas is the split point
   if(state.splitMode){
     e.stopPropagation();
@@ -3225,6 +3261,42 @@ function squareLock(p0, rawP){
 function onPointerMove(e){
   if(twoFingersActive()) return;
   const p = canvasPoint(e);
+
+  // In offset mode: compute and display the ghost offset polyline
+  if(state.offsetMode){
+    updateOffsetGhost(p);
+    drawAllMarkups();
+    return;
+  }
+
+  // In remove-point mode: highlight the nearest corner point on any route
+  if(state.removePointMode){
+    const sheet = activeSheet();
+    drawAllMarkups(); // clear previous overlay
+    if(sheet){
+      let bestPt = null, bestDist = Infinity;
+      const hitRadius = 44 / state.zoom;
+      sheet.markups.forEach(m => {
+        if(m.type !== 'multiline' || !m.points) return;
+        m.points.forEach(pt => {
+          const d = Math.hypot(pt.x - p.x, pt.y - p.y);
+          if(d < hitRadius && d < bestDist){ bestDist = d; bestPt = pt; }
+        });
+      });
+      if(bestPt){
+        const ctx = mCanvas.getContext('2d');
+        ctx.save();
+        ctx.fillStyle = '#C0392B';
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(bestPt.x, bestPt.y, 7, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+    }
+    return;
+  }
 
   // In split mode: show a snap dot on the nearest point of any route
   if(state.splitMode){
@@ -3395,6 +3467,7 @@ function switchToTool(toolName){
   const btn = document.querySelector(`.tool-btn[data-tool="${toolName}"]`);
   if(btn) btn.classList.add('active');
   if(state.tool === 'ductrun' && toolName !== 'ductrun') clearDuctRunState();
+  if(state.offsetMode && toolName !== 'offset') exitOffsetMode();
   if(toolName !== 'multiline') state.multilineGhostPos = null;
   if(toolName !== 'symbol') state.ghostSymbolPos = null;
   state.tool = toolName;
@@ -4839,6 +4912,17 @@ function showMarkupActionButtons(markupId){
     });
     buttonRow.appendChild(splitBtn);
   }
+  // Remove Point button — any multiline with at least 3 points (so removing one leaves at least 2)
+  if(m.type === 'multiline' && m.points && m.points.length >= 3){
+    const rmPtBtn = document.createElement('button');
+    rmPtBtn.textContent = 'Remove Pt';
+    rmPtBtn.title = 'Tap a corner point on the route to remove it';
+    rmPtBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      enterRemovePointMode(markupId);
+    });
+    buttonRow.appendChild(rmPtBtn);
+  }
   if(m.type === 'airOutletTag'){
     const editBtn = document.createElement('button');
     editBtn.textContent = 'Edit';
@@ -5233,6 +5317,24 @@ function drawAllMarkups(){
     }
     splitCtx.restore();
   }
+  // Remove-point mode — draw red-tinted grip circles at every corner point
+  if(state.removePointMode){
+    const rpCtx = mCanvas.getContext('2d');
+    rpCtx.save();
+    sheet.markups.forEach(m => {
+      if(m.type !== 'multiline' || !m.points) return;
+      m.points.forEach(pt => {
+        rpCtx.beginPath();
+        rpCtx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+        rpCtx.fillStyle = 'rgba(192,57,43,0.35)';
+        rpCtx.fill();
+        rpCtx.strokeStyle = '#C0392B';
+        rpCtx.lineWidth = 1.5;
+        rpCtx.stroke();
+      });
+    });
+    rpCtx.restore();
+  }
   // Ghost air outlet tag preview (follows cursor or frozen at pending anchor)
   if(state.tool === 'airOutletTag' && state.airOutletRunItem){
     const pos = state.airOutletPendingAnchor || state.ghostAirOutletPos;
@@ -5419,6 +5521,36 @@ function drawAllMarkups(){
       ctx.fill();
       ctx.restore();
     }
+  }
+  // Offset ghost — dashed preview of the offset polyline
+  if(state.offsetMode && state.offsetGhost && state.offsetGhost.length >= 2){
+    const octx = mCanvas.getContext('2d');
+    octx.save();
+    octx.globalAlpha = 0.6;
+    octx.strokeStyle = '#2F5D8A';
+    // Use the source markup's thickness if we can find it
+    const srcM = state.offsetSourceMarkupId && sheet && sheet.markups.find(m => m.id === state.offsetSourceMarkupId);
+    octx.lineWidth = (srcM && srcM.thickness) ? srcM.thickness : (state.thickness || 2);
+    octx.lineCap = 'round';
+    octx.lineJoin = 'round';
+    octx.setLineDash([8, 5]);
+    octx.beginPath();
+    const og = state.offsetGhost;
+    octx.moveTo(og[0].x, og[0].y);
+    for(let i = 1; i < og.length; i++) octx.lineTo(og[i].x, og[i].y);
+    octx.stroke();
+    octx.setLineDash([]);
+    // Highlight source segment(s) faintly
+    if(srcM && srcM.type === 'multiline' && srcM.points){
+      octx.globalAlpha = 0.25;
+      octx.strokeStyle = '#E8622C';
+      octx.lineWidth = (srcM.thickness || 2) + 3;
+      octx.beginPath();
+      octx.moveTo(srcM.points[0].x, srcM.points[0].y);
+      for(let i = 1; i < srcM.points.length; i++) octx.lineTo(srcM.points[i].x, srcM.points[i].y);
+      octx.stroke();
+    }
+    octx.restore();
   }
 }
 
@@ -5734,6 +5866,345 @@ function performSplit(pt){
   // Start (or reset) the 5s idle timeout — only runs after first successful split
   if(state._splitTimeout) clearTimeout(state._splitTimeout);
   state._splitTimeout = setTimeout(() => { if(state.splitMode) exitSplitMode(); }, 5000);
+}
+
+// ── Remove-Point mode ──────────────────────────────────────────────────────
+// Tap any corner point on any multiline to delete it.
+// Requires the multiline to have at least 3 points so removing one still
+// leaves a valid 2-point segment. If a multiline is reduced to exactly 2
+// points it stays valid. If the user picks an endpoint the route simply
+// gets shorter.
+
+function enterRemovePointMode(markupId){
+  state.removePointMode = true;
+  state.removePointMarkupId = markupId;
+  state.selectedMarkupId = null;
+  _showRemovePointBar();
+  mCanvas.style.cursor = 'crosshair';
+  updatePickersVisibility();
+  updateScaleChip();
+  drawAllMarkups();
+}
+
+function _showRemovePointBar(){
+  const bar = $('#actionBarDynamic');
+  bar.innerHTML = '';
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:8px;';
+  const msg = document.createElement('span');
+  msg.id = 'removePointBarMsg';
+  msg.style.cssText = 'font-size:12px;font-weight:600;color:var(--navy);white-space:nowrap;';
+  msg.textContent = 'Tap a corner point to remove it';
+  row.appendChild(msg);
+  const doneBtn = document.createElement('button');
+  doneBtn.textContent = 'Done';
+  doneBtn.style.cssText = 'font-family:inherit;font-size:11.5px;font-weight:600;padding:4px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);cursor:pointer;height:28px;flex-shrink:0;';
+  doneBtn.addEventListener('click', () => exitRemovePointMode());
+  row.appendChild(doneBtn);
+  bar.appendChild(row);
+}
+
+function exitRemovePointMode(){
+  state.removePointMode = false;
+  state.removePointMarkupId = null;
+  mCanvas.style.cursor = '';
+  clearMarkupActionButtons();
+  updatePickersVisibility();
+  updateScaleChip();
+  drawAllMarkups();
+}
+
+// Called from onPointerDown when removePointMode is active.
+// Finds the nearest corner point across all multilines and removes it.
+function performRemovePoint(p){
+  const sheet = activeSheet();
+  if(!sheet){ exitRemovePointMode(); return; }
+  const hitRadius = 44 / state.zoom;
+
+  let bestM = null, bestIdx = -1, bestDist = Infinity;
+  sheet.markups.forEach(m => {
+    if(m.type !== 'multiline' || !m.points) return;
+    m.points.forEach((pt, i) => {
+      const d = Math.hypot(pt.x - p.x, pt.y - p.y);
+      if(d < hitRadius && d < bestDist){
+        bestDist = d; bestM = m; bestIdx = i;
+      }
+    });
+  });
+
+  if(!bestM || bestIdx < 0){
+    const msg = $('#removePointBarMsg');
+    if(msg){ const orig = msg.textContent; msg.textContent = 'Tap closer to a corner point';
+      msg.style.color = 'var(--danger)';
+      setTimeout(() => { if(msg.isConnected){ msg.textContent = orig; msg.style.color = 'var(--navy)'; } }, 1400); }
+    return;
+  }
+
+  if(bestM.points.length <= 2){
+    const msg = $('#removePointBarMsg');
+    if(msg){ const orig = msg.textContent; msg.textContent = 'Need at least 2 points — use Delete to remove the whole route';
+      msg.style.color = 'var(--warn)';
+      setTimeout(() => { if(msg.isConnected){ msg.textContent = orig; msg.style.color = 'var(--navy)'; } }, 2200); }
+    return;
+  }
+
+  bestM.points.splice(bestIdx, 1);
+  markDirty(); drawAllMarkups(); renderNoteList(); renderTakeoffList();
+  // Auto-exit if the multiline now has only 2 points (nothing left to remove)
+  if(bestM.points.length < 3) exitRemovePointMode();
+}
+
+// ── Offset Tool ───────────────────────────────────────────────────────────────
+// Shows a distance input modal, then enters picker mode.  Hovering over any
+// multiline or line markup computes a full offset polyline (with miter joins at
+// corners, miter-limited to 4× the offset distance) and shows a ghost preview.
+// The side is determined by the cursor's signed perpendicular distance from the
+// nearest segment: positive = left normal side, negative = right.
+// Clicking places the offset as a new multiline using the source's color/
+// thickness/lineType.
+
+function showOffsetDistanceModal(){
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+
+  const sh = activeSheet();
+  const cal = sh && sh.scaleCalibration;
+  const hasScale = cal && cal.pixelDist && cal.realLength;
+
+  card.innerHTML = `
+    <div class="disp">Offset Distance</div>
+    <div class="modal-sub">${hasScale ? 'Enter the parallel distance for the offset copy.' : '<span style="color:var(--warn)">⚠ No scale calibration set — enter in feet/inches and results may not match real dimensions.</span>'}</div>
+    <div style="display:flex;align-items:center;gap:10px;margin:12px 0 4px;">
+      <label style="font-size:12px;font-weight:600;min-width:28px;">Feet</label>
+      <input id="offsetFt" type="number" min="0" value="0" style="width:72px;font-size:15px;font-family:'JetBrains Mono',monospace;padding:6px 8px;border:1.5px solid var(--line);border-radius:8px;">
+      <label style="font-size:12px;font-weight:600;min-width:32px;">Inches</label>
+      <input id="offsetIn" type="number" min="0" max="11" step="0.5" value="6" style="width:72px;font-size:15px;font-family:'JetBrains Mono',monospace;padding:6px 8px;border:1.5px solid var(--line);border-radius:8px;">
+    </div>
+    <div class="modal-row" style="gap:8px;margin-top:8px;">
+      <button type="button" class="save" id="offsetOK">Set Offset →</button>
+      <button type="button" class="cancel" id="offsetCancel">Cancel</button>
+    </div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+
+  const ftIn = card.querySelector('#offsetFt');
+  const inIn = card.querySelector('#offsetIn');
+  setTimeout(() => { inIn.focus(); inIn.select(); }, 60);
+
+  function confirm(){
+    const ft = parseFloat(ftIn.value) || 0;
+    const inch = parseFloat(inIn.value) || 0;
+    const totalFt = ft + inch / 12;
+    if(totalFt <= 0){ inIn.style.borderColor='var(--danger)'; return; }
+    let distPx;
+    if(hasScale){
+      const pixelsPerFoot = cal.pixelDist / cal.realLength;
+      distPx = totalFt * pixelsPerFoot;
+    } else {
+      // Fallback: 1 foot = ~96px (screen-ish default)
+      distPx = totalFt * 96;
+    }
+    root.innerHTML = '';
+    enterOffsetMode(distPx);
+  }
+
+  card.querySelector('#offsetOK').addEventListener('click', confirm);
+  card.querySelector('#offsetCancel').addEventListener('click', () => { root.innerHTML = ''; switchToTool('select'); });
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop){ root.innerHTML = ''; switchToTool('select'); } });
+  card.addEventListener('keydown', (e) => { if(e.key === 'Enter') confirm(); if(e.key === 'Escape'){ root.innerHTML = ''; switchToTool('select'); } });
+}
+
+function enterOffsetMode(distPx){
+  state.offsetMode = true;
+  state.offsetDistPx = distPx;
+  state.offsetGhost = null;
+  state.offsetSourceMarkupId = null;
+  mCanvas.style.cursor = 'crosshair';
+  _showOffsetBar();
+  updatePickersVisibility();
+  updateScaleChip();
+  drawAllMarkups();
+}
+
+function exitOffsetMode(){
+  state.offsetMode = false;
+  state.offsetDistPx = 0;
+  state.offsetGhost = null;
+  state.offsetSourceMarkupId = null;
+  mCanvas.style.cursor = '';
+  clearMarkupActionButtons();
+  updatePickersVisibility();
+  updateScaleChip();
+  drawAllMarkups();
+}
+
+function _showOffsetBar(){
+  const bar = $('#actionBarDynamic');
+  bar.innerHTML = '';
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;';
+  const msg = document.createElement('span');
+  msg.id = 'offsetBarMsg';
+  msg.style.cssText = 'font-size:12px;font-weight:600;color:var(--navy);white-space:nowrap;';
+  msg.textContent = 'Hover a line — move to one side to aim, click to place';
+  row.appendChild(msg);
+  const changeBtn = document.createElement('button');
+  changeBtn.textContent = 'Change Distance';
+  changeBtn.style.cssText = 'font-family:inherit;font-size:11.5px;font-weight:600;padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);cursor:pointer;height:28px;flex-shrink:0;';
+  changeBtn.addEventListener('click', () => { exitOffsetMode(); setTimeout(() => { if(state.tool === 'offset') showOffsetDistanceModal(); else { switchToTool('offset'); showOffsetDistanceModal(); } }, 10); });
+  row.appendChild(changeBtn);
+  const doneBtn = document.createElement('button');
+  doneBtn.textContent = 'Done';
+  doneBtn.style.cssText = 'font-family:inherit;font-size:11.5px;font-weight:600;padding:4px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);cursor:pointer;height:28px;flex-shrink:0;';
+  doneBtn.addEventListener('click', () => exitOffsetMode());
+  row.appendChild(doneBtn);
+  bar.appendChild(row);
+}
+
+// Compute offset of a polyline by distPx on the given side.
+// Uses miter join at interior corners with a miter limit of 4× offset.
+// side: +1 or -1.
+function computeOffsetPolyline(points, distPx, side){
+  if(!points || points.length < 2) return null;
+  const n = points.length;
+  const result = [];
+  const MITER_LIMIT = 4;
+
+  // Unit normal pointing "left" of travel for each segment
+  function segNormal(a, b){
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy);
+    if(len < 0.001) return {x:0, y:0};
+    return { x: -dy / len, y: dx / len }; // left normal
+  }
+
+  const norms = [];
+  for(let i = 0; i < n - 1; i++) norms.push(segNormal(points[i], points[i+1]));
+
+  for(let i = 0; i < n; i++){
+    if(i === 0){
+      // Endpoint: just offset along first segment normal
+      result.push({
+        x: points[i].x + norms[0].x * distPx * side,
+        y: points[i].y + norms[0].y * distPx * side,
+      });
+    } else if(i === n - 1){
+      // Endpoint: offset along last segment normal
+      const ni = norms[n - 2];
+      result.push({
+        x: points[i].x + ni.x * distPx * side,
+        y: points[i].y + ni.y * distPx * side,
+      });
+    } else {
+      // Interior corner: miter join
+      const na = norms[i - 1]; // normal of incoming segment
+      const nb = norms[i];     // normal of outgoing segment
+      // Bisector direction
+      const bx = na.x + nb.x, by = na.y + nb.y;
+      const bLen = Math.hypot(bx, by);
+      if(bLen < 0.001){
+        // Parallel segments — just use segment normal
+        result.push({
+          x: points[i].x + na.x * distPx * side,
+          y: points[i].y + na.y * distPx * side,
+        });
+      } else {
+        const bNx = bx / bLen, bNy = by / bLen;
+        // Miter scale = 1 / dot(bisector, segment_normal)
+        const dot = bNx * na.x + bNy * na.y;
+        const miterScale = Math.abs(dot) < 0.01 ? MITER_LIMIT : Math.min(MITER_LIMIT, 1 / Math.abs(dot));
+        result.push({
+          x: points[i].x + bNx * distPx * side * miterScale,
+          y: points[i].y + bNy * distPx * side * miterScale,
+        });
+      }
+    }
+  }
+  return result;
+}
+
+// On pointer move during offset mode: find nearest multiline/line, compute side, store ghost.
+function updateOffsetGhost(p){
+  const sheet = activeSheet();
+  state.offsetGhost = null;
+  state.offsetSourceMarkupId = null;
+  if(!sheet) return;
+
+  const hitRadius = 60 / state.zoom;
+  let bestM = null, bestDist = Infinity, bestSide = 1;
+
+  sheet.markups.forEach(m => {
+    let points = null;
+    if(m.type === 'multiline' && m.points && m.points.length >= 2) points = m.points;
+    else if(m.type === 'line' && m.p0 && m.p1) points = [m.p0, m.p1];
+    if(!points) return;
+
+    const res = nearestPointOnPolyline(points, p);
+    if(!res || res.dist > hitRadius || res.dist >= bestDist) return;
+
+    // Determine side: sign of cross product of segment direction × (cursor - nearest point on segment)
+    const si = res.segIndex;
+    const a = points[si], b = points[si + 1];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const cross = dx * (p.y - res.pt.y) - dy * (p.x - res.pt.x);
+    bestDist = res.dist;
+    bestM = m;
+    bestSide = cross >= 0 ? -1 : 1; // +1 = left-normal side
+  });
+
+  if(!bestM) return;
+
+  let pts;
+  if(bestM.type === 'multiline') pts = bestM.points;
+  else pts = [bestM.p0, bestM.p1];
+
+  const ghost = computeOffsetPolyline(pts, state.offsetDistPx, bestSide);
+  if(ghost){
+    state.offsetGhost = ghost;
+    state.offsetSide = bestSide;
+    state.offsetSourceMarkupId = bestM.id;
+  }
+}
+
+// Place the current ghost as a new multiline markup.
+function performOffsetPlace(p){
+  if(!state.offsetGhost || state.offsetGhost.length < 2){
+    // Nothing to place — show hint
+    const msg = $('#offsetBarMsg');
+    if(msg){ const orig = msg.textContent; msg.textContent = 'Hover closer to a line first'; msg.style.color = 'var(--danger)';
+      setTimeout(() => { if(msg.isConnected){ msg.textContent = orig; msg.style.color = 'var(--navy)'; } }, 1400); }
+    return;
+  }
+
+  const sheet = activeSheet();
+  if(!sheet) return;
+  const srcM = state.offsetSourceMarkupId && sheet.markups.find(m => m.id === state.offsetSourceMarkupId);
+
+  const newMarkup = {
+    id: genId(),
+    type: 'multiline',
+    points: state.offsetGhost.map(pt => ({ x: pt.x, y: pt.y })),
+    color: srcM ? srcM.color : state.color,
+    thickness: srcM ? srcM.thickness : state.thickness,
+    lineType: srcM ? srcM.lineType : undefined,
+    hatched: srcM ? srcM.hatched : undefined,
+    createdAt: Date.now(),
+  };
+  sheet.markups.push(newMarkup);
+  markDirty();
+  // Keep ghost & mode active so user can keep placing offsets
+  state.offsetGhost = null;
+  state.offsetSourceMarkupId = null;
+  drawAllMarkups();
+  renderNoteList();
+  renderTakeoffList();
+  const msg = $('#offsetBarMsg');
+  if(msg){ const orig = 'Hover a line — move to one side to aim, click to place'; msg.textContent = '✓ Placed — hover another line or click Done'; msg.style.color = 'var(--success)';
+    setTimeout(() => { if(msg.isConnected){ msg.textContent = orig; msg.style.color = 'var(--navy)'; } }, 2000); }
 }
 
 function drawShape(m){
@@ -8553,6 +9024,8 @@ document.addEventListener('keydown', (e) => {
   const tag = (document.activeElement && document.activeElement.tagName) || '';
   if(tag === 'INPUT' || tag === 'TEXTAREA') return;
   if($('#modalRoot').innerHTML.trim() !== '') return; // let modal handle its own Esc
+  if(state.offsetMode){ exitOffsetMode(); return; }
+  if(state.removePointMode){ exitRemovePointMode(); return; }
   if(state.splitMode){ exitSplitMode(); return; }
   if(state.drawing){
     state.drawing = false;
