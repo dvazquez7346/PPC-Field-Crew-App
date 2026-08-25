@@ -472,6 +472,8 @@ input,textarea{font-family:inherit;}
       <div class="tool-label">Draw</div>
       <button class="tool-btn" data-tool="multiline" title="Route: multi-segment run, snapped, rounded joints"><svg width="20" height="20" viewBox="0 0 24 24"><polyline points="3,18 8,18 8,6 20,6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="3" cy="18" r="1.8" fill="currentColor"/><circle cx="20" cy="6" r="1.8" fill="currentColor"/></svg></button>
       <div class="tool-label">Route</div>
+      <button class="tool-btn" data-tool="ductrun" title="Duct Run: place air terminal + flex duct + route in sequence"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="12" width="10" height="10"/><line x1="1" y1="12" x2="11" y2="22"/><line x1="1" y1="22" x2="11" y2="12"/><line x1="6" y1="17" x2="20" y2="17"/><line x1="20" y1="17" x2="20" y2="3"/><polyline points="17,7 20,3 23,7"/></svg></button>
+      <div class="tool-label">DctRun</div>
       <button class="tool-btn" data-tool="dimension" title="Dimension line with arrowheads and text"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2"/><polygon points="4,12 8,9 8,15" fill="currentColor"/><polygon points="20,12 16,9 16,15" fill="currentColor"/></svg></button>
       <div class="tool-label">Dim</div>
       <button class="tool-btn" data-tool="shape" title="Shapes">⬡</button>
@@ -546,7 +548,8 @@ input,textarea{font-family:inherit;}
         <div class="flyout-item" data-symbol="cap" title="Cap"><button class="tool-btn" tabindex="-1"><svg width="13" height="19" viewBox="0 0 24 36"><path d="M9 6 L17 6 L17 30 L9 30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter"/></svg></button><span class="fly-label">Cap</span></div>
         <div class="flyout-item" data-symbol="union" title="Union"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24"><line x1="2" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="9" y1="7" x2="9" y2="17" stroke="currentColor" stroke-width="1.6"/><line x1="15" y1="7" x2="15" y2="17" stroke="currentColor" stroke-width="1.6"/></svg></button><span class="fly-label">Union</span></div>
         <div class="flyout-item" data-symbol="flowarrow" title="Flow direction"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24"><line x1="3" y1="12" x2="18" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><polygon points="18,7 23,12 18,17" fill="currentColor"/></svg></button><span class="fly-label">Flow</span></div>
-        <div class="flyout-item" data-symbol="poc" title="POC"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M13 13 L13 2.5 A10.5 10.5 0 0 1 23.5 13 Z" fill="currentColor"/><path d="M13 13 L13 23.5 A10.5 10.5 0 0 1 2.5 13 Z" fill="currentColor"/></svg></button><span class="fly-label">POC</span></div>
+        <div class="flyout-item" data-symbol="poc" title="POC"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M13 13 L13 2.5 A10.5 10.5 0 0 1 23.5 13 Z" fill="currentColor"/><path d="M13 13 L13 23.5 A10.5 10.5 0 0 1 2.5 13 Z" fill="currentColor"/></svg></button><span class="fly-label">POC/D</span></div>
+        <div class="flyout-item" data-symbol="airterminal" title="Air Terminal (Supply/Return/Exhaust)"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="1.3"/><line x1="12" y1="3" x2="12" y2="21" stroke="currentColor" stroke-width="1.3"/></svg></button><span class="fly-label">A/T</span></div>
       </div>
     </div>
 
@@ -717,6 +720,12 @@ const state = {
   damperReordered: false,
   mLastActionPoint: null,
   whiteoutsUnlocked: false,
+  // Duct Run tool state
+  ductRunPhase: null,      // null | 'placeAT' | 'rotateAT' | 'rotateFlex'
+  ductRunAtMode: 'supply', // supply | return | exhaust
+  ductRunATPos: null,      // {x,y} canvas coords where A/T was placed
+  ductRunATMarkupId: null, // id of placed AT markup (for live rotation update)
+  ductRunGhostPos: null,   // current pointer canvas coords for ghost previews
   airOutletRunItem: null, // { lineId, catalogId, description, category } — active placement run
   damperRunItem: null,    // { lineId, scheduleNum, tagLabel, category } — active damper tag placement run
   ghostDimPos: null, // pointer position when dim tool is active but first click not yet placed
@@ -2293,6 +2302,7 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     state.routeDragging = false;
     state.routeSegmentStart = null;
     state.selectedMarkupId = null;
+    if(state.ductRunPhase && btn.dataset.tool !== 'ductrun') clearDuctRunState();
     if(state.tool !== 'shape') $('#shapeRow').classList.add('hidden');
     if(state.tool !== 'symbol') $('#symbolRow').classList.add('hidden');
     if(state.tool !== 'mselect'){
@@ -2312,6 +2322,9 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     }
     if(state.tool === 'damperTag'){
       setTimeout(() => { if(state.tool === 'damperTag') placeDamperTag(); }, 10);
+    }
+    if(state.tool === 'ductrun'){
+      setTimeout(() => { if(state.tool === 'ductrun') showDuctRunModePicker(); }, 10);
     }
     // Erase cursor
     const mCv = document.getElementById('markupCanvas');
@@ -3018,6 +3031,15 @@ function angleSnap(from, to){
   return { x: from.x + Math.cos(rad) * dist, y: from.y + Math.sin(rad) * dist };
 }
 
+// 5° snap — returns the snapped angle in RADIANS from `from` toward `to`.
+// Used by the Duct Run tool for both A/T rotation and flex duct aiming.
+function snapAngle5deg(from, to){
+  const dx = to.x - from.x, dy = to.y - from.y;
+  if(Math.hypot(dx, dy) < 2) return 0;
+  const step = 5 * Math.PI / 180;
+  return Math.round(Math.atan2(dy, dx) / step) * step;
+}
+
 // Dimension tool: snaps only when close to horizontal or vertical (within
 // AXIS_SNAP_THRESHOLD degrees); otherwise stays free-angle, since a dimension
 // is measuring between two arbitrary existing points, not laying out a run.
@@ -3181,6 +3203,8 @@ function onPointerDown(e){
     handleAirOutletTagTap(p);
   } else if(state.tool === 'damperTag'){
     handleDamperTagTap(p);
+  } else if(state.tool === 'ductrun'){
+    handleDuctRunTap(p);
   } else if(state.tool === 'erase'){
     eraseNear(p);
   }
@@ -3310,6 +3334,17 @@ function onPointerMove(e){
     state.ghostDamperTagPos = p;
     drawAllMarkups();
   }
+  // Duct Run ghost — update pointer position and live-rotate AT during rotateAT phase
+  if(state.tool === 'ductrun' && state.ductRunPhase){
+    state.ductRunGhostPos = p;
+    if(state.ductRunPhase === 'rotateAT' && state.ductRunATPos && state.ductRunATMarkupId){
+      // Live-update the placed AT markup's rotation so the user sees it spin
+      const sh = activeSheet();
+      const atM = sh && sh.markups.find(m => m.id === state.ductRunATMarkupId);
+      if(atM) atM.rotation = snapAngle5deg(state.ductRunATPos, p);
+    }
+    drawAllMarkups();
+  }
   // Ghost dim arrowhead — before first click
   if(state.tool === 'dimension' && !state.drawing){
     state.ghostDimPos = p;
@@ -3342,6 +3377,7 @@ function switchToTool(toolName){
   document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
   const btn = document.querySelector(`.tool-btn[data-tool="${toolName}"]`);
   if(btn) btn.classList.add('active');
+  if(state.tool === 'ductrun' && toolName !== 'ductrun') clearDuctRunState();
   state.tool = toolName;
   if(toolName !== 'dimension') state.ghostDimPos = null; // clear ghost when leaving dim tool
   if(!['label','note','elevation','equipment'].includes(toolName)) state.ghostLeaderPos = null;
@@ -3768,13 +3804,171 @@ function placePhotoMarker(anchor){
   switchToSelectAndSelect(markup.id);
 }
 
+function defaultATScaleFromCalibration(){
+  // Returns scaleX/scaleY so that the A/T symbol renders at 24"×24" by default.
+  // AT_HALF (9) local units × scale = half of the desired canvas pixel size.
+  // Desired half = 24 inches × pixelsPerInch / 2  →  scale = (12 * pixelsPerInch) / AT_HALF
+  const sh = activeSheet();
+  const cal = sh && sh.scaleCalibration;
+  if(!cal || !cal.pixelDist || !cal.realLength) return 1;
+  const pixelsPerFoot = cal.pixelDist / cal.realLength;
+  const pixelsPerInch = pixelsPerFoot / 12;
+  return Math.max(0.3, (12 * pixelsPerInch) / AT_HALF); // 24" total → 12" half
+}
+
+// Duct Run — mode picker and phase hint ----------------------------------------
+function showDuctRunModePicker(){
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  card.innerHTML = `
+    <div class="disp">Duct Run — Air Terminal Type</div>
+    <div class="modal-sub">Choose the type of air terminal to place.</div>
+    <div class="modal-row" style="gap:8px;margin-top:4px;">
+      <button type="button" class="save" id="drSupply">Supply</button>
+      <button type="button" class="save" id="drReturn">Return</button>
+      <button type="button" class="save" id="drExhaust">Exhaust</button>
+      <button type="button" class="cancel" id="drCancel">Cancel</button>
+    </div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+  function close(){ root.innerHTML = ''; }
+  function pick(mode){
+    close();
+    state.ductRunAtMode = mode;
+    state.ductRunPhase = 'placeAT';
+    state.ductRunATPos = null;
+    state.ductRunATMarkupId = null;
+    state.ductRunGhostPos = null;
+    setDuctRunHint('Tap to place air terminal');
+  }
+  card.querySelector('#drSupply').addEventListener('click',  () => pick('supply'));
+  card.querySelector('#drReturn').addEventListener('click',  () => pick('return'));
+  card.querySelector('#drExhaust').addEventListener('click', () => pick('exhaust'));
+  card.querySelector('#drCancel').addEventListener('click', () => { close(); switchToTool('select'); });
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop){ close(); switchToTool('select'); } });
+}
+
+function setDuctRunHint(text){
+  // Reuse the run-done button area: show a small hint label beside it
+  let hint = $('#ductRunHint');
+  if(!hint){
+    hint = document.createElement('span');
+    hint.id = 'ductRunHint';
+    hint.style.cssText = 'font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;margin-left:6px;';
+    const rb = $('#runDoneBtn');
+    if(rb && rb.parentNode) rb.parentNode.insertBefore(hint, rb.nextSibling);
+  }
+  hint.textContent = text;
+  hint.style.display = text ? 'inline' : 'none';
+}
+
+function clearDuctRunHint(){ const h = $('#ductRunHint'); if(h) h.style.display = 'none'; }
+
+function clearDuctRunState(){
+  state.ductRunPhase = null;
+  state.ductRunATPos = null;
+  state.ductRunATMarkupId = null;
+  state.ductRunGhostPos = null;
+  clearDuctRunHint();
+}
+
+function handleDuctRunTap(p){
+  if(!state.ductRunPhase) return;
+
+  if(state.ductRunPhase === 'placeAT'){
+    // Place the A/T markup at tap position
+    const atS = defaultATScaleFromCalibration();
+    const markup = {
+      id: genId(), type: 'symbol', symbolType: 'airterminal',
+      color: state.color, thickness: state.thickness,
+      rotation: 0, scale: 1, pocMode: 'POC',
+      atMode: state.ductRunAtMode, scaleX: atS, scaleY: atS,
+      anchor: p, note: '', createdAt: Date.now(),
+    };
+    activeSheet().markups.push(markup);
+    markDirty();
+    state.ductRunATPos = p;
+    state.ductRunATMarkupId = markup.id;
+    state.ductRunPhase = 'rotateAT';
+    setDuctRunHint('Rotate A/T — tap to lock');
+    drawAllMarkups();
+
+  } else if(state.ductRunPhase === 'rotateAT'){
+    // Lock A/T rotation
+    const angle = snapAngle5deg(state.ductRunATPos, p);
+    const sh = activeSheet();
+    const atM = sh.markups.find(m => m.id === state.ductRunATMarkupId);
+    if(atM) atM.rotation = angle;
+    markDirty();
+    state.ductRunPhase = 'rotateFlex';
+    setDuctRunHint('Aim flex duct — tap to place');
+    drawAllMarkups();
+
+  } else if(state.ductRunPhase === 'rotateFlex'){
+    // Place the flex duct and start the multiline
+    const flexAngle = snapAngle5deg(state.ductRunATPos, p);
+    const flexS = defaultFlexDuctScaleFromCalibration();
+    // Flex duct anchor offset: circle center is at local (-20,0), so world anchor
+    // = AT_center + rotate(+20*flexS, 0, flexAngle)
+    const flexAnchor = {
+      x: state.ductRunATPos.x + Math.cos(flexAngle) * 20 * flexS,
+      y: state.ductRunATPos.y + Math.sin(flexAngle) * 20 * flexS,
+    };
+    const flexMarkup = {
+      id: genId(), type: 'symbol', symbolType: 'flexduct',
+      color: state.color, thickness: state.thickness,
+      rotation: flexAngle, scale: flexS,
+      pocMode: 'POC', atMode: 'supply', scaleX: 1, scaleY: 1,
+      anchor: flexAnchor, note: '', createdAt: Date.now(),
+    };
+    activeSheet().markups.push(flexMarkup);
+    markDirty();
+
+    // Multiline starts from far end of flex line:
+    // local far-end = (33, 0) → world = AT_center + rotate(53*flexS, 0, flexAngle)
+    const mlStart = {
+      x: state.ductRunATPos.x + Math.cos(flexAngle) * 53 * flexS,
+      y: state.ductRunATPos.y + Math.sin(flexAngle) * 53 * flexS,
+    };
+
+    clearDuctRunState();
+    // Transition to multiline tool with the first point pre-seeded
+    switchToTool('multiline');
+    state.multiPoints = [mlStart];
+    state.routeSegmentStart = mlStart;
+    state.routeDragging = false;
+    showRunDoneBtn();
+    renderNoteList();
+    drawAllMarkups();
+    drawMultilinePreview(state.multiPoints);
+  }
+}
+
+function defaultFlexDuctScaleFromCalibration(){
+  // Flex duct circle local radius = 13 units. Target = 5" radius (10" diameter).
+  // scale = (5 * pixelsPerInch) / 13
+  // Zigzag amplitude (±12 local units) scales proportionally — no extra math needed.
+  const sh = activeSheet();
+  const cal = sh && sh.scaleCalibration;
+  if(!cal || !cal.pixelDist || !cal.realLength) return 1;
+  const pixelsPerFoot = cal.pixelDist / cal.realLength;
+  const pixelsPerInch = pixelsPerFoot / 12;
+  return Math.max(0.3, (5 * pixelsPerInch) / 13); // 10" diameter → 5" radius
+}
+
 function placeSymbolMarker(anchor){
   // Every symbol respects the color picker like Shapes do, except POC/POD —
   // that one always defaults to black, matching the standard convention.
   const color = state.symbolType === 'poc' ? '#000000' : state.color;
+  const atS = state.symbolType === 'airterminal' ? defaultATScaleFromCalibration() : 1;
+  const flexS = state.symbolType === 'flexduct' ? defaultFlexDuctScaleFromCalibration() : 1;
   const markup = {
     id: genId(), type: 'symbol', symbolType: state.symbolType, color, thickness: state.thickness,
-    rotation: 0, scale: 1, pocMode: 'POC', anchor, note: '', createdAt: Date.now(),
+    rotation: 0, scale: flexS, pocMode: 'POC', atMode: 'supply', scaleX: atS, scaleY: atS, anchor, note: '', createdAt: Date.now(),
   };
   activeSheet().markups.push(markup);
   markDirty();
@@ -4074,7 +4268,17 @@ function handlePointsForMarkup(m){
   }
   if(m.type === 'freehand'){ const c = markupCenterPoint(m); return [{ key: 'move', p: c }]; }
   if(m.type === 'photo') return [{ key: 'move', p: m.anchor }, { key: 'rotate', p: computePhotoRotateHandle(m) }];
-  if(m.type === 'symbol') return [{ key: 'move', p: m.anchor }, { key: 'rotate', p: computePhotoRotateHandle(m) }, { key: 'scale', p: computeSymbolScaleHandle(m) }];
+  if(m.type === 'symbol'){
+    if(m.symbolType === 'airterminal'){
+      return [
+        { key: 'move',     p: m.anchor },
+        { key: 'rotate',   p: computePhotoRotateHandle(m) },
+        { key: 'stretchX', p: computeATStretchXHandle(m) },
+        { key: 'stretchY', p: computeATStretchYHandle(m) },
+      ];
+    }
+    return [{ key: 'move', p: m.anchor }, { key: 'rotate', p: computePhotoRotateHandle(m) }, { key: 'scale', p: computeSymbolScaleHandle(m) }];
+  }
   return [];
 }
 function cloneMarkupPoints(m){ return JSON.parse(JSON.stringify(m)); }
@@ -4215,6 +4419,20 @@ function applyDragHandle(drag, p){
   if(drag.key === 'scale' && m.type === 'symbol'){
     const dist = Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y);
     m.scale = Math.max(0.4, Math.min(3, dist / SYMBOL_SCALE_BASE_DIST));
+    return;
+  }
+  if((drag.key === 'stretchX' || drag.key === 'stretchY') && m.symbolType === 'airterminal'){
+    const r = m.rotation || 0;
+    const dx = p.x - m.anchor.x, dy = p.y - m.anchor.y;
+    if(drag.key === 'stretchX'){
+      // Project pointer onto the rotated X axis, divide by half-size
+      const proj = dx * Math.cos(r) + dy * Math.sin(r);
+      m.scaleX = Math.max(0.3, Math.min(8, proj / AT_HALF));
+    } else {
+      // Project pointer onto the rotated Y axis
+      const proj = -dx * Math.sin(r) + dy * Math.cos(r);
+      m.scaleY = Math.max(0.3, Math.min(8, proj / AT_HALF));
+    }
     return;
   }
   if(drag.key === 'bend' && (m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment')){
@@ -4531,6 +4749,23 @@ function showMarkupActionButtons(markupId){
       showMarkupActionButtons(markupId);
     });
     buttonRow.appendChild(pocBtn);
+  }
+  if(m.type === 'symbol' && m.symbolType === 'airterminal'){
+    const AT_MODES = ['supply', 'return', 'exhaust'];
+    const AT_LABELS = { supply: 'Supply', return: 'Return', exhaust: 'Exhaust' };
+    const cur = m.atMode || 'supply';
+    const next = AT_MODES[(AT_MODES.indexOf(cur) + 1) % AT_MODES.length];
+    const atBtn = document.createElement('button');
+    atBtn.textContent = AT_LABELS[cur] + ' → ' + AT_LABELS[next];
+    atBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      m.atMode = next;
+      markDirty();
+      drawAllMarkups();
+      renderNoteList();
+      showMarkupActionButtons(markupId);
+    });
+    buttonRow.appendChild(atBtn);
   }
   if(m.type === 'line' || m.type === 'multiline'){
     // Line Type dropdown button (replaces old Hatch toggle)
@@ -5034,6 +5269,56 @@ function drawAllMarkups(){
     ctx.stroke();
     ctx.restore();
   }
+  // Duct Run ghost previews
+  if(state.tool === 'ductrun' && state.ductRunGhostPos){
+    const gp = state.ductRunGhostPos;
+    const ctx = mCanvas.getContext('2d');
+    if(state.ductRunPhase === 'placeAT'){
+      // Ghost A/T following cursor
+      const atS = defaultATScaleFromCalibration();
+      ctx.save();
+      ctx.globalAlpha = 0.45;
+      ctx.translate(gp.x, gp.y);
+      ctx.scale(atS, atS);
+      ctx.strokeStyle = state.color;
+      ctx.lineWidth = (state.thickness || 2) / atS;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      drawSymAirTerminal(ctx, state.ductRunAtMode);
+      ctx.restore();
+    } else if(state.ductRunPhase === 'rotateFlex' && state.ductRunATPos){
+      // Ghost flex duct rotating from AT center
+      const flexAngle = snapAngle5deg(state.ductRunATPos, gp);
+      const flexS = defaultFlexDuctScaleFromCalibration();
+      const flexAnchor = {
+        x: state.ductRunATPos.x + Math.cos(flexAngle) * 20 * flexS,
+        y: state.ductRunATPos.y + Math.sin(flexAngle) * 20 * flexS,
+      };
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      ctx.translate(flexAnchor.x, flexAnchor.y);
+      ctx.rotate(flexAngle);
+      ctx.scale(flexS, flexS);
+      ctx.strokeStyle = state.color;
+      ctx.lineWidth = (state.thickness || 2) / flexS;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      drawSymFlexDuct(ctx);
+      ctx.restore();
+      // Dot at multiline start point
+      const mlStart = {
+        x: state.ductRunATPos.x + Math.cos(flexAngle) * 53 * flexS,
+        y: state.ductRunATPos.y + Math.sin(flexAngle) * 53 * flexS,
+      };
+      ctx.save();
+      ctx.globalAlpha = 0.8;
+      ctx.fillStyle = '#2F5D8A';
+      ctx.beginPath();
+      ctx.arc(mlStart.x, mlStart.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
 }
 
 function drawHandles(m){
@@ -5095,6 +5380,22 @@ function drawHandles(m){
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = 1.5;
       ctx.stroke();
+      return;
+    }
+    if(h.key === 'stretchX' || h.key === 'stretchY'){
+      // Blue diamond grip — same style as segment midpoint grips
+      ctx.save();
+      ctx.translate(h.p.x, h.p.y);
+      ctx.rotate(Math.PI / 4);
+      const s = 5;
+      ctx.beginPath();
+      ctx.rect(-s, -s, s * 2, s * 2);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.strokeStyle = '#2F5D8A';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+      ctx.restore();
       return;
     }
     if(h.key.startsWith('mid')){
@@ -5405,6 +5706,17 @@ function computePhotoRotateHandle(m){
   const ang = (m.rotation || 0) - Math.PI / 2;
   return { x: m.anchor.x + dist * Math.cos(ang), y: m.anchor.y + dist * Math.sin(ang) };
 }
+// Air terminal stretch handles — right-edge (width) and bottom-edge (height),
+// in the symbol's local rotated frame.
+const AT_HALF = 9; // local half-size, must match drawSymAirTerminal's `s`
+function computeATStretchXHandle(m){
+  const r = m.rotation || 0, sx = m.scaleX || 1;
+  return { x: m.anchor.x + Math.cos(r) * AT_HALF * sx, y: m.anchor.y + Math.sin(r) * AT_HALF * sx };
+}
+function computeATStretchYHandle(m){
+  const r = m.rotation || 0, sy = m.scaleY || 1;
+  return { x: m.anchor.x - Math.sin(r) * AT_HALF * sy, y: m.anchor.y + Math.cos(r) * AT_HALF * sy };
+}
 const SYMBOL_SCALE_BASE_DIST = 24;
 function computeSymbolScaleHandle(m){
   const dist = SYMBOL_SCALE_BASE_DIST * (m.scale || 1);
@@ -5685,7 +5997,11 @@ function drawSymbolMarker(m){
   ctx.save();
   ctx.translate(m.anchor.x, m.anchor.y);
   ctx.rotate(m.rotation || 0);
-  ctx.scale(m.scale || 1, m.scale || 1);
+  if(m.symbolType === 'airterminal'){
+    ctx.scale(m.scaleX || 1, m.scaleY || 1);
+  } else {
+    ctx.scale(m.scale || 1, m.scale || 1);
+  }
   ctx.strokeStyle = m.color;
   ctx.fillStyle = m.color;
   ctx.lineWidth = m.thickness || 2;
@@ -5703,6 +6019,7 @@ function drawSymbolMarker(m){
     case 'union': drawSymUnion(ctx); break;
     case 'flowarrow': drawSymFlowArrow(ctx); break;
     case 'poc': drawSymPocPod(ctx, m.pocMode || 'POC'); break;
+    case 'airterminal': drawSymAirTerminal(ctx, m.atMode || 'supply'); break;
   }
   ctx.restore();
 }
@@ -5804,6 +6121,31 @@ function drawSymPocPod(ctx, mode){
   }
 }
 
+function drawSymAirTerminal(ctx, mode){
+  const s = 9;
+  // Outer square
+  ctx.beginPath();
+  ctx.rect(-s, -s, s * 2, s * 2);
+  ctx.stroke();
+  if(mode === 'supply'){
+    // X: two diagonals corner to corner
+    ctx.beginPath();
+    ctx.moveTo(-s, -s); ctx.lineTo(s, s);
+    ctx.moveTo(-s,  s); ctx.lineTo(s, -s);
+    ctx.stroke();
+  } else if(mode === 'return'){
+    // Slash (/): bottom-left to top-right
+    ctx.beginPath();
+    ctx.moveTo(-s, s); ctx.lineTo(s, -s);
+    ctx.stroke();
+  } else {
+    // Exhaust: slash (/) + leg from lower-right corner to center
+    ctx.beginPath();
+    ctx.moveTo(-s, s); ctx.lineTo(s, -s);   // slash
+    ctx.moveTo(s, s);  ctx.lineTo(0, 0);    // leg to midpoint of slash
+    ctx.stroke();
+  }
+}
 // Dimension: a straight line between two picked points, arrowheads at both
 // ends, and independently-draggable text (not attached by a leader).
 // Blends a hex color toward white — used to visually distinguish a
@@ -6093,7 +6435,7 @@ function renderNoteList(){
     const label = (m.type === 'label' || m.type === 'note' || m.type === 'dimension') ? m.text
       : (m.type === 'elevation') ? `${m.textTop || ''} / ${m.textBottom || ''}`
       : (m.type === 'equipment') ? `${m.eqType || ''}/${m.eqNumber || ''}`
-      : (m.type === 'symbol') ? (m.symbolType === 'poc' ? (m.pocMode || 'POC') : m.symbolType)
+      : (m.type === 'symbol') ? (m.symbolType === 'poc' ? (m.pocMode || 'POC') : m.symbolType === 'airterminal' ? ({ supply: 'Supply', return: 'Return', exhaust: 'Exhaust' }[m.atMode || 'supply']) : m.symbolType)
       : (m.type === 'photo') ? `Photo ${m.number || ''}`
       : (m.type === 'shape') ? m.shape
       : (m.type === 'whiteoutRect') ? 'whiteout (rect)' + (m.locked ? ' \u2014 locked' : ' \u2014 unlocked')
