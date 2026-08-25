@@ -721,6 +721,7 @@ const state = {
   mLastActionPoint: null,
   whiteoutsUnlocked: false,
   multilineGhostPos: null,  // cursor position for pre-drag ghost segment on multiline tool
+  ghostSymbolPos: null,     // cursor position for symbol ghost preview before placement
   // Duct Run tool state
   ductRunPhase: null,      // null | 'placeAT' | 'rotateAT' | 'rotateFlex'
   ductRunAtMode: 'supply', // supply | return | exhaust
@@ -3354,6 +3355,13 @@ function onPointerMove(e){
     }
     drawAllMarkups();
   }
+  // Ghost symbol — follows cursor before placement
+  if(state.tool === 'symbol'){
+    state.ghostSymbolPos = p;
+    drawAllMarkups();
+  } else {
+    state.ghostSymbolPos = null;
+  }
   // Ghost dim arrowhead — before first click
   if(state.tool === 'dimension' && !state.drawing){
     state.ghostDimPos = p;
@@ -3388,6 +3396,7 @@ function switchToTool(toolName){
   if(btn) btn.classList.add('active');
   if(state.tool === 'ductrun' && toolName !== 'ductrun') clearDuctRunState();
   if(toolName !== 'multiline') state.multilineGhostPos = null;
+  if(toolName !== 'symbol') state.ghostSymbolPos = null;
   state.tool = toolName;
   if(toolName !== 'dimension') state.ghostDimPos = null; // clear ghost when leaving dim tool
   if(!['label','note','elevation','equipment'].includes(toolName)) state.ghostLeaderPos = null;
@@ -5291,6 +5300,26 @@ function drawAllMarkups(){
     ctx.arcTo(px, py, px + pillW, py, pillR);
     ctx.closePath();
     ctx.stroke();
+    ctx.restore();
+  }
+  // Symbol ghost — semi-transparent preview following cursor before placement
+  if(state.tool === 'symbol' && state.ghostSymbolPos){
+    const gp = state.ghostSymbolPos;
+    const color = state.symbolType === 'poc' ? '#000000' : state.color;
+    const atS  = state.symbolType === 'airterminal' ? defaultATScaleFromCalibration() : 1;
+    const flexS = state.symbolType === 'flexduct'   ? defaultFlexDuctScaleFromCalibration() : 1;
+    const ghostM = {
+      type: 'symbol', symbolType: state.symbolType,
+      color, thickness: state.thickness,
+      rotation: 0, scale: flexS,
+      flexMode: 'flex', pocMode: 'POC', atMode: 'supply',
+      scaleX: atS, scaleY: atS,
+      anchor: gp,
+    };
+    const ctx = mCanvas.getContext('2d');
+    ctx.save();
+    ctx.globalAlpha = 0.45;
+    drawSymbolMarker(ghostM);
     ctx.restore();
   }
   // Multiline "tap to start" ghost — dashed line from last committed point to cursor
