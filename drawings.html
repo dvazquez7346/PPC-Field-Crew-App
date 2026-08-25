@@ -3271,7 +3271,13 @@ function onPointerDown(e){
   } else if(state.tool === 'damperTag'){
     handleDamperTagTap(p);
   } else if(state.tool === 'ductrun'){
-    handleDuctRunTap(p);
+    if(e.pointerType === 'touch'){
+      // On touch, pointerdown only previews the ghost — pointerup confirms placement.
+      state.ductRunGhostPos = p;
+      drawAllMarkups();
+    } else {
+      handleDuctRunTap(p);
+    }
   } else if(state.tool === 'erase'){
     eraseNear(p);
   }
@@ -3605,6 +3611,13 @@ function onPointerUp(e){
     if(dragDist < 8 && checkDoubleTap(e)){
       switchToTool(state.tool === 'pan' ? 'select' : 'pan');
     }
+    return;
+  }
+
+  if(state.tool === 'ductrun' && e.pointerType === 'touch' && state.ductRunPhase){
+    // Touch: confirm each duct-run phase on finger-lift, not finger-down.
+    const p = canvasPoint(e);
+    handleDuctRunTap(p);
     return;
   }
 
