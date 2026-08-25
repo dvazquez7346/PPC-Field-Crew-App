@@ -3169,6 +3169,50 @@ function onPointerDown(e){
   }
 
   if(state.tool === 'select'){
+    if(e.pointerType === 'touch'){
+      // ── Touch path ──────────────────────────────────────────────────────────
+      // Grip hit → drag (deliberate, precise gesture on the move handle)
+      // Body hit → select only, then pan (prevents accidental markup movement)
+      // Empty    → deselect, pan
+      const gripHit = hitTestHandle(p);
+      if(gripHit){
+        state.selectedMarkupId = gripHit.markup.id;
+        try{ mCanvas.setPointerCapture(e.pointerId); }catch(err){}
+        renderNoteList();
+        drawAllMarkups();
+        showMarkupActionButtons(gripHit.markup.id);
+        state.dragHandle = { markupId: gripHit.markup.id, key: gripHit.key, startPoint: canvasPoint(e), startClientX: e.clientX, startClientY: e.clientY, committed: true, origins: cloneMarkupPoints(gripHit.markup) };
+        state.selectPanFallback = null;
+        if(gripHit.markup.groupId){
+          const sheet = activeSheet();
+          state.dragGroupOrigins = {};
+          sheet.markups.forEach(gm => {
+            if(gm.groupId === gripHit.markup.groupId && gm.id !== gripHit.markup.id)
+              state.dragGroupOrigins[gm.id] = cloneMarkupPoints(gm);
+          });
+        } else {
+          state.dragGroupOrigins = null;
+        }
+        return;
+      }
+      const bodyHit = hitTestMarkup(p);
+      if(bodyHit){
+        // Select the item but don't lock into drag — fall through to pan
+        state.selectedMarkupId = bodyHit.markup.id;
+        renderNoteList();
+        drawAllMarkups();
+        showMarkupActionButtons(bodyHit.markup.id);
+      } else {
+        state.selectedMarkupId = null;
+        clearMarkupActionButtons();
+        drawAllMarkups();
+      }
+      state.panState = { startX: e.clientX, startY: e.clientY, scrollLeft: $('#canvasArea').scrollLeft, scrollTop: $('#canvasArea').scrollTop };
+      $('#canvasArea').classList.add('panning');
+      return;
+    }
+
+    // ── Mouse path (unchanged) ───────────────────────────────────────────────
     const hit = hitTestHandle(p) || hitTestMarkup(p);
     if(hit){
       state.selectedMarkupId = hit.markup.id;
@@ -3180,17 +3224,14 @@ function onPointerDown(e){
       // real space shifts the canvas down) — re-read the pointer's position
       // AFTER that shift settles, so the drag's reference point matches the
       // canvas's new on-screen position instead of its pre-shift one.
-      const isTouch = e.pointerType === 'touch';
-      state.dragHandle = { markupId: hit.markup.id, key: hit.key, startPoint: canvasPoint(e), startClientX: e.clientX, startClientY: e.clientY, committed: !isTouch, origins: cloneMarkupPoints(hit.markup) };
-      // Touch only: pan fallback so accidental finger landings on markups don't block scrolling
-      state.selectPanFallback = isTouch ? { startX: e.clientX, startY: e.clientY, scrollLeft: $('#canvasArea').scrollLeft, scrollTop: $('#canvasArea').scrollTop } : null;
+      state.dragHandle = { markupId: hit.markup.id, key: hit.key, startPoint: canvasPoint(e), startClientX: e.clientX, startClientY: e.clientY, committed: true, origins: cloneMarkupPoints(hit.markup) };
+      state.selectPanFallback = null;
       if(hit.markup.groupId){
         const sheet = activeSheet();
         state.dragGroupOrigins = {};
         sheet.markups.forEach(gm => {
-          if(gm.groupId === hit.markup.groupId && gm.id !== hit.markup.id){
+          if(gm.groupId === hit.markup.groupId && gm.id !== hit.markup.id)
             state.dragGroupOrigins[gm.id] = cloneMarkupPoints(gm);
-          }
         });
       } else {
         state.dragGroupOrigins = null;
