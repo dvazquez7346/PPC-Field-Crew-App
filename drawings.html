@@ -4552,7 +4552,9 @@ function applyDragHandle(drag, p){
   if(drag.key.startsWith('mid')){
     // Segment grip: move both adjacent corner points by the same delta
     const i = parseInt(drag.key.slice(3), 10);
-    const dx = p.x - drag.startPoint.x, dy = p.y - drag.startPoint.y;
+    let dx = p.x - drag.startPoint.x, dy = p.y - drag.startPoint.y;
+    // Shift = axis lock: constrain the delta to whichever axis is dominant
+    if(state.shiftDown){ if(Math.abs(dx) >= Math.abs(dy)) dy = 0; else dx = 0; }
     m.points[i]     = { x: drag.origins.points[i].x     + dx, y: drag.origins.points[i].y     + dy };
     m.points[i + 1] = { x: drag.origins.points[i + 1].x + dx, y: drag.origins.points[i + 1].y + dy };
     // Keep fused corner in sync for closed hatch areas
@@ -4569,9 +4571,9 @@ function applyDragHandle(drag, p){
   if(drag.key.startsWith('pt')){
     const idx = parseInt(drag.key.slice(2), 10);
     if(m.type === 'multiline' && m.points.length >= 2){
-      // 5° angle snap relative to adjacent point(s)
-      const SNAP_DEG = 5;
-      const step = SNAP_DEG * Math.PI / 180;
+      // Shift = axis lock (90°), otherwise 5° snap — relative to adjacent point(s)
+      const snapDeg = state.shiftDown ? 90 : 5;
+      const step = snapDeg * Math.PI / 180;
       const prev = idx > 0 ? m.points[idx - 1] : null;
       const next = idx < m.points.length - 1 ? m.points[idx + 1] : null;
       // Snap relative to the previous segment if it exists
@@ -4643,6 +4645,11 @@ function applyDragHandle(drag, p){
     const fixedCorner = drag.key === 'p0' ? m.p1 : m.p0;
     m[drag.key] = LOCKED_SHAPES.includes(m.shape) ? squareLock(fixedCorner, p) : p;
     return;
+  }
+  // Plain line endpoint drag: Shift = axis lock from the fixed endpoint
+  if(m.type === 'line' && (drag.key === 'p0' || drag.key === 'p1') && state.shiftDown){
+    const fixed = drag.key === 'p0' ? m.p1 : m.p0;
+    p = angleSnap(fixed, p);
   }
   m[drag.key] = p;
 }
@@ -9062,6 +9069,9 @@ function _refreshDrawPreview(){
     if(state.tool === 'hatchline') drawHatchLinePreview(state.multiPoints);
     else drawMultilinePreview(state.multiPoints);
   } else if(state.tool === 'multiline' && state.multilineGhostPos){
+    drawAllMarkups();
+  } else if(state.tool === 'select' && state.dragHandle){
+    // Re-apply the drag at the last known pointer position so the snap updates live
     drawAllMarkups();
   }
 }
