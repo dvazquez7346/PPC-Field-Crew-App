@@ -4491,7 +4491,7 @@ function handlePointsForMarkup(m){
     if(m.symbolType === 'airterminal'){
       return [
         { key: 'move',     p: m.anchor },
-        { key: 'rotate',   p: computePhotoRotateHandle(m) },
+        { key: 'rotate',   p: computeATRotateHandle(m) },
         { key: 'stretchX', p: computeATStretchXHandle(m) },
         { key: 'stretchY', p: computeATStretchYHandle(m) },
       ];
@@ -4604,7 +4604,19 @@ function markupContainsPoint(m, p){
   if(m.type === 'whiteoutFreeform') return pointInPolygon(p, m.points) || m.points.some(pt => Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
   if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment') return Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 40 || Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
   if(m.type === 'photo') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
-  if(m.type === 'symbol') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 22;
+  if(m.type === 'symbol'){
+    if(m.symbolType === 'airterminal'){
+      // Hit against the rotated outer square (AT_HALF = 9 local units) + tolerance
+      const dx = p.x - m.anchor.x, dy = p.y - m.anchor.y;
+      const r = m.rotation || 0;
+      const localX = dx * Math.cos(r) + dy * Math.sin(r);
+      const localY = -dx * Math.sin(r) + dy * Math.cos(r);
+      const hx = AT_HALF * (m.scaleX || 1) + 8;
+      const hy = AT_HALF * (m.scaleY || 1) + 8;
+      return Math.abs(localX) <= hx && Math.abs(localY) <= hy;
+    }
+    return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 22;
+  }
   if(m.type === 'airOutletTag') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 40;
   if(m.type === 'damperTag') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 40;
   return false;
@@ -5764,7 +5776,9 @@ function drawHandles(m){
   const ctx = mCanvas.getContext('2d');
   if(m.type === 'shape' || m.type === 'photo' || m.type === 'symbol'){
     const c = (m.type === 'photo' || m.type === 'symbol') ? m.anchor : shapeCenter(m);
-    const rh = (m.type === 'photo' || m.type === 'symbol') ? computePhotoRotateHandle(m) : computeShapeRotateHandle(m);
+    const rh = (m.type === 'symbol' && m.symbolType === 'airterminal') ? computeATRotateHandle(m)
+             : (m.type === 'photo' || m.type === 'symbol') ? computePhotoRotateHandle(m)
+             : computeShapeRotateHandle(m);
     ctx.save();
     ctx.strokeStyle = '#E8622C';
     ctx.lineWidth = 1.5;
@@ -5855,7 +5869,7 @@ function drawHandles(m){
     }
     ctx.beginPath();
     ctx.arc(h.p.x, h.p.y, 5.25, 0, Math.PI * 2);
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.fill();
     ctx.lineWidth = 2;
     ctx.strokeStyle = '#E8622C';
@@ -6777,6 +6791,11 @@ function computeShapeRotateHandle(m){
 }
 function computePhotoRotateHandle(m){
   const dist = 30;
+  const ang = (m.rotation || 0) - Math.PI / 2;
+  return { x: m.anchor.x + dist * Math.cos(ang), y: m.anchor.y + dist * Math.sin(ang) };
+}
+function computeATRotateHandle(m){
+  const dist = 60; // twice the photo handle distance — easier to grab above the symbol
   const ang = (m.rotation || 0) - Math.PI / 2;
   return { x: m.anchor.x + dist * Math.cos(ang), y: m.anchor.y + dist * Math.sin(ang) };
 }
