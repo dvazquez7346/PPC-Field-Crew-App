@@ -217,23 +217,38 @@ input,textarea{font-family:inherit;}
 .kn-add-btn.kn-add-rfi{background:#FEF3C7;color:#B45309;}
 .kn-add-btn:hover{opacity:0.8;}
 .kn-list{border-bottom:1px solid var(--line);}
-.kn-row{display:flex;align-items:center;gap:6px;padding:6px 8px 6px 10px;border-bottom:1px solid var(--line);min-height:38px;}
-.kn-row:last-child{border-bottom:none;}
-.kn-row:hover{background:var(--surface-2);}
-.kn-num{width:22px;height:22px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;font-variant-numeric:tabular-nums;}
-.kn-num.kn{border-color:#2563A8;color:#2563A8;}
-.kn-num.rfi{border-color:#B45309;color:#B45309;}
-.kn-rfi-field{font-size:11px;font-weight:600;color:#B45309;background:#FEF3C7;border:1px solid transparent;border-radius:5px;padding:2px 5px;width:64px;flex-shrink:0;font-family:inherit;text-align:center;}
+/* Table-style rows like AOT panel */
+.kn-table{width:100%;border-collapse:collapse;font-size:12px;}
+.kn-table td{padding:5px 5px;vertical-align:middle;white-space:nowrap;}
+.kn-table tr{border-bottom:1px solid var(--line);}
+.kn-table tr:last-child{border-bottom:none;}
+.kn-table tr:hover{background:var(--surface-2);}
+.kn-table tr:hover .kn-del-btn{opacity:1;}
+.kn-td-action{width:22px;text-align:center;}
+.kn-td-order{width:18px;text-align:center;}
+.kn-td-num{width:26px;text-align:center;}
+.kn-td-text{min-width:0;width:100%;}
+.kn-td-del{width:20px;text-align:center;}
+/* Action buttons */
+.kn-edit-btn,.kn-dup-btn{width:20px;height:20px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:12px;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:0;}
+.kn-edit-btn:hover,.kn-dup-btn:hover{color:var(--ink);background:var(--surface-2);}
+.kn-reorder-btn{display:block;width:16px;height:12px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:8px;padding:0;line-height:1;border-radius:2px;}
+.kn-reorder-btn:hover{color:var(--ink);}
+/* ID# place badge */
+.kn-place-btn{width:24px;height:24px;border-radius:50%;border:none;color:#fff;font-weight:700;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;transition:opacity 0.12s;}
+.kn-place-btn:hover{opacity:0.8;}
+.kn-place-btn.placing{outline:3px solid #E8622C;outline-offset:1px;}
+/* RFI # field */
+.kn-rfi-field{font-size:11px;font-weight:600;color:#B45309;background:#FEF3C7;border:1px solid transparent;border-radius:5px;padding:2px 4px;width:58px;flex-shrink:0;font-family:inherit;text-align:center;}
 .kn-rfi-field:focus{outline:none;border-color:#B45309;}
-.kn-text{flex:1;font-size:12px;color:var(--ink);background:none;border:none;font-family:inherit;padding:0;min-width:0;}
+.kn-text{width:100%;font-size:12px;color:var(--ink);background:none;border:none;font-family:inherit;padding:0;min-width:0;}
 .kn-text:focus{outline:none;}
 .kn-text::placeholder{color:var(--muted);}
-.kn-tag-btn{flex-shrink:0;width:26px;height:26px;border-radius:6px;border:1.5px solid var(--line);background:var(--surface-2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);transition:all 0.12s;}
-.kn-tag-btn:hover{border-color:var(--navy);color:var(--navy);}
-.kn-tag-btn.placing{background:#E8622C;border-color:#E8622C;color:#fff;}
-.kn-del-btn{flex-shrink:0;width:18px;height:18px;border-radius:4px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;opacity:0;display:flex;align-items:center;justify-content:center;transition:opacity 0.1s;}
-.kn-row:hover .kn-del-btn{opacity:1;}
+.kn-del-btn{width:18px;height:18px;border-radius:4px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;opacity:0;display:flex;align-items:center;justify-content:center;padding:0;margin:auto;}
 .kn-del-btn:hover{color:#DC2626;}
+/* Export button — matches takeoff-export-btn style */
+.kn-export-btn{font-size:11px;font-weight:600;border:1px solid var(--line);border-radius:6px;padding:4px 9px;cursor:pointer;background:var(--surface);color:var(--ink);}
+.kn-export-btn:hover{background:var(--surface-2);}
 
 /* ---- Bottom bar: save state ---- */
 .save-btn{background:var(--navy);color:#fff;border:none;font-weight:600;font-size:13px;padding:8px 16px;border-radius:8px;}
@@ -635,7 +650,10 @@ input,textarea{font-family:inherit;}
           <div class="disp">Notes</div>
           <div class="count" id="noteCount">0 items</div>
         </div>
-        <button class="panel-close" id="panelCloseBtn">✕</button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="kn-export-btn" id="knExportBtn" title="Export Key Notes &amp; RFIs as PDF">⬇ Export PDF</button>
+          <button class="panel-close" id="panelCloseBtn">✕</button>
+        </div>
       </div>
       <!-- Key Notes section -->
       <div class="kn-section-head">
@@ -2996,6 +3014,7 @@ $('#takeoffFlowFilter').addEventListener('change', (e) => {
   renderTakeoffList();
 });
 $('#takeoffExportBtn').addEventListener('click', exportTakeoffPDF);
+$('#knExportBtn').addEventListener('click', exportKeyNotesPDF);
 $('#takeoffRefreshBtn').addEventListener('click', () => { ensureCatalogLoaded().then(() => { renderTakeoffList(); drawAllMarkups(); }); });
 $('#takeoffAddBtn').addEventListener('click', async () => {
   await ensureCatalogLoaded();
@@ -5661,20 +5680,44 @@ function drawAllMarkups(){
     ctx.beginPath();
     ctx.arc(ga.x, ga.y, 4, 0, Math.PI * 2);
     ctx.fill();
-    // Text pill outline (simple box)
-    ctx.font = '600 12px Inter, sans-serif';
-    const pillW = 52, pillH = 20, pillR = 6;
-    const px = gt.x - pillW / 2, py = gt.y - pillH / 2;
-    ctx.strokeStyle = ghostColor;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(px + pillR, py);
-    ctx.arcTo(px + pillW, py, px + pillW, py + pillH, pillR);
-    ctx.arcTo(px + pillW, py + pillH, px, py + pillH, pillR);
-    ctx.arcTo(px, py + pillH, px, py, pillR);
-    ctx.arcTo(px, py, px + pillW, py, pillR);
-    ctx.closePath();
-    ctx.stroke();
+    // Tag circle preview matching actual badge
+    if(state.tool === 'keynotetag'){
+      const placingItem = state.placingKeyNoteId ? (state.data.keyNotes || []).find(k => k.id === state.placingKeyNoteId) : null;
+      const isRfi = placingItem && placingItem.category === 'rfi';
+      const R = isRfi ? 20 : 14;
+      const catItems = (state.data.keyNotes || []).filter(k => k.category === (isRfi ? 'rfi' : 'keynote'));
+      const num = placingItem ? catItems.indexOf(placingItem) + 1 : 1;
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = ghostColor;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(gt.x, gt.y, R, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      if(isRfi){
+        ctx.beginPath(); ctx.moveTo(gt.x - R, gt.y); ctx.lineTo(gt.x + R, gt.y); ctx.stroke();
+        ctx.fillStyle = ghostColor; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = '700 10px Inter, sans-serif'; ctx.fillText(String(num), gt.x, gt.y - R/2);
+        const rfiNum = placingItem ? (placingItem.rfiNumber || '') : '';
+        ctx.font = '600 9px Inter, sans-serif'; ctx.fillText(rfiNum || '—', gt.x, gt.y + R/2);
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      } else {
+        ctx.fillStyle = ghostColor; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = '700 11px Inter, sans-serif'; ctx.fillText(String(num), gt.x, gt.y);
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      }
+    } else {
+      // Other leader tools: pill outline
+      const pillW = 52, pillH = 20, pillR = 6;
+      const px = gt.x - pillW / 2, py = gt.y - pillH / 2;
+      ctx.strokeStyle = ghostColor;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(px + pillR, py);
+      ctx.arcTo(px + pillW, py, px + pillW, py + pillH, pillR);
+      ctx.arcTo(px + pillW, py + pillH, px, py + pillH, pillR);
+      ctx.arcTo(px, py + pillH, px, py, pillR);
+      ctx.arcTo(px, py, px + pillW, py, pillR);
+      ctx.closePath();
+      ctx.stroke();
+    }
     ctx.restore();
   }
   // Symbol ghost — semi-transparent preview following cursor before placement
@@ -7097,9 +7140,9 @@ function drawKeyNoteTag(m){
     ctx.moveTo(m.textPos.x - R, m.textPos.y);
     ctx.lineTo(m.textPos.x + R, m.textPos.y);
     ctx.stroke();
-    ctx.font = '700 10px Inter, sans-serif';
+    ctx.font = '700 12px Inter, sans-serif';
     ctx.fillText(String(num), m.textPos.x, m.textPos.y - R / 2);
-    ctx.font = '600 8px Inter, sans-serif';
+    ctx.font = '600 9px Inter, sans-serif';
     ctx.fillText(rfiNum || '—', m.textPos.x, m.textPos.y + R / 2);
   } else {
     ctx.font = '700 11px Inter, sans-serif';
@@ -7703,58 +7746,42 @@ function renderKeyNotePanel(){
   const rfis = keyNotes.filter(k => k.category === 'rfi');
   $('#noteCount').textContent = `${kns.length} key note${kns.length !== 1 ? 's' : ''} · ${rfis.length} RFI${rfis.length !== 1 ? 's' : ''}`;
 
-  // Key Notes list
-  const knList = $('#knList');
-  knList.innerHTML = '';
-  if(kns.length === 0){
-    knList.innerHTML = '<div class="panel-empty" style="padding:10px 14px;font-size:11.5px;">No key notes yet.</div>';
-  } else {
-    kns.forEach((item, idx) => {
+  function buildTable(items, category){
+    if(items.length === 0) return `<div class="panel-empty" style="padding:10px 14px;font-size:11.5px;">No ${category === 'rfi' ? 'RFIs' : 'key notes'} yet.</div>`;
+    const isRfi = category === 'rfi';
+    const color = isRfi ? KN_RFI_COLOR : KN_COLOR;
+    let rows = '';
+    items.forEach((item, idx) => {
       const num = idx + 1;
       const isPlacing = state.placingKeyNoteId === item.id;
-      const row = document.createElement('div');
-      row.className = 'kn-row';
-      row.innerHTML = `
-        <div class="kn-num kn">${num}</div>
-        <input class="kn-text" data-kn-id="${escapeAttr(item.id)}" placeholder="Key note text…" value="${escapeAttr(item.text || '')}">
-        <button class="kn-tag-btn${isPlacing ? ' placing' : ''}" data-tag-id="${escapeAttr(item.id)}" title="Place tag on canvas">
-          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-            <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/>
-            <text x="7" y="11" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor" font-family="Inter,sans-serif">${num}</text>
-          </svg>
-        </button>
-        <button class="kn-del-btn" data-del-id="${escapeAttr(item.id)}" title="Delete">×</button>`;
-      knList.appendChild(row);
+      const isFirst = idx === 0;
+      const isLast  = idx === items.length - 1;
+      const rfiField = isRfi
+        ? `<input class="kn-rfi-field" data-rfi-num-id="${escapeAttr(item.id)}" placeholder="RFI-###" value="${escapeAttr(item.rfiNumber || '')}">`
+        : '';
+      rows += `<tr data-kn-id="${escapeAttr(item.id)}" data-kn-cat="${escapeAttr(category)}">
+        <td class="kn-td-action"><button class="kn-edit-btn" data-edit-id="${escapeAttr(item.id)}" title="Edit">✎</button></td>
+        <td class="kn-td-action"><button class="kn-dup-btn"  data-dup-id="${escapeAttr(item.id)}"  title="Duplicate">⧉</button></td>
+        <td class="kn-td-order">
+          <button class="kn-reorder-btn kn-up-btn"   data-up-id="${escapeAttr(item.id)}"   data-kn-cat="${escapeAttr(category)}" title="Move up"   ${isFirst ? 'disabled' : ''}>▲</button>
+          <button class="kn-reorder-btn kn-down-btn" data-down-id="${escapeAttr(item.id)}" data-kn-cat="${escapeAttr(category)}" title="Move down" ${isLast  ? 'disabled' : ''}>▼</button>
+        </td>
+        <td class="kn-td-num">
+          <button class="kn-place-btn${isPlacing ? ' placing' : ''}" data-tag-id="${escapeAttr(item.id)}" title="Place tag on canvas" style="background:${color};">${num}</button>
+        </td>
+        <td class="kn-td-text">${rfiField}<input class="kn-text" data-kn-id="${escapeAttr(item.id)}" placeholder="${isRfi ? 'RFI description…' : 'Key note text…'}" value="${escapeAttr(item.text || '')}"></td>
+        <td class="kn-td-del"><button class="kn-del-btn" data-del-id="${escapeAttr(item.id)}" title="Delete">×</button></td>
+      </tr>`;
     });
+    return `<table class="kn-table"><tbody>${rows}</tbody></table>`;
   }
 
-  // RFI list
+  const knList  = $('#knList');
   const rfiList = $('#rfiList');
-  rfiList.innerHTML = '';
-  if(rfis.length === 0){
-    rfiList.innerHTML = '<div class="panel-empty" style="padding:10px 14px;font-size:11.5px;">No RFIs yet.</div>';
-  } else {
-    rfis.forEach((item, idx) => {
-      const num = idx + 1;
-      const isPlacing = state.placingKeyNoteId === item.id;
-      const row = document.createElement('div');
-      row.className = 'kn-row';
-      row.innerHTML = `
-        <div class="kn-num rfi">${num}</div>
-        <input class="kn-rfi-field" data-rfi-num-id="${escapeAttr(item.id)}" placeholder="RFI-###" value="${escapeAttr(item.rfiNumber || '')}">
-        <input class="kn-text" data-kn-id="${escapeAttr(item.id)}" placeholder="RFI description…" value="${escapeAttr(item.text || '')}">
-        <button class="kn-tag-btn${isPlacing ? ' placing' : ''}" data-tag-id="${escapeAttr(item.id)}" title="Place tag on canvas">
-          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-            <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/>
-            <text x="7" y="11" text-anchor="middle" font-size="5.5" font-weight="700" fill="currentColor" font-family="Inter,sans-serif">RFI</text>
-          </svg>
-        </button>
-        <button class="kn-del-btn" data-del-id="${escapeAttr(item.id)}" title="Delete">×</button>`;
-      rfiList.appendChild(row);
-    });
-  }
+  knList.innerHTML  = buildTable(kns,  'keynote');
+  rfiList.innerHTML = buildTable(rfis, 'rfi');
 
-  // Wire up events for all rows
+  // Wire events
   $('#panel').querySelectorAll('.kn-text').forEach(input => {
     input.addEventListener('input', () => {
       const id = input.dataset.knId;
@@ -7766,24 +7793,66 @@ function renderKeyNotePanel(){
     input.addEventListener('input', () => {
       const id = input.dataset.rfiNumId;
       const item = (state.data.keyNotes || []).find(k => k.id === id);
-      if(item){
-        item.rfiNumber = input.value;
-        markDirty();
-        drawAllMarkups();
-      }
+      if(item){ item.rfiNumber = input.value; markDirty(); drawAllMarkups(); }
     });
   });
-  $('#panel').querySelectorAll('.kn-tag-btn').forEach(btn => {
+  $('#panel').querySelectorAll('.kn-place-btn').forEach(btn => {
+    btn.addEventListener('click', () => activateKeyNoteTagMode(btn.dataset.tagId));
+  });
+  $('#panel').querySelectorAll('.kn-edit-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const id = btn.dataset.tagId;
-      activateKeyNoteTagMode(id);
+      const id = btn.dataset.editId;
+      const item = (state.data.keyNotes || []).find(k => k.id === id);
+      if(!item) return;
+      // Focus the text field in this row
+      const tr = btn.closest('tr');
+      if(tr){ const inp = tr.querySelector('.kn-text'); if(inp) inp.focus(); }
+    });
+  });
+  $('#panel').querySelectorAll('.kn-dup-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.dupId;
+      const item = (state.data.keyNotes || []).find(k => k.id === id);
+      if(!item) return;
+      const newItem = { id: genId(), category: item.category, text: item.text, rfiNumber: item.rfiNumber || '' };
+      const arr = state.data.keyNotes;
+      const idx = arr.indexOf(item);
+      arr.splice(idx + 1, 0, newItem);
+      markDirty();
+      renderKeyNotePanel();
+    });
+  });
+  $('#panel').querySelectorAll('.kn-up-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.upId;
+      const cat = btn.dataset.knCat;
+      const arr = state.data.keyNotes;
+      const catItems = arr.filter(k => k.category === cat);
+      const globalIdx = arr.indexOf(catItems.find(k => k.id === id));
+      const catIdx = catItems.findIndex(k => k.id === id);
+      if(catIdx <= 0) return;
+      // swap in global array
+      const prevGlobalIdx = arr.indexOf(catItems[catIdx - 1]);
+      [arr[prevGlobalIdx], arr[globalIdx]] = [arr[globalIdx], arr[prevGlobalIdx]];
+      markDirty(); renderKeyNotePanel(); drawAllMarkups();
+    });
+  });
+  $('#panel').querySelectorAll('.kn-down-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.downId;
+      const cat = btn.dataset.knCat;
+      const arr = state.data.keyNotes;
+      const catItems = arr.filter(k => k.category === cat);
+      const globalIdx = arr.indexOf(catItems.find(k => k.id === id));
+      const catIdx = catItems.findIndex(k => k.id === id);
+      if(catIdx < 0 || catIdx >= catItems.length - 1) return;
+      const nextGlobalIdx = arr.indexOf(catItems[catIdx + 1]);
+      [arr[globalIdx], arr[nextGlobalIdx]] = [arr[nextGlobalIdx], arr[globalIdx]];
+      markDirty(); renderKeyNotePanel(); drawAllMarkups();
     });
   });
   $('#panel').querySelectorAll('.kn-del-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.delId;
-      deleteKeyNote(id);
-    });
+    btn.addEventListener('click', () => deleteKeyNote(btn.dataset.delId));
   });
 }
 
@@ -9265,6 +9334,90 @@ function wireDamperRowEvents(){
 }
 
 /* ── Damper Takeoff PDF Export ── */
+function exportKeyNotesPDF(){
+  const jobName = state.jobName || 'Unknown Job';
+  const logoImgEl = document.querySelector('.topbar-logo, #topbar img, img[alt="PPC"]');
+  const logoSrc = (logoImgEl && logoImgEl.src && logoImgEl.src.startsWith('data:')) ? logoImgEl.src : null;
+  const keyNotes = state.data.keyNotes || [];
+  const kns  = keyNotes.filter(k => k.category === 'keynote');
+  const rfis = keyNotes.filter(k => k.category === 'rfi');
+
+  if(kns.length === 0 && rfis.length === 0){
+    showModal({ title:'Nothing to export', sub:'No key notes or RFIs have been added yet.', confirmLabel:'OK', onConfirm:()=>{} });
+    return;
+  }
+
+  // Count how many tags each note has across all sheets
+  function countTagsForNote(id){
+    return (state.data.sheets || []).reduce((s, sh) => s + (sh.markups || []).filter(m => m.type === 'keynotetag' && m.keyNoteId === id).length, 0);
+  }
+
+  function buildSection(items, category){
+    if(items.length === 0) return '';
+    const isRfi = category === 'rfi';
+    const color = isRfi ? '#B45309' : '#2563A8';
+    const title = isRfi ? 'RFI' : 'Key Notes';
+    let rows = items.map((item, idx) => {
+      const num = idx + 1;
+      const tags = countTagsForNote(item.id);
+      const idCell = isRfi
+        ? `<td style="text-align:center;font-weight:700;color:${color};">${num}</td><td style="color:${color};font-weight:600;">${escapeHtml(item.rfiNumber || '—')}</td>`
+        : `<td style="text-align:center;font-weight:700;color:${color};">${num}</td>`;
+      return `<tr style="border-bottom:1px solid #e5e7eb;">
+        ${idCell}
+        <td>${escapeHtml(item.text || '')}</td>
+        <td style="text-align:center;color:${color};font-weight:600;">${tags > 0 ? tags : '—'}</td>
+      </tr>`;
+    }).join('');
+    const extraTh = isRfi ? `<th>RFI #</th>` : '';
+    return `
+      <h3 style="margin:18px 0 6px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:${color};border-bottom:2px solid ${color};padding-bottom:4px;">${title}</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr style="background:#f3f4f6;">
+          <th style="width:36px;text-align:center;">#</th>${extraTh}
+          <th style="text-align:left;padding:5px 8px;">Description</th>
+          <th style="width:54px;text-align:center;">Tags</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  const logoHtml = logoSrc ? `<img src="${logoSrc}" style="height:36px;margin-bottom:4px;" alt="Logo">` : '';
+  const dateStr = new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+    <title>Key Notes Report — ${escapeHtml(jobName)}</title>
+    <style>
+      body{font-family:Inter,Arial,sans-serif;color:#111;padding:32px 40px;margin:0;font-size:12px;}
+      h2{font-size:17px;font-weight:700;margin:0 0 2px;}
+      .sub{color:#6b7280;font-size:11px;}
+      table th{padding:5px 8px;font-weight:700;font-size:11px;text-align:left;white-space:nowrap;}
+      table td{padding:5px 8px;}
+      @media print{body{padding:20px;}}
+    </style>
+  </head><body>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;border-bottom:1px solid #e5e7eb;padding-bottom:14px;">
+      <div>${logoHtml}<h2>${escapeHtml(jobName)}</h2><div class="sub">Key Notes &amp; RFI Report · ${escapeHtml(dateStr)}</div></div>
+    </div>
+    ${buildSection(kns, 'keynote')}
+    ${buildSection(rfis, 'rfi')}
+  </body></html>`;
+
+  if(!window.jspdf || !window.jspdf.jsPDF){
+    showConfirmModal({ title:'PDF library not loaded', sub:'jsPDF failed to load. Printing the report instead.', confirmLabel:'Print', cancelLabel:'Cancel', onConfirm:() => {
+      const win = window.open('', '_blank');
+      win.document.write(html);
+      win.document.close();
+      win.print();
+    }, onCancel:()=>{} });
+    return;
+  }
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.print();
+}
+
 function exportDamperTakeoffPDF(){
   const jobName = state.jobName || 'Unknown Job';
   const takeoff = state.data.damperTakeoff || { fire: [], smoke: [], combination: [] };
