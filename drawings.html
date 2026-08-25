@@ -4396,6 +4396,13 @@ function handlePointsForMarkup(m){
     handles.push({ key: 'move', p: c });
     return handles;
   }
+  if(m.type === 'arc'){
+    const midAngle = m.anticlockwise
+      ? m.startAngle - (((m.startAngle - m.endAngle) % (Math.PI*2) + Math.PI*2) % (Math.PI*2)) / 2
+      : m.startAngle + (((m.endAngle - m.startAngle) % (Math.PI*2) + Math.PI*2) % (Math.PI*2)) / 2;
+    const mid = { x: m.cx + Math.cos(midAngle) * m.radius, y: m.cy + Math.sin(midAngle) * m.radius };
+    return [{ key: 'move', p: mid }];
+  }
   if(m.type === 'freehand'){ const c = markupCenterPoint(m); return [{ key: 'move', p: c }]; }
   if(m.type === 'photo') return [{ key: 'move', p: m.anchor }, { key: 'rotate', p: computePhotoRotateHandle(m) }];
   if(m.type === 'symbol'){
@@ -4414,6 +4421,7 @@ function handlePointsForMarkup(m){
 function cloneMarkupPoints(m){ return JSON.parse(JSON.stringify(m)); }
 function markupCenterPoint(m){
   if(m.type === 'label' || m.type === 'note' || m.type === 'dimension' || m.type === 'elevation' || m.type === 'equipment') return m.textPos;
+  if(m.type === 'arc') return { x: m.cx, y: m.cy };
   if(m.type === 'line' || m.type === 'shape' || m.type === 'whiteoutRect') return { x: (m.p0.x + m.p1.x) / 2, y: (m.p0.y + m.p1.y) / 2 };
   if(m.type === 'multiline' || m.type === 'freehand' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform' || m.type === 'hatchline'){
     const xs = m.points.map(pt => pt.x), ys = m.points.map(pt => pt.y);
@@ -4474,6 +4482,25 @@ function markupContainsPoint(m, p){
   if(m.type === 'freehand' || m.type === 'hatcharea'){
     const pts = m.points || (m.p0 && m.p1 ? [m.p0, m.p1] : []);
     return pts.some(pt => pt && Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
+  }
+  if(m.type === 'arc'){
+    // Hit if cursor is within 12px of the arc curve (check distance from point to circle, then angle range)
+    const distFromCenter = Math.hypot(p.x - m.cx, p.y - m.cy);
+    if(Math.abs(distFromCenter - m.radius) > 14) return false;
+    const angle = Math.atan2(p.y - m.cy, p.x - m.cx);
+    // Check if angle is within the arc's swept range
+    let sa = m.startAngle, ea = m.endAngle;
+    if(m.anticlockwise){
+      // Normalize: going from sa toward decreasing angle to ea
+      let a = angle;
+      const span = ((sa - ea) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+      const fromSa = ((sa - a) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+      return fromSa <= span + 0.15;
+    } else {
+      const span = ((ea - sa) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+      const fromSa = ((angle - sa) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+      return fromSa <= span + 0.15;
+    }
   }
   if(m.type === 'line') return distToSegment(p, m.p0, m.p1) < 12 || (m.textPos && Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 24);
   if(m.type === 'dimension'){
@@ -4691,6 +4718,9 @@ function applyDragHandle(drag, p){
 function translateMarkup(m, origin, dx, dy){
   if(m.type === 'freehand' || m.type === 'multiline' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform' || m.type === 'hatchline'){
     m.points = origin.points.map(pt => ({ x: pt.x + dx, y: pt.y + dy }));
+  } else if(m.type === 'arc'){
+    m.cx = origin.cx + dx;
+    m.cy = origin.cy + dy;
   } else if(m.type === 'line' || m.type === 'shape' || m.type === 'whiteoutRect'){
     m.p0 = { x: origin.p0.x + dx, y: origin.p0.y + dy };
     m.p1 = { x: origin.p1.x + dx, y: origin.p1.y + dy };
