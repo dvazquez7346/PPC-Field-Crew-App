@@ -724,6 +724,7 @@ const state = {
   drawing: false, currentStroke: null,
   multiPoints: null, routeDragging: false, routeSegmentStart: null,
   lastTapTime: 0, lastTapX: 0, lastTapY: 0,
+  snapPoint: null,   // {pt:{x,y}, type:'endpoint'|'midpoint'|'segment'} — active geometry snap
   panState: null,
   selectedMarkupId: null, dragHandle: null, selectPanFallback: null,
   jobsIndexCache: null,
@@ -767,6 +768,7 @@ const state = {
   filletRadiusPx: 0,       // fillet radius in canvas pixels
   filletFirstPick: null,   // {markupId, endKey, pt, dir} — first selected endpoint
   filletHoverPick: null,   // nearest endpoint under cursor (for ghost highlight)
+  filletInactivityTimer: null, // auto-exit timer after fillet is placed
 };
 
 const ANGLE_STEP = 15; // degrees — snap increment for Line/Run tools
@@ -3258,14 +3260,20 @@ function onPointerDown(e){
     state.drawing = true;
     state.currentStroke = { id: genId(), type: 'freehand', color: state.color, thickness: state.thickness, points: [p], note: '' };
   } else if(state.tool === 'line'){
+    const lineSnap = findSnapPoint(p);
+    const lineStart = lineSnap ? lineSnap.pt : p;
+    state.snapPoint = null;
     state.drawing = true;
-    state.currentStroke = { id: genId(), type: 'line', color: state.color, thickness: state.thickness, p0: p, p1: p, note: '' };
+    state.currentStroke = { id: genId(), type: 'line', color: state.color, thickness: state.thickness, p0: lineStart, p1: lineStart, note: '' };
   } else if(state.tool === 'multiline' || state.tool === 'hatchline'){
     // Route and Demo Line share this mechanic: touch down starts (or
     // continues) a segment from the last committed point; dragging previews
     // it live; lifting the finger commits that endpoint and sets up the next
     // segment. Much easier with a finger than tapping precisely at each vertex.
-    if(!state.multiPoints) state.multiPoints = [p]; // first touch places the very first anchor
+    const mlSnap = state.tool === 'multiline' ? findSnapPoint(p) : null;
+    const mlStart = mlSnap ? mlSnap.pt : p;
+    state.snapPoint = null;
+    if(!state.multiPoints) state.multiPoints = [mlStart]; // first touch places the very first anchor
     state.routeSegmentStart = state.multiPoints[state.multiPoints.length - 1];
     state.routeDragging = true;
     showRunDoneBtn();
@@ -3294,8 +3302,11 @@ function onPointerDown(e){
     state.currentStroke = { id: genId(), type: 'shape', shape: state.shapeType, color: state.color, thickness: state.thickness, rotation: 0, p0: p, p1: p, note: '' };
   } else if(state.tool === 'dimension'){
     state.drawing = true;
-    const dp = canvasPointClearFingertip(e);
+    const rawDp = canvasPointClearFingertip(e);
+    const dimSnap = state.snapPoint || findSnapPoint(rawDp);
+    const dp = dimSnap ? dimSnap.pt : rawDp;
     state.ghostDimPos = null; // clear ghost when drawing starts
+    state.snapPoint = null;
     state.currentStroke = { id: genId(), type: 'dimension', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: dp, p1: dp, text: '', textPos: dp, note: '', extOffset: 15 };
   } else if(state.tool === 'whiteoutRect'){
     state.drawing = true;
@@ -3461,7 +3472,9 @@ function onPointerMove(e){
       drawStroke(state.currentStroke);
     }
   } else if(state.tool === 'line' && state.drawing){
-    state.currentStroke.p1 = angleSnap(state.currentStroke.p0, p);
+    const lineSn = findSnapPoint(p);
+    state.snapPoint = lineSn || null;
+    state.currentStroke.p1 = lineSn ? lineSn.pt : angleSnap(state.currentStroke.p0, p);
     drawAllMarkups();
     drawLine(state.currentStroke);
   } else if(state.tool === 'shape' && state.drawing){
@@ -3469,7 +3482,9 @@ function onPointerMove(e){
     drawAllMarkups();
     drawShape(state.currentStroke);
   } else if(state.tool === 'dimension' && state.drawing){
-    state.currentStroke.p1 = axisSnap(state.currentStroke.p0, canvasPointClearFingertip(e));
+    const dimSn = findSnapPoint(canvasPointClearFingertip(e));
+    state.snapPoint = dimSn || null;
+    state.currentStroke.p1 = dimSn ? dimSn.pt : axisSnap(state.currentStroke.p0, canvasPointClearFingertip(e));
     drawAllMarkups();
     drawDimensionPreview(state.currentStroke.p0, state.currentStroke.p1);
   } else if(state.tool === 'whiteoutRect' && state.drawing){
@@ -3477,8 +3492,10 @@ function onPointerMove(e){
     drawAllMarkups();
     drawWhiteoutRectPreview(state.currentStroke.p0, state.currentStroke.p1);
   } else if((state.tool === 'multiline' || state.tool === 'hatchline') && state.routeDragging){
+    const mlSn = state.tool === 'multiline' ? findSnapPoint(p) : null;
+    state.snapPoint = mlSn || null;
+    const snapped = mlSn ? mlSn.pt : angleSnap(state.routeSegmentStart, p);
     drawAllMarkups();
-    const snapped = angleSnap(state.routeSegmentStart, p);
     if(state.tool === 'hatchline') drawHatchLinePreview(state.multiPoints.concat([snapped]));
     else drawMultilinePreview(state.multiPoints.concat([snapped]));
   } else if(state.tool === 'hatcharea' && state.multiPoints){
@@ -3508,7 +3525,9 @@ function onPointerMove(e){
   }
   // Multiline ghost segment — track cursor so we can draw a preview before first drag
   if(state.tool === 'multiline' && state.multiPoints && !state.routeDragging){
-    state.multilineGhostPos = p;
+    const mlGhostSn = findSnapPoint(p);
+    state.snapPoint = mlGhostSn || null;
+    state.multilineGhostPos = mlGhostSn ? mlGhostSn.pt : p;
     drawAllMarkups();
     if(state.multiPoints.length > 0) drawMultilinePreview(state.multiPoints);
   } else if(state.tool !== 'multiline'){
@@ -3534,7 +3553,9 @@ function onPointerMove(e){
   }
   // Ghost dim arrowhead — before first click
   if(state.tool === 'dimension' && !state.drawing){
-    state.ghostDimPos = p;
+    const dimGhostSn = findSnapPoint(canvasPointClearFingertip(e));
+    state.snapPoint = dimGhostSn || null;
+    state.ghostDimPos = dimGhostSn ? dimGhostSn.pt : p;
     drawAllMarkups();
   }
   // Ghost leader anchor — before first click on label/note/elevation/equipment
@@ -3711,6 +3732,7 @@ function onPointerUp(e){
     }, 4000);
   } else if(state.tool === 'line' && state.drawing){
     state.drawing = false;
+    state.snapPoint = null;
     if(Math.hypot(state.currentStroke.p1.x - state.currentStroke.p0.x, state.currentStroke.p1.y - state.currentStroke.p0.y) > 4){
       state.currentStroke.createdAt = Date.now();
       activeSheet().markups.push(state.currentStroke);
@@ -4635,6 +4657,43 @@ function distToSegment(p, a, b){
   let t = ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2;
   t = Math.max(0, Math.min(1, t));
   return Math.hypot(p.x - (a.x + t * (b.x - a.x)), p.y - (a.y + t * (b.y - a.y)));
+}
+function nearestPointOnSegment(p, a, b){
+  const l2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
+  if(l2 === 0) return { x: a.x, y: a.y };
+  let t = ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / l2;
+  t = Math.max(0, Math.min(1, t));
+  return { x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) };
+}
+
+// Geometry snap — finds the nearest endpoint, midpoint, or on-segment point
+// across all line and multiline markups within the snap radii.
+const SNAP_R     = 20; // endpoint / midpoint snap radius (canvas px)
+const SNAP_R_SEG = 13; // on-segment snap radius (tighter, so it doesn't steal endpoint grabs)
+function findSnapPoint(rawP){
+  const sheet = activeSheet();
+  if(!sheet) return null;
+  let best = null, bestDist = Infinity;
+  function tryPt(pt, type, radius){
+    const d = Math.hypot(rawP.x - pt.x, rawP.y - pt.y);
+    if(d < radius && d < bestDist){ bestDist = d; best = { pt, type }; }
+  }
+  sheet.markups.forEach(m => {
+    if(m.type === 'line'){
+      tryPt(m.p0, 'endpoint', SNAP_R);
+      tryPt(m.p1, 'endpoint', SNAP_R);
+      tryPt({ x: (m.p0.x + m.p1.x) / 2, y: (m.p0.y + m.p1.y) / 2 }, 'midpoint', SNAP_R);
+      tryPt(nearestPointOnSegment(rawP, m.p0, m.p1), 'segment', SNAP_R_SEG);
+    } else if((m.type === 'multiline' || m.type === 'hatchline') && m.points && m.points.length >= 2){
+      const pts = m.points;
+      pts.forEach(pt => tryPt(pt, 'endpoint', SNAP_R));
+      for(let i = 0; i < pts.length - 1; i++){
+        tryPt({ x: (pts[i].x + pts[i+1].x) / 2, y: (pts[i].y + pts[i+1].y) / 2 }, 'midpoint', SNAP_R);
+        tryPt(nearestPointOnSegment(rawP, pts[i], pts[i+1]), 'segment', SNAP_R_SEG);
+      }
+    }
+  });
+  return best;
 }
 
 function applyDragHandle(drag, p){
@@ -5770,6 +5829,32 @@ function drawAllMarkups(){
     }
     octx.restore();
   }
+
+  // Snap indicator — cyan ring + crosshair at the active snap point
+  if(state.snapPoint){
+    const { pt, type } = state.snapPoint;
+    const sctx = mCanvas.getContext('2d');
+    sctx.save();
+    sctx.strokeStyle = '#00C8D4';
+    sctx.lineWidth = 1.5;
+    const r = type === 'segment' ? 7 : 9;
+    sctx.beginPath();
+    sctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+    sctx.stroke();
+    if(type === 'midpoint'){
+      // Small triangle marker inside for midpoint
+      sctx.beginPath();
+      sctx.moveTo(pt.x, pt.y - 5); sctx.lineTo(pt.x + 4.5, pt.y + 3); sctx.lineTo(pt.x - 4.5, pt.y + 3);
+      sctx.closePath(); sctx.stroke();
+    } else {
+      // Crosshair for endpoint and segment
+      sctx.beginPath();
+      sctx.moveTo(pt.x - 5, pt.y); sctx.lineTo(pt.x + 5, pt.y);
+      sctx.moveTo(pt.x, pt.y - 5); sctx.lineTo(pt.x, pt.y + 5);
+      sctx.stroke();
+    }
+    sctx.restore();
+  }
 }
 
 function drawHandles(m){
@@ -6497,6 +6582,7 @@ function enterFilletMode(radiusPx){
 }
 
 function exitFilletMode(){
+  if(state.filletInactivityTimer){ clearTimeout(state.filletInactivityTimer); state.filletInactivityTimer = null; }
   state.filletMode = false;
   state.filletRadiusPx = 0;
   state.filletFirstPick = null;
@@ -6704,6 +6790,13 @@ function handleFilletTap(p){
   const msg = $('#filletBarMsg');
   if(msg){ msg.style.color = 'var(--success)'; msg.textContent = '✓ Fillet placed — tap another pair or Done';
     setTimeout(() => { if(msg.isConnected){ msg.textContent = 'Tap first line endpoint'; msg.style.color = 'var(--navy)'; } }, 2000); }
+
+  // Auto-exit fillet mode after 5 seconds of inactivity
+  if(state.filletInactivityTimer) clearTimeout(state.filletInactivityTimer);
+  state.filletInactivityTimer = setTimeout(() => {
+    if(state.filletMode) exitFilletMode();
+    state.filletInactivityTimer = null;
+  }, 5000);
 
   drawAllMarkups();
   renderNoteList();
