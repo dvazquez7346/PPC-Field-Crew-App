@@ -720,6 +720,7 @@ const state = {
   damperReordered: false,
   mLastActionPoint: null,
   whiteoutsUnlocked: false,
+  multilineGhostPos: null,  // cursor position for pre-drag ghost segment on multiline tool
   // Duct Run tool state
   ductRunPhase: null,      // null | 'placeAT' | 'rotateAT' | 'rotateFlex'
   ductRunAtMode: 'supply', // supply | return | exhaust
@@ -3334,6 +3335,14 @@ function onPointerMove(e){
     state.ghostDamperTagPos = p;
     drawAllMarkups();
   }
+  // Multiline ghost segment — track cursor so we can draw a preview before first drag
+  if(state.tool === 'multiline' && state.multiPoints && !state.routeDragging){
+    state.multilineGhostPos = p;
+    drawAllMarkups();
+    if(state.multiPoints.length > 0) drawMultilinePreview(state.multiPoints);
+  } else if(state.tool !== 'multiline'){
+    state.multilineGhostPos = null;
+  }
   // Duct Run ghost — update pointer position and live-rotate AT during rotateAT phase
   if(state.tool === 'ductrun' && state.ductRunPhase){
     state.ductRunGhostPos = p;
@@ -3378,6 +3387,7 @@ function switchToTool(toolName){
   const btn = document.querySelector(`.tool-btn[data-tool="${toolName}"]`);
   if(btn) btn.classList.add('active');
   if(state.tool === 'ductrun' && toolName !== 'ductrun') clearDuctRunState();
+  if(toolName !== 'multiline') state.multilineGhostPos = null;
   state.tool = toolName;
   if(toolName !== 'dimension') state.ghostDimPos = null; // clear ghost when leaving dim tool
   if(!['label','note','elevation','equipment'].includes(toolName)) state.ghostLeaderPos = null;
@@ -5269,6 +5279,31 @@ function drawAllMarkups(){
     ctx.stroke();
     ctx.restore();
   }
+  // Multiline "tap to start" ghost — dashed line from last committed point to cursor
+  // Shown whenever multiline has at least one point but isn't mid-drag yet.
+  if(state.tool === 'multiline' && state.multiPoints && state.multiPoints.length > 0 && !state.routeDragging && state.multilineGhostPos){
+    const last = state.multiPoints[state.multiPoints.length - 1];
+    const snapped = angleSnap(last, state.multilineGhostPos);
+    const ctx = mCanvas.getContext('2d');
+    ctx.save();
+    ctx.globalAlpha = 0.45;
+    ctx.strokeStyle = state.color || '#FF0000';
+    ctx.lineWidth = state.thickness || 2;
+    ctx.lineCap = 'round';
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath();
+    ctx.moveTo(last.x, last.y);
+    ctx.lineTo(snapped.x, snapped.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // Filled dot at the start point so user sees the anchor
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = '#2F5D8A';
+    ctx.beginPath();
+    ctx.arc(last.x, last.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
   // Duct Run ghost previews
   if(state.tool === 'ductrun' && state.ductRunGhostPos){
     const gp = state.ductRunGhostPos;
@@ -5285,6 +5320,29 @@ function drawAllMarkups(){
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       drawSymAirTerminal(ctx, state.ductRunAtMode);
+      ctx.restore();
+    } else if(state.ductRunPhase === 'rotateAT' && state.ductRunATPos){
+      // Dashed aim-line from AT center in the snapped direction so user sees the rotation cue
+      const angle = snapAngle5deg(state.ductRunATPos, gp);
+      const atS = defaultATScaleFromCalibration();
+      const reach = AT_HALF * Math.max(atS, 1) * 2.5; // extends well beyond the symbol edge
+      const tipX = state.ductRunATPos.x + Math.cos(angle) * reach;
+      const tipY = state.ductRunATPos.y + Math.sin(angle) * reach;
+      ctx.save();
+      ctx.globalAlpha = 0.65;
+      ctx.strokeStyle = '#2F5D8A';
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = 'round';
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.moveTo(state.ductRunATPos.x, state.ductRunATPos.y);
+      ctx.lineTo(tipX, tipY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#2F5D8A';
+      ctx.beginPath();
+      ctx.arc(tipX, tipY, 5, 0, Math.PI * 2);
+      ctx.fill();
       ctx.restore();
     } else if(state.ductRunPhase === 'rotateFlex' && state.ductRunATPos){
       // Ghost flex duct rotating from AT center
