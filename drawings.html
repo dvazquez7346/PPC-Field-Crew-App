@@ -3453,7 +3453,17 @@ function onPointerMove(e){
       state.dragHandle.committed = true;
       state.selectPanFallback = null;
     }
-    applyDragHandle(state.dragHandle, p);
+    // Snap endpoint grips to nearby geometry on existing markups (excluding the one being edited)
+    const drag = state.dragHandle;
+    const isEndpointKey = drag.key === 'p0' || drag.key === 'p1' || (typeof drag.key === 'string' && drag.key.startsWith('pt'));
+    if(isEndpointKey){
+      const gripSn = findSnapPoint(p, drag.markupId);
+      state.snapPoint = gripSn || null;
+      applyDragHandle(drag, gripSn ? gripSn.pt : p);
+    } else {
+      state.snapPoint = null;
+      applyDragHandle(drag, p);
+    }
     drawAllMarkups();
     return;
   }
@@ -3484,7 +3494,8 @@ function onPointerMove(e){
   } else if(state.tool === 'dimension' && state.drawing){
     const dimSn = findSnapPoint(canvasPointClearFingertip(e));
     state.snapPoint = dimSn || null;
-    state.currentStroke.p1 = dimSn ? dimSn.pt : axisSnap(state.currentStroke.p0, canvasPointClearFingertip(e));
+    const dimRaw = canvasPointClearFingertip(e);
+    state.currentStroke.p1 = dimSn ? dimSn.pt : (state.shiftDown ? axisSnap(state.currentStroke.p0, dimRaw) : dimRaw);
     drawAllMarkups();
     drawDimensionPreview(state.currentStroke.p0, state.currentStroke.p1);
   } else if(state.tool === 'whiteoutRect' && state.drawing){
@@ -3672,6 +3683,7 @@ function onPointerUp(e){
     const markupId = state.dragHandle.markupId;
     state.dragHandle = null;
     state.selectPanFallback = null;
+    state.snapPoint = null;
     try{ mCanvas.releasePointerCapture(e.pointerId); }catch(err){}
     if(!wasCommitted){
       // Finger lifted before drag threshold — it was a tap, not a drag; no dirty mark needed
@@ -4670,7 +4682,7 @@ function nearestPointOnSegment(p, a, b){
 // across all line and multiline markups within the snap radii.
 const SNAP_R     = 20; // endpoint / midpoint snap radius (canvas px)
 const SNAP_R_SEG = 13; // on-segment snap radius (tighter, so it doesn't steal endpoint grabs)
-function findSnapPoint(rawP){
+function findSnapPoint(rawP, excludeId){
   const sheet = activeSheet();
   if(!sheet) return null;
   let best = null, bestDist = Infinity;
@@ -4679,6 +4691,7 @@ function findSnapPoint(rawP){
     if(d < radius && d < bestDist){ bestDist = d; best = { pt, type }; }
   }
   sheet.markups.forEach(m => {
+    if(m.id === excludeId) return;
     if(m.type === 'line'){
       tryPt(m.p0, 'endpoint', SNAP_R);
       tryPt(m.p1, 'endpoint', SNAP_R);
