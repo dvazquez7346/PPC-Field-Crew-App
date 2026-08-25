@@ -3932,6 +3932,7 @@ function handleDuctRunTap(p){
       id: genId(), type: 'symbol', symbolType: 'flexduct',
       color: state.color, thickness: state.thickness,
       rotation: flexAngle, scale: flexS,
+      flexMode: state.ductRunAtMode === 'exhaust' ? 'rigid' : 'flex',
       pocMode: 'POC', atMode: 'supply', scaleX: 1, scaleY: 1,
       anchor: flexAnchor, note: '', createdAt: Date.now(),
     };
@@ -4776,6 +4777,19 @@ function showMarkupActionButtons(markupId){
       showMarkupActionButtons(markupId);
     });
     buttonRow.appendChild(atBtn);
+  }
+  if(m.type === 'symbol' && m.symbolType === 'flexduct'){
+    const cur = m.flexMode || 'flex';
+    const next = cur === 'flex' ? 'rigid' : 'flex';
+    const flexToggleBtn = document.createElement('button');
+    flexToggleBtn.textContent = cur === 'flex' ? 'Flex → Rigid' : 'Rigid → Flex';
+    flexToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      m.flexMode = next;
+      markDirty(); drawAllMarkups(); renderNoteList();
+      showMarkupActionButtons(markupId);
+    });
+    buttonRow.appendChild(flexToggleBtn);
   }
   if(m.type === 'line' || m.type === 'multiline'){
     // Line Type dropdown button (replaces old Hatch toggle)
@@ -6070,7 +6084,7 @@ function drawSymbolMarker(m){
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   switch(m.symbolType){
-    case 'flexduct': drawSymFlexDuct(ctx); break;
+    case 'flexduct': drawSymFlexDuct(ctx, m.flexMode || 'flex'); break;
     case 'pipeup': drawSymPipeUp(ctx); break;
     case 'pipedown': drawSymPipeDown(ctx); break;
     case 'valve': drawSymValve(ctx); break;
@@ -6085,15 +6099,23 @@ function drawSymbolMarker(m){
   }
   ctx.restore();
 }
-function drawSymFlexDuct(ctx){
+function drawSymFlexDuct(ctx, mode){
   ctx.beginPath();
   ctx.arc(-20, 0, 13, Math.PI * 0.25, Math.PI * 1.75);
   ctx.stroke();
-  const pts = [[-20, 0], [-5, 0], [-1, -12], [3, 12], [7, -12], [11, 12], [15, -12], [19, 0], [33, 0]];
-  ctx.beginPath();
-  ctx.moveTo(pts[0][0], pts[0][1]);
-  for(let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
-  ctx.stroke();
+  if(mode === 'rigid'){
+    // Straight line from circle center to far end
+    ctx.beginPath();
+    ctx.moveTo(-20, 0); ctx.lineTo(33, 0);
+    ctx.stroke();
+  } else {
+    // Default flex zigzag
+    const pts = [[-20, 0], [-5, 0], [-1, -12], [3, 12], [7, -12], [11, 12], [15, -12], [19, 0], [33, 0]];
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for(let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.stroke();
+  }
 }
 function drawSymPipeUp(ctx){
   ctx.beginPath();
