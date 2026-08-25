@@ -207,6 +207,34 @@ input,textarea{font-family:inherit;}
 .note-card .nc-empty{color:var(--muted);font-style:italic;}
 .panel-empty{padding:24px 16px;color:var(--muted);font-size:12.5px;text-align:center;}
 
+/* ---- Key Notes panel ---- */
+.kn-section-head{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 7px;}
+.kn-section-title{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;}
+.kn-color{color:#2563A8;}
+.rfi-color{color:#B45309;}
+.kn-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.kn-add-btn{font-size:11px;font-weight:600;border:none;border-radius:6px;padding:4px 9px;cursor:pointer;background:#EBF2FB;color:#2563A8;}
+.kn-add-btn.kn-add-rfi{background:#FEF3C7;color:#B45309;}
+.kn-add-btn:hover{opacity:0.8;}
+.kn-list{border-bottom:1px solid var(--line);}
+.kn-row{display:flex;align-items:center;gap:6px;padding:6px 8px 6px 10px;border-bottom:1px solid var(--line);min-height:38px;}
+.kn-row:last-child{border-bottom:none;}
+.kn-row:hover{background:var(--surface-2);}
+.kn-num{width:22px;height:22px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;font-variant-numeric:tabular-nums;}
+.kn-num.kn{border-color:#2563A8;color:#2563A8;}
+.kn-num.rfi{border-color:#B45309;color:#B45309;}
+.kn-rfi-field{font-size:11px;font-weight:600;color:#B45309;background:#FEF3C7;border:1px solid transparent;border-radius:5px;padding:2px 5px;width:64px;flex-shrink:0;font-family:inherit;text-align:center;}
+.kn-rfi-field:focus{outline:none;border-color:#B45309;}
+.kn-text{flex:1;font-size:12px;color:var(--ink);background:none;border:none;font-family:inherit;padding:0;min-width:0;}
+.kn-text:focus{outline:none;}
+.kn-text::placeholder{color:var(--muted);}
+.kn-tag-btn{flex-shrink:0;width:26px;height:26px;border-radius:6px;border:1.5px solid var(--line);background:var(--surface-2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);transition:all 0.12s;}
+.kn-tag-btn:hover{border-color:var(--navy);color:var(--navy);}
+.kn-tag-btn.placing{background:#E8622C;border-color:#E8622C;color:#fff;}
+.kn-del-btn{flex-shrink:0;width:18px;height:18px;border-radius:4px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;opacity:0;display:flex;align-items:center;justify-content:center;transition:opacity 0.1s;}
+.kn-row:hover .kn-del-btn{opacity:1;}
+.kn-del-btn:hover{color:#DC2626;}
+
 /* ---- Bottom bar: save state ---- */
 .save-btn{background:var(--navy);color:#fff;border:none;font-weight:600;font-size:13px;padding:8px 16px;border-radius:8px;}
 .save-btn:hover{background:var(--navy-2);}
@@ -604,19 +632,27 @@ input,textarea{font-family:inherit;}
       <div class="panel-resize-handle" id="panelResizeHandle"></div>
       <div class="panel-head">
         <div>
-          <div class="disp">Notes on this sheet</div>
-          <div class="count" id="noteCount">0 markups</div>
+          <div class="disp">Notes</div>
+          <div class="count" id="noteCount">0 items</div>
         </div>
         <button class="panel-close" id="panelCloseBtn">✕</button>
       </div>
-      <div class="panel-filter-row">
-        <input type="text" id="noteFilterInput" placeholder="Filter by text or type…">
-        <button id="typeVisibilityBtn" title="Show/hide by type">👁</button>
+      <!-- Key Notes section -->
+      <div class="kn-section-head">
+        <span class="kn-section-title kn-color">
+          <span class="kn-dot" style="background:#2563A8;"></span>Key Notes
+        </span>
+        <button class="kn-add-btn" id="knAddBtn">+ Add</button>
       </div>
-      <div class="type-visibility-flyout hidden" id="typeVisibilityFlyout"></div>
-      <div class="panel-list" id="noteList">
-        <div class="panel-empty">No markups yet.</div>
+      <div id="knList" class="kn-list"></div>
+      <!-- RFI section -->
+      <div class="kn-section-head" style="border-top:1px solid var(--line);margin-top:0;">
+        <span class="kn-section-title rfi-color">
+          <span class="kn-dot" style="background:#B45309;"></span>RFI
+        </span>
+        <button class="kn-add-btn kn-add-rfi" id="rfiAddBtn">+ Add</button>
       </div>
+      <div id="rfiList" class="kn-list"></div>
     </div>
 
     <!-- ── Stacked takeoff panels wrapper ── -->
@@ -769,6 +805,7 @@ const state = {
   filletFirstPick: null,   // {markupId, endKey, pt, dir} — first selected endpoint
   filletHoverPick: null,   // nearest endpoint under cursor (for ghost highlight)
   filletInactivityTimer: null, // auto-exit timer after fillet is placed
+  placingKeyNoteId: null,      // id of keyNote/RFI item currently being tagged onto canvas
 };
 
 const ANGLE_STEP = 15; // degrees — snap increment for Line/Run tools
@@ -780,7 +817,7 @@ const LOCKED_SHAPES = ['circle', 'square', 'triangle', 'diamond', 'hexagon'];
 // naturally want to treat as one rigid unit (a symbol + the line it sits on,
 // several shapes marking one area); leader-based types (Callout, Note, etc.)
 // have their own mechanics that don't benefit from rigid grouping.
-const GROUPABLE_TYPES = ['line', 'multiline', 'freehand', 'shape', 'symbol', 'label', 'note', 'hatchline', 'hatcharea', 'dimension', 'elevation', 'equipment', 'photo', 'airOutletTag', 'damperTag'];
+const GROUPABLE_TYPES = ['line', 'multiline', 'freehand', 'shape', 'symbol', 'label', 'note', 'hatchline', 'hatcharea', 'dimension', 'elevation', 'equipment', 'photo', 'airOutletTag', 'damperTag', 'keynotetag'];
 const AXIS_SNAP_THRESHOLD = 6; // degrees — Dimension tool snaps only near horizontal/vertical, else free angle
 const JOINT_RADIUS = 15; // fixed fillet radius for multi-segment corners (diagrammatic, not exact)
 const PALETTE = ['#FF0000', '#00FF00', '#0000FF', '#FF8000', '#FF00FF', '#000000'];
@@ -815,6 +852,8 @@ const HATCH_COLOR = '#FF0000'; // vivid red — reserved for "changed/demo'd" ha
 const DEFAULT_PHOTO_COLOR = '#FF8000'; // orange
 const DEFAULT_EQUIPMENT_COLOR = '#00FF00'; // green
 const LEADER_STUB_LENGTH = 36; // fixed length of the horizontal segment nearest the text, before it bends toward the target
+const KN_COLOR = '#2563A8';   // Key Note circle color — engineering blue
+const KN_RFI_COLOR = '#B45309'; // RFI circle color — amber
 const HATCH_TICK_SPACING = 10, HATCH_TICK_LENGTH = 9; // px, for hatch-line tick marks and area fill spacing
 const SYMBOLS = ['°','⌀','±','∠','′','″'];
 
@@ -1283,7 +1322,7 @@ $('#fileExit').addEventListener('click', () => {
 });
 
 function exitToBlankCanvas(){
-  state.data = { jobId: '', jobName: '', sheets: [{ id: Date.now(), name: 'Sheet 1', markups: [], pdfData: null, pdfPageNum: 1 }] };
+  state.data = { jobId: '', jobName: '', keyNotes: [], sheets: [{ id: Date.now(), name: 'Sheet 1', markups: [], pdfData: null, pdfPageNum: 1 }] };
   state.jobId = null;
   state.jobName = '';
   state.fileName = null;
@@ -1711,12 +1750,16 @@ async function openJobById(jobId, initialJobName){
     if(!state.data.damperTakeoff){
       state.data.damperTakeoff = { fire: [], smoke: [], combination: [] };
     }
+    if(!state.data.keyNotes){
+      state.data.keyNotes = [];
+    }
     migrateOldMarkupData(state.data);
     state.loadedSnapshot = JSON.parse(JSON.stringify(state.data.sheets)); // baseline for save-conflict auto-merge
     state.loadedTakeoffSnapshot = JSON.parse(JSON.stringify(state.data.airTerminalTakeoff || {}));
     updateJobNameChip();
     renderSheetTabs();
     await renderActiveSheet();
+    renderKeyNotePanel();
     setStatus('saved', 'Job ' + jobId + ' — all changes saved');
     refreshJobDropdown();
     checkForLocalDraft(jobId, state.data);
@@ -1913,7 +1956,7 @@ $('#photoFileUpload').addEventListener('change', async (e) => {
     m.photoPath = `${folder}/${filename}`;
     markDirty();
     drawAllMarkups();
-    renderNoteList();
+    renderKeyNotePanel();
     if(state.selectedMarkupId === m.id) showMarkupActionButtons(m.id);
     setStatus('dirty', 'Photo attached — remember to Save');
   }catch(err){
@@ -2090,7 +2133,7 @@ async function renderActiveSheet(){
       $('#emptyStateBody').textContent = 'Type a job number above and click Open, or click "Browse" to pick from existing jobs.';
       $('#uploadBtn').classList.add('hidden');
     }
-    renderNoteList();
+    renderKeyNotePanel();
     return;
   }
   $('#emptyState').classList.add('hidden');
@@ -2155,7 +2198,7 @@ async function renderActiveSheet(){
 
     fitToScreen();
     drawAllMarkups();
-    renderNoteList();
+    renderKeyNotePanel();
   }catch(e){
     console.error('PDF render failed', e);
     $('#emptyState').classList.remove('hidden');
@@ -2882,6 +2925,8 @@ $('#panelCloseBtn').addEventListener('click', () => {
   $('#panel').classList.add('panel-hidden');
   positionFloatingControls();
 });
+$('#knAddBtn').addEventListener('click', () => addKeyNote('keynote'));
+$('#rfiAddBtn').addEventListener('click', () => addKeyNote('rfi'));
 // Keeps the wrapper visible iff at least one child panel is open
 function updateTakeoffWrapperVisibility(){
   const aotHidden  = $('#takeoffPanel').classList.contains('panel-hidden');
@@ -2962,44 +3007,6 @@ $('#takeoffApplyOrderBtn').addEventListener('click', () => {
   drawAllMarkups();
   state.aotReordered = false;
   renderTakeoffList();
-});
-$('#noteFilterInput').addEventListener('input', (e) => {
-  state.noteFilterText = e.target.value;
-  renderNoteList();
-});
-$('#typeVisibilityBtn').addEventListener('click', () => {
-  const flyout = $('#typeVisibilityFlyout');
-  if(!flyout.classList.contains('hidden')){
-    flyout.classList.add('hidden');
-    return;
-  }
-  const sheet = activeSheet();
-  const types = [...new Set((sheet ? sheet.markups : []).map(m => m.type))];
-  if(types.length === 0){ flyout.classList.add('hidden'); return; }
-  flyout.innerHTML = types.map(t => {
-    const displayName = markupTypeDisplayName({ type: t });
-    const checked = state.hiddenTypes.has(t) ? '' : 'checked';
-    return `<label><input type="checkbox" data-hide-type="${escapeAttr(t)}" ${checked}> ${escapeHtml(displayName)}</label>`;
-  }).join('');
-  flyout.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-    cb.addEventListener('change', () => {
-      const t = cb.dataset.hideType;
-      if(cb.checked) state.hiddenTypes.delete(t);
-      else state.hiddenTypes.add(t);
-      drawAllMarkups();
-    });
-  });
-  flyout.classList.remove('hidden');
-  const btn = $('#typeVisibilityBtn');
-  const rect = btn.getBoundingClientRect();
-  flyout.style.left = Math.max(8, rect.right - 160) + 'px';
-  flyout.style.top = (rect.bottom + 6) + 'px';
-});
-document.addEventListener('click', (e) => {
-  const flyout = $('#typeVisibilityFlyout');
-  if(!flyout.classList.contains('hidden') && !e.target.closest('#typeVisibilityFlyout') && !e.target.closest('#typeVisibilityBtn')){
-    flyout.classList.add('hidden');
-  }
 });
 
 /* ============================================================
@@ -3180,7 +3187,7 @@ function onPointerDown(e){
       if(gripHit){
         state.selectedMarkupId = gripHit.markup.id;
         try{ mCanvas.setPointerCapture(e.pointerId); }catch(err){}
-        renderNoteList();
+        renderKeyNotePanel();
         drawAllMarkups();
         showMarkupActionButtons(gripHit.markup.id);
         state.dragHandle = { markupId: gripHit.markup.id, key: gripHit.key, startPoint: canvasPoint(e), startClientX: e.clientX, startClientY: e.clientY, committed: true, origins: cloneMarkupPoints(gripHit.markup) };
@@ -3201,7 +3208,7 @@ function onPointerDown(e){
       if(bodyHit){
         // Select the item but don't lock into drag — fall through to pan
         state.selectedMarkupId = bodyHit.markup.id;
-        renderNoteList();
+        renderKeyNotePanel();
         drawAllMarkups();
         showMarkupActionButtons(bodyHit.markup.id);
       } else {
@@ -3219,7 +3226,7 @@ function onPointerDown(e){
     if(hit){
       state.selectedMarkupId = hit.markup.id;
       try{ mCanvas.setPointerCapture(e.pointerId); }catch(err){}
-      renderNoteList();
+      renderKeyNotePanel();
       drawAllMarkups();
       showMarkupActionButtons(hit.markup.id);
       // showMarkupActionButtons can reflow the layout (the action bar taking
@@ -3321,6 +3328,8 @@ function onPointerDown(e){
     placeEquipmentMarkup(p);
   } else if(state.tool === 'symbol'){
     placeSymbolMarker(p);
+  } else if(state.tool === 'keynotetag'){
+    placeKeyNoteTag(p);
   } else if(state.tool === 'airOutletTag'){
     handleAirOutletTagTap(p);
   } else if(state.tool === 'damperTag'){
@@ -3570,11 +3579,11 @@ function onPointerMove(e){
     state.ghostDimPos = dimGhostSn ? dimGhostSn.pt : p;
     drawAllMarkups();
   }
-  // Ghost leader anchor — before first click on label/note/elevation/equipment
-  if(['label','note','elevation','equipment'].includes(state.tool) && !state.drawing){
+  // Ghost leader anchor — before first click on label/note/elevation/equipment/keynotetag
+  if(['label','note','elevation','equipment','keynotetag'].includes(state.tool) && !state.drawing){
     state.ghostLeaderPos = p;
     drawAllMarkups();
-  } else if(!['label','note','elevation','equipment'].includes(state.tool)){
+  } else if(!['label','note','elevation','equipment','keynotetag'].includes(state.tool)){
     state.ghostLeaderPos = null;
   }
   // Erase halo cursor
@@ -3602,9 +3611,13 @@ function switchToTool(toolName){
   if(state.filletMode && toolName !== 'fillet') exitFilletMode();
   if(toolName !== 'multiline') state.multilineGhostPos = null;
   if(toolName !== 'symbol') state.ghostSymbolPos = null;
+  if(toolName !== 'keynotetag' && state.placingKeyNoteId){
+    state.placingKeyNoteId = null;
+    renderKeyNotePanel();
+  }
   state.tool = toolName;
   if(toolName !== 'dimension'){ state.ghostDimPos = null; state._lastDimRawP1 = null; } // clear ghost when leaving dim tool
-  if(!['label','note','elevation','equipment'].includes(toolName)) state.ghostLeaderPos = null;
+  if(!['label','note','elevation','equipment','keynotetag'].includes(toolName)) state.ghostLeaderPos = null;
 }
 
 // Native 'dblclick' doesn't reliably fire from two touch taps on iOS Safari
@@ -3698,7 +3711,7 @@ function onPointerUp(e){
       return;
     }
     markDirty();
-    renderNoteList();
+    renderKeyNotePanel();
     if(state.selectedMarkupId) showMarkupActionButtons(state.selectedMarkupId);
     if(dragDist < 6 && checkDoubleTap(e)){
       const sheet = activeSheet();
@@ -3730,7 +3743,7 @@ function onPointerUp(e){
       state.currentStroke.createdAt = Date.now();
       activeSheet().markups.push(state.currentStroke);
       markDirty();
-      renderNoteList();
+      renderKeyNotePanel();
     }
     state.currentStroke = null;
     drawAllMarkups();
@@ -3750,7 +3763,7 @@ function onPointerUp(e){
       state.currentStroke.createdAt = Date.now();
       activeSheet().markups.push(state.currentStroke);
       markDirty();
-      renderNoteList();
+      renderKeyNotePanel();
     }
     state.currentStroke = null;
     drawAllMarkups();
@@ -3760,7 +3773,7 @@ function onPointerUp(e){
       state.currentStroke.createdAt = Date.now();
       activeSheet().markups.push(state.currentStroke);
       markDirty();
-      renderNoteList();
+      renderKeyNotePanel();
     }
     state.currentStroke = null;
     drawAllMarkups();
@@ -3771,7 +3784,7 @@ function onPointerUp(e){
       state.currentStroke.createdAt = Date.now();
       activeSheet().markups.push(state.currentStroke);
       markDirty();
-      renderNoteList();
+      renderKeyNotePanel();
     }
     state.currentStroke = null;
     drawAllMarkups();
@@ -3797,7 +3810,7 @@ function onPointerUp(e){
         dim.createdAt = Date.now();
         sh.markups.push(dim);
         markDirty();
-        renderNoteList();
+        renderKeyNotePanel();
         switchToSelectAndSelect(dim.id);
       }
       if(!sh || !sh.scaleCalibration){
@@ -3883,25 +3896,25 @@ function finishMultiline(){
       const markup = { id: genId(), type: 'hatcharea', color: HATCH_COLOR, points: state.multiPoints, note: '', createdAt: Date.now() };
       activeSheet().markups.push(markup);
       markDirty();
-      renderNoteList();
+      renderKeyNotePanel();
       createdId = markup.id;
     } else if(state.tool === 'whiteoutFreeform' && state.multiPoints.length >= 3){
       const markup = { id: genId(), type: 'whiteoutFreeform', points: state.multiPoints, locked: true, note: '', createdAt: Date.now() };
       activeSheet().markups.push(markup);
       markDirty();
-      renderNoteList();
+      renderKeyNotePanel();
       createdId = markup.id;
     } else if(state.tool === 'multiline'){
       const markup = { id: genId(), type: 'multiline', color: state.color, thickness: state.thickness, lineType: state.lineType || 'solid', points: state.multiPoints, note: '', createdAt: Date.now() };
       activeSheet().markups.push(markup);
       markDirty();
-      renderNoteList();
+      renderKeyNotePanel();
       createdId = markup.id;
     } else if(state.tool === 'hatchline'){
       const markup = { id: genId(), type: 'hatchline', color: HATCH_COLOR, thickness: state.thickness, points: state.multiPoints, note: '', createdAt: Date.now() };
       activeSheet().markups.push(markup);
       markDirty();
-      renderNoteList();
+      renderKeyNotePanel();
       createdId = markup.id;
     }
   }
@@ -3968,7 +3981,7 @@ function openTextEditForMarkup(m){
         m.text = text;
         markDirty();
         drawAllMarkups();
-        renderNoteList();
+        renderKeyNotePanel();
       }
     });
   } else if(m.type === 'elevation'){
@@ -3978,7 +3991,7 @@ function openTextEditForMarkup(m){
         m.textTop = top; m.textBottom = bottom;
         markDirty();
         drawAllMarkups();
-        renderNoteList();
+        renderKeyNotePanel();
       }
     });
   } else if(m.type === 'equipment'){
@@ -3988,7 +4001,7 @@ function openTextEditForMarkup(m){
         m.eqType = type; m.eqNumber = number;
         markDirty();
         drawAllMarkups();
-        renderNoteList();
+        renderKeyNotePanel();
       }
     });
   }
@@ -4006,7 +4019,7 @@ function placeLeaderMarkup(kind, anchor){
   };
   activeSheet().markups.push(markup);
   markDirty();
-  renderNoteList();
+  renderKeyNotePanel();
   switchToSelectAndSelect(markup.id);
 }
 
@@ -4019,7 +4032,7 @@ function placeElevationMarkup(anchor){
   };
   activeSheet().markups.push(markup);
   markDirty();
-  renderNoteList();
+  renderKeyNotePanel();
   switchToSelectAndSelect(markup.id);
 }
 
@@ -4032,7 +4045,7 @@ function placeEquipmentMarkup(anchor){
   };
   activeSheet().markups.push(markup);
   markDirty();
-  renderNoteList();
+  renderKeyNotePanel();
   switchToSelectAndSelect(markup.id);
 }
 
@@ -4046,7 +4059,7 @@ function placePhotoMarker(anchor){
   };
   sheet.markups.push(markup);
   markDirty();
-  renderNoteList();
+  renderKeyNotePanel();
   switchToSelectAndSelect(markup.id);
 }
 
@@ -4189,7 +4202,7 @@ function handleDuctRunTap(p){
     state.routeSegmentStart = mlStart;
     state.routeDragging = false;
     showRunDoneBtn();
-    renderNoteList();
+    renderKeyNotePanel();
     drawAllMarkups();
     drawMultilinePreview(state.multiPoints);
   }
@@ -4219,7 +4232,7 @@ function placeSymbolMarker(anchor){
   };
   activeSheet().markups.push(markup);
   markDirty();
-  renderNoteList();
+  renderKeyNotePanel();
   switchToSelectAndSelect(markup.id);
 }
 
@@ -4285,7 +4298,7 @@ function confirmAirOutletPlacement(){
   };
   activeSheet().markups.push(markup);
   markDirty();
-  renderNoteList();
+  renderKeyNotePanel();
   renderTakeoffList();
   drawAllMarkups();
   startAirOutletSessionTimer(); // reset the 10s idle timeout after each placement
@@ -4472,6 +4485,7 @@ function defaultBendPosition(anchor, textPos){
    SELECTION / HANDLE HIT-TESTING + DRAGGING
    ============================================================ */
 function handlePointsForMarkup(m){
+  if(m.type === 'keynotetag') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'move', p: m.textPos }];
   if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'move', p: m.textPos }];
   if(m.type === 'dimension'){
     // Grips at measurement points (p0/p1), label (textPos), and dim-line midpoint (extOffset)
@@ -4537,7 +4551,7 @@ function handlePointsForMarkup(m){
 }
 function cloneMarkupPoints(m){ return JSON.parse(JSON.stringify(m)); }
 function markupCenterPoint(m){
-  if(m.type === 'label' || m.type === 'note' || m.type === 'dimension' || m.type === 'elevation' || m.type === 'equipment') return m.textPos;
+  if(m.type === 'keynotetag' || m.type === 'label' || m.type === 'note' || m.type === 'dimension' || m.type === 'elevation' || m.type === 'equipment') return m.textPos;
   if(m.type === 'arc') return { x: m.cx, y: m.cy };
   if(m.type === 'line' || m.type === 'shape' || m.type === 'whiteoutRect') return { x: (m.p0.x + m.p1.x) / 2, y: (m.p0.y + m.p1.y) / 2 };
   if(m.type === 'multiline' || m.type === 'freehand' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform' || m.type === 'hatchline'){
@@ -4637,6 +4651,7 @@ function markupContainsPoint(m, p){
     return p.x >= x0 - 6 && p.x <= x1 + 6 && p.y >= y0 - 6 && p.y <= y1 + 6;
   }
   if(m.type === 'whiteoutFreeform') return pointInPolygon(p, m.points) || m.points.some(pt => Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
+  if(m.type === 'keynotetag') return Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 28 || Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
   if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment') return Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 40 || Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
   if(m.type === 'photo') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
   if(m.type === 'symbol'){
@@ -4715,7 +4730,7 @@ function applyDragHandle(drag, p){
   const m = sheet.markups.find(x => x.id === drag.markupId);
   if(!m) return;
   // For leader tags: move grip moves textPos+bend only — anchor (arrowhead) stays pinned
-  if(drag.key === 'move' && (m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment')){
+  if(drag.key === 'move' && (m.type === 'keynotetag' || m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment')){
     const dx = p.x - drag.startPoint.x, dy = p.y - drag.startPoint.y;
     m.textPos = { x: drag.origins.textPos.x + dx, y: drag.origins.textPos.y + dy };
     m.bend = { x: drag.origins.bend.x + dx, y: drag.origins.bend.y + dy };
@@ -4759,7 +4774,7 @@ function applyDragHandle(drag, p){
     }
     return;
   }
-  if(drag.key === 'bend' && (m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment')){
+  if(drag.key === 'bend' && (m.type === 'keynotetag' || m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment')){
     // Manually draggable, snapped to clean angle increments around the text
     // so it can be pointed at either side deliberately instead of ending up
     // at a crooked, hard-to-read angle.
@@ -4770,7 +4785,7 @@ function applyDragHandle(drag, p){
     m.bend = { x: m.textPos.x + Math.cos(angle) * dist, y: m.textPos.y + Math.sin(angle) * dist };
     return;
   }
-  if(drag.key === 'textPos' && (m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment')){
+  if(drag.key === 'textPos' && (m.type === 'keynotetag' || m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment')){
     // Bend moves along with the text (keeping the stub's shape consistent)
     // unless the person deliberately drags the bend grip itself.
     const dx = p.x - m.textPos.x, dy = p.y - m.textPos.y;
@@ -4895,7 +4910,7 @@ function translateMarkup(m, origin, dx, dy){
     m.p0 = { x: origin.p0.x + dx, y: origin.p0.y + dy };
     m.p1 = { x: origin.p1.x + dx, y: origin.p1.y + dy };
     m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
-  } else if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment'){
+  } else if(m.type === 'keynotetag' || m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment'){
     m.anchor = { x: origin.anchor.x + dx, y: origin.anchor.y + dy };
     m.bend = { x: origin.bend.x + dx, y: origin.bend.y + dy };
     m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
@@ -4937,7 +4952,7 @@ function eraseNear(p){
     sheet.markups.splice(idx, 1);
     markDirty();
     drawAllMarkups();
-    renderNoteList();
+    renderKeyNotePanel();
     clearMarkupActionButtons();
   }
 }
@@ -4980,7 +4995,7 @@ function showMarkupActionButtons(markupId){
           if(m.type === 'dimension') m.textIsCustom = true;
           markDirty();
           drawAllMarkups();
-          renderNoteList();
+          renderKeyNotePanel();
         }
       });
     });
@@ -4998,7 +5013,7 @@ function showMarkupActionButtons(markupId){
           m.textTop = top; m.textBottom = bottom;
           markDirty();
           drawAllMarkups();
-          renderNoteList();
+          renderKeyNotePanel();
         }
       });
     });
@@ -5015,13 +5030,13 @@ function showMarkupActionButtons(markupId){
           m.eqType = type; m.eqNumber = number;
           markDirty();
           drawAllMarkups();
-          renderNoteList();
+          renderKeyNotePanel();
         }
       });
     });
     buttonRow.appendChild(editBtn);
   }
-  if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment'){
+  if(m.type === 'keynotetag' || m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment'){
     const leaderBtn = document.createElement('button');
     leaderBtn.textContent = m.leaderHidden ? 'Show leader' : 'Hide leader';
     leaderBtn.addEventListener('click', (e) => {
@@ -5045,7 +5060,7 @@ function showMarkupActionButtons(markupId){
           m.number = val;
           markDirty();
           drawAllMarkups();
-          renderNoteList();
+          renderKeyNotePanel();
         }
       });
     });
@@ -5079,7 +5094,7 @@ function showMarkupActionButtons(markupId){
       m.pocMode = m.pocMode === 'POD' ? 'POC' : 'POD';
       markDirty();
       drawAllMarkups();
-      renderNoteList();
+      renderKeyNotePanel();
       showMarkupActionButtons(markupId);
     });
     buttonRow.appendChild(pocBtn);
@@ -5096,7 +5111,7 @@ function showMarkupActionButtons(markupId){
       m.atMode = next;
       markDirty();
       drawAllMarkups();
-      renderNoteList();
+      renderKeyNotePanel();
       showMarkupActionButtons(markupId);
     });
     buttonRow.appendChild(atBtn);
@@ -5109,7 +5124,7 @@ function showMarkupActionButtons(markupId){
     flexToggleBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       m.flexMode = next;
-      markDirty(); drawAllMarkups(); renderNoteList();
+      markDirty(); drawAllMarkups(); renderKeyNotePanel();
       showMarkupActionButtons(markupId);
     });
     buttonRow.appendChild(flexToggleBtn);
@@ -5136,7 +5151,7 @@ function showMarkupActionButtons(markupId){
         m.hatched = (key === 'hatch'); // keep backward compat flag in sync
         markDirty();
         drawAllMarkups();
-        renderNoteList();
+        renderKeyNotePanel();
         showMarkupActionButtons(markupId);
       });
     });
@@ -5211,7 +5226,7 @@ function showMarkupActionButtons(markupId){
         const copy = duplicateMarkup(m);
         sheet.markups.push(copy);
         markDirty();
-        renderNoteList();
+        renderKeyNotePanel();
         switchToSelectAndSelect(copy.id);
       });
       buttonRow.appendChild(dupBtn);
@@ -5235,7 +5250,7 @@ function showMarkupActionButtons(markupId){
       _openPickerDropdown(colorBtn, PALETTE.map(_buildColorItem), (c) => {
         m.color = c;
         if(m.groupId) sheet.markups.forEach(gm => { if(gm.groupId === m.groupId) gm.color = c; });
-        markDirty(); drawAllMarkups(); renderNoteList();
+        markDirty(); drawAllMarkups(); renderKeyNotePanel();
         showMarkupActionButtons(markupId);
       });
     });
@@ -5281,7 +5296,7 @@ function showMarkupActionButtons(markupId){
       if(idx > -1) sheet.markups.splice(idx, 1);
     }
     state.selectedMarkupId = null;
-    markDirty(); drawAllMarkups(); renderNoteList(); renderTakeoffList(); renderDamperTakeoffList(); clearMarkupActionButtons();
+    markDirty(); drawAllMarkups(); renderKeyNotePanel(); renderTakeoffList(); renderDamperTakeoffList(); clearMarkupActionButtons();
   });
   buttonRow.appendChild(delBtn);
   group.appendChild(buttonRow);
@@ -5375,7 +5390,7 @@ function updateMSelectActionBar(){
             m.hatched = (key === 'hatch');
           }
         });
-        markDirty(); drawAllMarkups(); renderNoteList(); updateMSelectActionBar();
+        markDirty(); drawAllMarkups(); renderKeyNotePanel(); updateMSelectActionBar();
       });
     });
     row.appendChild(ltBtn);
@@ -5401,7 +5416,7 @@ function updateMSelectActionBar(){
       e.stopPropagation();
       _openPickerDropdown(colorBtn, PALETTE.map(_buildColorItem), (c) => {
         colorableSelected.forEach(m => { m.color = c; });
-        markDirty(); drawAllMarkups(); renderNoteList(); updateMSelectActionBar();
+        markDirty(); drawAllMarkups(); renderKeyNotePanel(); updateMSelectActionBar();
       });
     });
     row.appendChild(colorBtn);
@@ -5430,7 +5445,7 @@ function updateMSelectActionBar(){
     const idsToDelete = new Set(state.multiSelectedIds);
     sheet.markups = sheet.markups.filter(m => !idsToDelete.has(m.id));
     state.multiSelectedIds.clear();
-    markDirty(); drawAllMarkups(); renderNoteList(); updateMSelectActionBar(); positionMSelectButtons();
+    markDirty(); drawAllMarkups(); renderKeyNotePanel(); updateMSelectActionBar(); positionMSelectButtons();
   });
   row.appendChild(delBtn);
 
@@ -5484,6 +5499,7 @@ function drawAllMarkups(){
     else if(m.type === 'line') drawLine(m);
     else if(m.type === 'multiline') drawMultiline(m);
     else if(m.type === 'shape') drawShape(m);
+    else if(m.type === 'keynotetag') drawKeyNoteTag(m);
     else if(m.type === 'label' || m.type === 'note') drawLeader(m);
     else if(m.type === 'elevation') drawElevation(m);
     else if(m.type === 'equipment') drawEquipmentTag(m);
@@ -5617,8 +5633,8 @@ function drawAllMarkups(){
     ctx.stroke();
     ctx.restore();
   }
-  // Ghost leader — shows before first click on label/note/elevation/equipment
-  if(['label','note','elevation','equipment'].includes(state.tool) && !state.drawing && state.ghostLeaderPos){
+  // Ghost leader — shows before first click on label/note/elevation/equipment/keynotetag
+  if(['label','note','elevation','equipment','keynotetag'].includes(state.tool) && !state.drawing && state.ghostLeaderPos){
     const ctx = mCanvas.getContext('2d');
     ctx.save();
     ctx.globalAlpha = 0.4;
@@ -5629,6 +5645,7 @@ function drawAllMarkups(){
     const ghostColor = state.tool === 'note' ? DEFAULT_NOTE_COLOR
       : state.tool === 'elevation' ? DEFAULT_ELEVATION_COLOR
       : state.tool === 'equipment' ? DEFAULT_EQUIPMENT_COLOR
+      : state.tool === 'keynotetag' ? (state.placingKeyNoteId && (state.data.keyNotes || []).find(k => k.id === state.placingKeyNoteId)?.category === 'rfi' ? KN_RFI_COLOR : KN_COLOR)
       : DEFAULT_LABEL_COLOR;
     ctx.strokeStyle = ghostColor;
     ctx.lineWidth = 1.5;
@@ -6181,7 +6198,7 @@ function performSplit(pt){
   sheet.markups.splice(idx, 1, m1, m2);
   // Store the split point to draw a highlighted grip circle on the canvas
   state._lastSplitPt = { x: splitPt.x, y: splitPt.y };
-  markDirty(); drawAllMarkups(); renderNoteList(); renderTakeoffList();
+  markDirty(); drawAllMarkups(); renderKeyNotePanel(); renderTakeoffList();
   // Start (or reset) the 5s idle timeout — only runs after first successful split
   if(state._splitTimeout) clearTimeout(state._splitTimeout);
   state._splitTimeout = setTimeout(() => { if(state.splitMode) exitSplitMode(); }, 5000);
@@ -6268,7 +6285,7 @@ function performRemovePoint(p){
   }
 
   bestM.points.splice(bestIdx, 1);
-  markDirty(); drawAllMarkups(); renderNoteList(); renderTakeoffList();
+  markDirty(); drawAllMarkups(); renderKeyNotePanel(); renderTakeoffList();
   // Auto-exit if the multiline now has only 2 points (nothing left to remove)
   if(bestM.points.length < 3) exitRemovePointMode();
 }
@@ -6519,7 +6536,7 @@ function performOffsetPlace(p){
   state.offsetGhost = null;
   state.offsetSourceMarkupId = null;
   drawAllMarkups();
-  renderNoteList();
+  renderKeyNotePanel();
   renderTakeoffList();
   const msg = $('#offsetBarMsg');
   if(msg){ const orig = 'Hover a line — move to one side to aim, click to place'; msg.textContent = '✓ Placed — hover another line or click Done'; msg.style.color = 'var(--success)';
@@ -6813,7 +6830,7 @@ function handleFilletTap(p){
   }, 5000);
 
   drawAllMarkups();
-  renderNoteList();
+  renderKeyNotePanel();
 }
 
 function drawArcMarkup(m){
@@ -7035,6 +7052,64 @@ function drawElevation(m){
 
   drawElevationPill(ctx, m.textTop || '', m.textBottom || '', m.textPos, m.color);
 }
+
+function drawKeyNoteTag(m){
+  const ctx = mCanvas.getContext('2d');
+  const keyNotes = state.data.keyNotes || [];
+  const item = keyNotes.find(k => k.id === m.keyNoteId);
+  const isRfi = item && item.category === 'rfi';
+  const sameCategory = keyNotes.filter(k => k.category === (item ? item.category : 'keynote'));
+  const num = item ? sameCategory.indexOf(item) + 1 : '?';
+  const rfiNum = item ? (item.rfiNumber || '') : '';
+  const bend = m.bend || defaultBendPosition(m.anchor, m.textPos);
+  const R = isRfi ? 20 : 14;
+
+  ctx.strokeStyle = m.color;
+  ctx.fillStyle = m.color;
+  ctx.lineWidth = 1.5;
+
+  if(!m.leaderHidden){
+    ctx.beginPath();
+    ctx.moveTo(m.textPos.x, m.textPos.y);
+    ctx.lineTo(bend.x, bend.y);
+    ctx.lineTo(m.anchor.x, m.anchor.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(m.anchor.x, m.anchor.y, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = m.color;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(m.textPos.x, m.textPos.y, R, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = m.color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  if(isRfi){
+    // Horizontal divider
+    ctx.beginPath();
+    ctx.moveTo(m.textPos.x - R, m.textPos.y);
+    ctx.lineTo(m.textPos.x + R, m.textPos.y);
+    ctx.stroke();
+    ctx.font = '700 10px Inter, sans-serif';
+    ctx.fillText(String(num), m.textPos.x, m.textPos.y - R / 2);
+    ctx.font = '600 8px Inter, sans-serif';
+    ctx.fillText(rfiNum || '—', m.textPos.x, m.textPos.y + R / 2);
+  } else {
+    ctx.font = '700 11px Inter, sans-serif';
+    ctx.fillText(String(num), m.textPos.x, m.textPos.y);
+  }
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+}
+
 function drawElevationPill(ctx, textTop, textBottom, pos, color){
   const isEmpty = !textTop && !textBottom;
   ctx.font = isEmpty ? '600 italic 11px Inter, sans-serif' : '600 13px Inter, sans-serif';
@@ -7620,62 +7695,149 @@ function roundRect(ctx, x, y, w, h, r){
 }
 
 /* ============================================================
-   NOTES PANEL
+   KEY NOTES PANEL
    ============================================================ */
-function renderNoteList(){
-  const list = $('#noteList');
-  const sheet = activeSheet();
-  if(!sheet || sheet.markups.length === 0){
-    list.innerHTML = '<div class="panel-empty">No markups yet.</div>';
-    $('#noteCount').textContent = '0 markups';
-    return;
-  }
-  const filterText = (state.noteFilterText || '').trim().toLowerCase();
-  const visible = sheet.markups.filter(m => {
-    if(!filterText) return true;
-    const haystack = [markupTypeDisplayName(m), m.text, m.note, m.textTop, m.textBottom, m.eqType, m.eqNumber, m.number, m.symbolType]
-      .filter(Boolean).join(' ').toLowerCase();
-    return haystack.includes(filterText);
-  });
-  $('#noteCount').textContent = sheet.markups.length + ' markup' + (sheet.markups.length === 1 ? '' : 's') + (filterText ? ` (${visible.length} shown)` : '');
-  if(visible.length === 0){
-    list.innerHTML = '<div class="panel-empty">No markups match that filter.</div>';
-    return;
-  }
-  list.innerHTML = '';
-  visible.slice().reverse().forEach(m => {
-    const card = document.createElement('div');
-    card.className = 'note-card' + (m.id === state.selectedMarkupId ? ' selected' : '');
-    const time = m.createdAt ? new Date(m.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
-    const label = (m.type === 'label' || m.type === 'note' || m.type === 'dimension') ? m.text
-      : (m.type === 'elevation') ? `${m.textTop || ''} / ${m.textBottom || ''}`
-      : (m.type === 'equipment') ? `${m.eqType || ''}/${m.eqNumber || ''}`
-      : (m.type === 'symbol') ? (m.symbolType === 'poc' ? (m.pocMode || 'POC') : m.symbolType === 'airterminal' ? ({ supply: 'Supply', return: 'Return', exhaust: 'Exhaust' }[m.atMode || 'supply']) : m.symbolType)
-      : (m.type === 'photo') ? `Photo ${m.number || ''}`
-      : (m.type === 'shape') ? m.shape
-      : (m.type === 'whiteoutRect') ? 'whiteout (rect)' + (m.locked ? ' \u2014 locked' : ' \u2014 unlocked')
-      : (m.type === 'whiteoutFreeform') ? 'whiteout (freeform)' + (m.locked ? ' \u2014 locked' : ' \u2014 unlocked')
-      : (m.type === 'airOutletTag') ? `#${m.catalogId} / ${m.description || ''} (${m.category || ''})`
-      : (m.type === 'line' && (m.lineType || (m.hatched ? 'hatch' : 'solid')) !== 'solid') ? `Line (${(LINE_TYPE_MAP[m.lineType || (m.hatched ? 'hatch' : 'solid')] || LINE_TYPES[0]).label})`
-      : (m.type === 'multiline' && (m.lineType || (m.hatched ? 'hatch' : 'solid')) !== 'solid') ? `Route (${(LINE_TYPE_MAP[m.lineType || (m.hatched ? 'hatch' : 'solid')] || LINE_TYPES[0]).label})`
-      : null; // generic types with no distinguishing content — title line gets skipped below
-    const isGeneric = label === null;
-    const noteText = m.note ? escapeHtml(m.note) : '<span class="nc-empty">No note added</span>';
-    card.innerHTML = `
-      <div class="nc-top"><span class="nc-type">${escapeHtml(markupTypeDisplayName(m))}</span><span class="nc-time">${time}</span></div>
-      <div class="nc-text">${isGeneric ? '' : `<strong>${escapeHtml(label)}</strong><br>`}${noteText}</div>`;
-    card.addEventListener('click', () => {
-      // Select it on the canvas too and scroll it into view, not just open the note editor —
-      // so clicking an item in this list actually takes you to it.
-      switchToSelectAndSelect(m.id);
-      centerViewOnMarkup(m);
-      showModal({
-        title: 'Note', value: m.note || '', placeholder: 'Add a note about this markup', confirmLabel: 'Save',
-        onConfirm: (text) => { m.note = text; markDirty(); renderNoteList(); }
-      });
+function renderKeyNotePanel(){
+  const keyNotes = state.data.keyNotes || [];
+  const kns  = keyNotes.filter(k => k.category === 'keynote');
+  const rfis = keyNotes.filter(k => k.category === 'rfi');
+  $('#noteCount').textContent = `${kns.length} key note${kns.length !== 1 ? 's' : ''} · ${rfis.length} RFI${rfis.length !== 1 ? 's' : ''}`;
+
+  // Key Notes list
+  const knList = $('#knList');
+  knList.innerHTML = '';
+  if(kns.length === 0){
+    knList.innerHTML = '<div class="panel-empty" style="padding:10px 14px;font-size:11.5px;">No key notes yet.</div>';
+  } else {
+    kns.forEach((item, idx) => {
+      const num = idx + 1;
+      const isPlacing = state.placingKeyNoteId === item.id;
+      const row = document.createElement('div');
+      row.className = 'kn-row';
+      row.innerHTML = `
+        <div class="kn-num kn">${num}</div>
+        <input class="kn-text" data-kn-id="${escapeAttr(item.id)}" placeholder="Key note text…" value="${escapeAttr(item.text || '')}">
+        <button class="kn-tag-btn${isPlacing ? ' placing' : ''}" data-tag-id="${escapeAttr(item.id)}" title="Place tag on canvas">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+            <text x="7" y="11" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor" font-family="Inter,sans-serif">${num}</text>
+          </svg>
+        </button>
+        <button class="kn-del-btn" data-del-id="${escapeAttr(item.id)}" title="Delete">×</button>`;
+      knList.appendChild(row);
     });
-    list.appendChild(card);
+  }
+
+  // RFI list
+  const rfiList = $('#rfiList');
+  rfiList.innerHTML = '';
+  if(rfis.length === 0){
+    rfiList.innerHTML = '<div class="panel-empty" style="padding:10px 14px;font-size:11.5px;">No RFIs yet.</div>';
+  } else {
+    rfis.forEach((item, idx) => {
+      const num = idx + 1;
+      const isPlacing = state.placingKeyNoteId === item.id;
+      const row = document.createElement('div');
+      row.className = 'kn-row';
+      row.innerHTML = `
+        <div class="kn-num rfi">${num}</div>
+        <input class="kn-rfi-field" data-rfi-num-id="${escapeAttr(item.id)}" placeholder="RFI-###" value="${escapeAttr(item.rfiNumber || '')}">
+        <input class="kn-text" data-kn-id="${escapeAttr(item.id)}" placeholder="RFI description…" value="${escapeAttr(item.text || '')}">
+        <button class="kn-tag-btn${isPlacing ? ' placing' : ''}" data-tag-id="${escapeAttr(item.id)}" title="Place tag on canvas">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+            <text x="7" y="11" text-anchor="middle" font-size="5.5" font-weight="700" fill="currentColor" font-family="Inter,sans-serif">RFI</text>
+          </svg>
+        </button>
+        <button class="kn-del-btn" data-del-id="${escapeAttr(item.id)}" title="Delete">×</button>`;
+      rfiList.appendChild(row);
+    });
+  }
+
+  // Wire up events for all rows
+  $('#panel').querySelectorAll('.kn-text').forEach(input => {
+    input.addEventListener('input', () => {
+      const id = input.dataset.knId;
+      const item = (state.data.keyNotes || []).find(k => k.id === id);
+      if(item){ item.text = input.value; markDirty(); }
+    });
   });
+  $('#panel').querySelectorAll('.kn-rfi-field').forEach(input => {
+    input.addEventListener('input', () => {
+      const id = input.dataset.rfiNumId;
+      const item = (state.data.keyNotes || []).find(k => k.id === id);
+      if(item){
+        item.rfiNumber = input.value;
+        markDirty();
+        drawAllMarkups();
+      }
+    });
+  });
+  $('#panel').querySelectorAll('.kn-tag-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.tagId;
+      activateKeyNoteTagMode(id);
+    });
+  });
+  $('#panel').querySelectorAll('.kn-del-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.delId;
+      deleteKeyNote(id);
+    });
+  });
+}
+
+function addKeyNote(category){
+  if(!state.data.keyNotes) state.data.keyNotes = [];
+  const item = { id: genId(), category, text: '', rfiNumber: '' };
+  state.data.keyNotes.push(item);
+  markDirty();
+  renderKeyNotePanel();
+  setTimeout(() => {
+    const inputs = $('#panel').querySelectorAll(`.kn-text[data-kn-id="${item.id}"]`);
+    if(inputs[0]) inputs[0].focus();
+  }, 30);
+}
+
+function deleteKeyNote(id){
+  if(!state.data.keyNotes) return;
+  state.data.keyNotes = state.data.keyNotes.filter(k => k.id !== id);
+  (state.data.sheets || []).forEach(sheet => {
+    sheet.markups = sheet.markups.filter(m => !(m.type === 'keynotetag' && m.keyNoteId === id));
+  });
+  if(state.placingKeyNoteId === id){
+    state.placingKeyNoteId = null;
+    switchToTool('select');
+  }
+  markDirty();
+  renderKeyNotePanel();
+  drawAllMarkups();
+}
+
+function activateKeyNoteTagMode(id){
+  if(state.placingKeyNoteId === id){
+    state.placingKeyNoteId = null;
+    switchToTool('select');
+  } else {
+    state.placingKeyNoteId = id;
+    switchToTool('keynotetag');
+  }
+  renderKeyNotePanel();
+}
+
+function placeKeyNoteTag(anchor){
+  const item = (state.data.keyNotes || []).find(k => k.id === state.placingKeyNoteId);
+  if(!item) return;
+  const color = item.category === 'rfi' ? KN_RFI_COLOR : KN_COLOR;
+  const textPos = { x: anchor.x + 60, y: anchor.y - 60 };
+  const bend = defaultBendPosition(anchor, textPos);
+  const markup = {
+    id: genId(), type: 'keynotetag', keyNoteId: item.id,
+    color, anchor, bend, textPos, leaderHidden: false, note: '', createdAt: Date.now()
+  };
+  activeSheet().markups.push(markup);
+  markDirty();
+  drawAllMarkups();
 }
 
 // Maps internal markup type strings to the names actually shown in the
@@ -7688,7 +7850,7 @@ function markupTypeDisplayName(m){
     equipment: 'Equipment', photo: 'Photo', shape: 'Shape', symbol: 'Symbol',
     multiline: 'Route', hatchline: 'Demo Line', hatcharea: 'Hatch',
     whiteoutRect: 'Whiteout', whiteoutFreeform: 'Whiteout', line: 'Line', freehand: 'Draw',
-    airOutletTag: 'Air Outlet Tag',
+    airOutletTag: 'Air Outlet Tag', keynotetag: 'Key Note',
   };
   let name = map[m.type] || m.type;
   if(m.type === 'line' || m.type === 'multiline'){
@@ -8061,7 +8223,7 @@ function wireTakeoffRowEvents(){
             renumberTakeoffItems();
             markDirty();
             drawAllMarkups();
-            renderNoteList();
+            renderKeyNotePanel();
             renderTakeoffList();
           }
         },
@@ -8716,7 +8878,7 @@ function confirmDamperPlacement(){
   };
   activeSheet().markups.push(markup);
   markDirty();
-  renderNoteList();
+  renderKeyNotePanel();
   renderDamperTakeoffList();
   drawAllMarkups();
   startDamperSessionTimer();
@@ -9028,7 +9190,7 @@ function wireDamperRowEvents(){
               sheet.markups = (sheet.markups || []).filter(m => !(m.type === 'damperTag' && m.lineId === lineId));
             });
             renumberDamperItems();
-            markDirty(); drawAllMarkups(); renderNoteList(); renderDamperTakeoffList();
+            markDirty(); drawAllMarkups(); renderKeyNotePanel(); renderDamperTakeoffList();
           }
         },
         onCancel: () => {}
@@ -9496,7 +9658,7 @@ function performUndo(){
   state.dirty = true;
   setStatus('dirty', 'Unsaved changes');
   drawAllMarkups();
-  renderNoteList();
+  renderKeyNotePanel();
   updateUndoBtn();
 }
 function updateUndoBtn(){
@@ -9601,7 +9763,7 @@ async function saveJob(){
         state.loadedTakeoffSnapshot = JSON.parse(JSON.stringify(state.data.airTerminalTakeoff || {}));
         state.dirty = false;
         await renderActiveSheet();
-        renderNoteList(); renderTakeoffList();
+        renderKeyNotePanel(); renderTakeoffList();
         setStatus('saved', 'All changes saved (merged with other changes)');
         upsertJobsIndex(state.jobId, state.jobName);
         clearLocalDraft(state.jobId);
@@ -9639,7 +9801,7 @@ document.addEventListener('keydown', (e) => {
   state.selectedMarkupId = null;
   markDirty();
   drawAllMarkups();
-  renderNoteList();
+  renderKeyNotePanel();
   if(target.type === 'airOutletTag') renderTakeoffList();
   if(target.type === 'damperTag') renderDamperTakeoffList();
   clearMarkupActionButtons();
