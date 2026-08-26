@@ -824,6 +824,9 @@ const state = {
   filletHoverPick: null,   // nearest endpoint under cursor (for ghost highlight)
   filletInactivityTimer: null, // auto-exit timer after fillet is placed
   placingKeyNoteId: null,      // id of keyNote/RFI item currently being tagged onto canvas
+  keynotePendingAnchor: null,  // pending anchor point waiting for confirm tap
+  keynotePendingTimer: null,   // auto-cancel timer for pending keynote tag
+  keynoteSessionTimer: null,   // idle-exit timer — exits placement mode after 20s of no confirmed tag
 };
 
 const ANGLE_STEP = 15; // degrees — snap increment for Line/Run tools
@@ -3348,7 +3351,7 @@ function onPointerDown(e){
   } else if(state.tool === 'symbol'){
     placeSymbolMarker(p);
   } else if(state.tool === 'keynotetag'){
-    placeKeyNoteTag(p);
+    handleKeyNoteTagTap(p);
   } else if(state.tool === 'airOutletTag'){
     handleAirOutletTagTap(p);
   } else if(state.tool === 'damperTag'){
@@ -3634,6 +3637,7 @@ function switchToTool(toolName){
     state.placingKeyNoteId = null;
     renderKeyNotePanel();
   }
+  if(toolName !== 'keynotetag'){ clearKeyNotePending(); clearKeynoteSessionTimer(); }
   state.tool = toolName;
   if(toolName !== 'dimension'){ state.ghostDimPos = null; state._lastDimRawP1 = null; } // clear ghost when leaving dim tool
   if(!['label','note','elevation','equipment','keynotetag'].includes(toolName)) state.ghostLeaderPos = null;
@@ -5652,19 +5656,22 @@ function drawAllMarkups(){
     ctx.stroke();
     ctx.restore();
   }
-  // Ghost leader — shows before first click on label/note/elevation/equipment/keynotetag
-  if(['label','note','elevation','equipment','keynotetag'].includes(state.tool) && !state.drawing && state.ghostLeaderPos){
+  // Ghost keynote tag — pending (frozen, higher alpha) or floating (follows cursor)
+  if(state.tool === 'keynotetag' && state.placingKeyNoteId && !state.drawing){
+    const ga = state.keynotePendingAnchor || state.ghostLeaderPos;
+    if(ga) drawKeyNoteGhost(ga, !!state.keynotePendingAnchor);
+  }
+  // Ghost leader — shows before first click on label/note/elevation/equipment (not keynotetag — handled above)
+  if(['label','note','elevation','equipment'].includes(state.tool) && !state.drawing && state.ghostLeaderPos){
     const ctx = mCanvas.getContext('2d');
     ctx.save();
     ctx.globalAlpha = 0.4;
     const ga = state.ghostLeaderPos;
     const gt = { x: ga.x + 50, y: ga.y - 50 };
     const gb = defaultBendPosition(ga, gt);
-    // Leader line
     const ghostColor = state.tool === 'note' ? DEFAULT_NOTE_COLOR
       : state.tool === 'elevation' ? DEFAULT_ELEVATION_COLOR
       : state.tool === 'equipment' ? DEFAULT_EQUIPMENT_COLOR
-      : state.tool === 'keynotetag' ? (state.placingKeyNoteId && (state.data.keyNotes || []).find(k => k.id === state.placingKeyNoteId)?.category === 'rfi' ? KN_RFI_COLOR : KN_COLOR)
       : DEFAULT_LABEL_COLOR;
     ctx.strokeStyle = ghostColor;
     ctx.lineWidth = 1.5;
@@ -5675,49 +5682,23 @@ function drawAllMarkups(){
     ctx.lineTo(ga.x, ga.y);
     ctx.stroke();
     ctx.setLineDash([]);
-    // Anchor dot
     ctx.fillStyle = ghostColor;
     ctx.beginPath();
     ctx.arc(ga.x, ga.y, 4, 0, Math.PI * 2);
     ctx.fill();
-    // Tag circle preview matching actual badge
-    if(state.tool === 'keynotetag'){
-      const placingItem = state.placingKeyNoteId ? (state.data.keyNotes || []).find(k => k.id === state.placingKeyNoteId) : null;
-      const isRfi = placingItem && placingItem.category === 'rfi';
-      const R = isRfi ? 20 : 14;
-      const catItems = (state.data.keyNotes || []).filter(k => k.category === (isRfi ? 'rfi' : 'keynote'));
-      const num = placingItem ? catItems.indexOf(placingItem) + 1 : 1;
-      ctx.fillStyle = '#fff';
-      ctx.strokeStyle = ghostColor;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(gt.x, gt.y, R, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      if(isRfi){
-        ctx.beginPath(); ctx.moveTo(gt.x - R, gt.y); ctx.lineTo(gt.x + R, gt.y); ctx.stroke();
-        ctx.fillStyle = ghostColor; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.font = '700 10px Inter, sans-serif'; ctx.fillText(String(num), gt.x, gt.y - R/2);
-        const rfiNum = placingItem ? (placingItem.rfiNumber || '') : '';
-        ctx.font = '600 9px Inter, sans-serif'; ctx.fillText(rfiNum || '—', gt.x, gt.y + R/2);
-        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      } else {
-        ctx.fillStyle = ghostColor; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.font = '700 11px Inter, sans-serif'; ctx.fillText(String(num), gt.x, gt.y);
-        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      }
-    } else {
-      // Other leader tools: pill outline
-      const pillW = 52, pillH = 20, pillR = 6;
-      const px = gt.x - pillW / 2, py = gt.y - pillH / 2;
-      ctx.strokeStyle = ghostColor;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(px + pillR, py);
-      ctx.arcTo(px + pillW, py, px + pillW, py + pillH, pillR);
-      ctx.arcTo(px + pillW, py + pillH, px, py + pillH, pillR);
-      ctx.arcTo(px, py + pillH, px, py, pillR);
-      ctx.arcTo(px, py, px + pillW, py, pillR);
-      ctx.closePath();
-      ctx.stroke();
-    }
+    // Pill outline for non-keynotetag leader tools
+    const pillW = 52, pillH = 20, pillR = 6;
+    const px = gt.x - pillW / 2, py = gt.y - pillH / 2;
+    ctx.strokeStyle = ghostColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(px + pillR, py);
+    ctx.arcTo(px + pillW, py, px + pillW, py + pillH, pillR);
+    ctx.arcTo(px + pillW, py + pillH, px, py + pillH, pillR);
+    ctx.arcTo(px, py + pillH, px, py, pillR);
+    ctx.arcTo(px, py, px + pillW, py, pillR);
+    ctx.closePath();
+    ctx.stroke();
     ctx.restore();
   }
   // Symbol ghost — semi-transparent preview following cursor before placement
@@ -7922,6 +7903,8 @@ function deleteKeyNote(id){
   });
   if(state.placingKeyNoteId === id){
     state.placingKeyNoteId = null;
+    clearKeyNotePending();
+    clearKeynoteSessionTimer();
     switchToTool('select');
   }
   markDirty();
@@ -7932,17 +7915,59 @@ function deleteKeyNote(id){
 function activateKeyNoteTagMode(id){
   if(state.placingKeyNoteId === id){
     state.placingKeyNoteId = null;
+    clearKeyNotePending();
+    clearKeynoteSessionTimer();
     switchToTool('select');
   } else {
     state.placingKeyNoteId = id;
     switchToTool('keynotetag');
+    startKeynoteSessionTimer();
+    // Show action-bar placement hint
+    const item = (state.data.keyNotes || []).find(k => k.id === id);
+    if(item){
+      const catItems = (state.data.keyNotes || []).filter(k => k.category === item.category);
+      const num = catItems.indexOf(item) + 1;
+      const label = item.category === 'rfi' ? `RFI ${num}` : `Key Note ${num}`;
+      const bar = $('#actionBarDynamic');
+      if(bar) bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(label)}</strong> — tap to aim, tap again to confirm</span>`;
+    }
   }
   renderKeyNotePanel();
 }
 
-function placeKeyNoteTag(anchor){
+/* ---- Key Note tag placement: tap-to-aim → confirm ---- */
+
+function handleKeyNoteTagTap(p){
+  if(!state.placingKeyNoteId) return;
+  if(state.keynotePendingAnchor){
+    const dist = Math.hypot(p.x - state.keynotePendingAnchor.x, p.y - state.keynotePendingAnchor.y);
+    if(dist <= 40){
+      // Second tap near pending → confirm
+      confirmKeyNotePlacement();
+    } else {
+      // Second tap far away → re-aim to new position
+      clearKeyNotePending();
+      state.keynotePendingAnchor = p;
+      state.ghostLeaderPos = p;
+      startKeyNotePendingTimer();
+      showKeyNoteConfirmBar();
+      drawAllMarkups();
+    }
+  } else {
+    // First tap — freeze ghost here, wait for confirm
+    state.keynotePendingAnchor = p;
+    state.ghostLeaderPos = p;
+    startKeyNotePendingTimer();
+    showKeyNoteConfirmBar();
+    drawAllMarkups();
+  }
+}
+
+function confirmKeyNotePlacement(){
+  const anchor = state.keynotePendingAnchor;
   const item = (state.data.keyNotes || []).find(k => k.id === state.placingKeyNoteId);
-  if(!item) return;
+  if(!anchor || !item) return;
+  clearKeyNotePending();
   const color = item.category === 'rfi' ? KN_RFI_COLOR : KN_COLOR;
   const textPos = { x: anchor.x + 60, y: anchor.y - 60 };
   const bend = defaultBendPosition(anchor, textPos);
@@ -7953,6 +7978,122 @@ function placeKeyNoteTag(anchor){
   activeSheet().markups.push(markup);
   markDirty();
   drawAllMarkups();
+  startKeynoteSessionTimer(); // reset idle timeout after each confirmed placement
+  // Restore the placement hint
+  const catItems = (state.data.keyNotes || []).filter(k => k.category === item.category);
+  const num = catItems.indexOf(item) + 1;
+  const label = item.category === 'rfi' ? `RFI ${num}` : `Key Note ${num}`;
+  const bar = $('#actionBarDynamic');
+  if(bar) bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(label)}</strong> — tap to aim, tap again to confirm</span>`;
+}
+
+function clearKeyNotePending(){
+  if(state.keynotePendingTimer){ clearTimeout(state.keynotePendingTimer); state.keynotePendingTimer = null; }
+  state.keynotePendingAnchor = null;
+}
+
+function startKeynoteSessionTimer(){
+  clearKeynoteSessionTimer();
+  state.keynoteSessionTimer = setTimeout(() => {
+    if(!state.placingKeyNoteId) return;
+    clearKeyNotePending();
+    state.ghostLeaderPos = null;
+    state.placingKeyNoteId = null;
+    renderKeyNotePanel();
+    switchToTool('select');
+    clearMarkupActionButtons();
+    drawAllMarkups();
+  }, 20000);
+}
+
+function clearKeynoteSessionTimer(){
+  if(state.keynoteSessionTimer){ clearTimeout(state.keynoteSessionTimer); state.keynoteSessionTimer = null; }
+}
+
+function startKeyNotePendingTimer(){
+  // Clear only the timer, not the anchor (caller already set it)
+  if(state.keynotePendingTimer){ clearTimeout(state.keynotePendingTimer); state.keynotePendingTimer = null; }
+  state.keynotePendingTimer = setTimeout(() => {
+    if(!state.keynotePendingAnchor) return;
+    const savedAnchor = state.keynotePendingAnchor;
+    state.keynotePendingAnchor = null;
+    state.keynotePendingTimer = null;
+    // Restore hint text
+    const item = (state.data.keyNotes || []).find(k => k.id === state.placingKeyNoteId);
+    if(item){
+      const catItems = (state.data.keyNotes || []).filter(k => k.category === item.category);
+      const num = catItems.indexOf(item) + 1;
+      const label = item.category === 'rfi' ? `RFI ${num}` : `Key Note ${num}`;
+      const bar = $('#actionBarDynamic');
+      if(bar) bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(label)}</strong> — tap to aim, tap again to confirm</span>`;
+    }
+    drawAllMarkups();
+  }, 4000);
+}
+
+function showKeyNoteConfirmBar(){
+  const bar = $('#actionBarDynamic');
+  if(!bar) return;
+  bar.innerHTML = `
+    <button id="knConfirmBtn" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:2px 10px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;line-height:20px;">&#10003; Place here</button>
+    <button id="knCancelAimBtn" style="background:none;border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;flex-shrink:0;line-height:20px;">&#10005; Cancel</button>
+    <span style="font-size:10px;color:var(--muted);margin-left:8px;">Tap near tag to confirm &bull; auto-cancels in 4s</span>`;
+  document.getElementById('knConfirmBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    confirmKeyNotePlacement();
+  });
+  document.getElementById('knCancelAimBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearKeyNotePending();
+    state.ghostLeaderPos = null;
+    drawAllMarkups();
+    const item = (state.data.keyNotes || []).find(k => k.id === state.placingKeyNoteId);
+    if(item){
+      const catItems = (state.data.keyNotes || []).filter(k => k.category === item.category);
+      const num = catItems.indexOf(item) + 1;
+      const label = item.category === 'rfi' ? `RFI ${num}` : `Key Note ${num}`;
+      bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(label)}</strong> — tap to aim, tap again to confirm</span>`;
+    }
+  });
+}
+
+function drawKeyNoteGhost(anchor, isPending){
+  const item = (state.data.keyNotes || []).find(k => k.id === state.placingKeyNoteId);
+  if(!item) return;
+  const isRfi = item.category === 'rfi';
+  const color = isRfi ? KN_RFI_COLOR : KN_COLOR;
+  const catItems = (state.data.keyNotes || []).filter(k => k.category === item.category);
+  const num = catItems.indexOf(item) + 1;
+  const rfiNum = item.rfiNumber || '';
+  const R = isRfi ? 20 : 14;
+  const textPos = { x: anchor.x + 60, y: anchor.y - 60 };
+  const bend = defaultBendPosition(anchor, textPos);
+  const ctx = mCanvas.getContext('2d');
+  ctx.save();
+  ctx.globalAlpha = isPending ? 0.78 : 0.42;
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+  ctx.setLineDash(isPending ? [] : [4, 3]);
+  ctx.beginPath();
+  ctx.moveTo(textPos.x, textPos.y);
+  ctx.lineTo(bend.x, bend.y);
+  ctx.lineTo(anchor.x, anchor.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(anchor.x, anchor.y, 3.5, 0, Math.PI * 2); ctx.fill();
+  // Circle badge
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(textPos.x, textPos.y, R, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if(isRfi){
+    ctx.beginPath(); ctx.moveTo(textPos.x - R, textPos.y); ctx.lineTo(textPos.x + R, textPos.y); ctx.stroke();
+    ctx.font = '700 12px Inter, sans-serif'; ctx.fillText(String(num), textPos.x, textPos.y - R/2);
+    ctx.font = '600 9px Inter, sans-serif'; ctx.fillText(rfiNum || '—', textPos.x, textPos.y + R/2);
+  } else {
+    ctx.font = '700 11px Inter, sans-serif'; ctx.fillText(String(num), textPos.x, textPos.y);
+  }
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.restore();
 }
 
 // Maps internal markup type strings to the names actually shown in the
