@@ -238,12 +238,12 @@ input,textarea{font-family:inherit;}
 .kn-place-btn{width:24px;height:24px;border-radius:50%;border:none;color:#fff;font-weight:700;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;transition:opacity 0.12s;}
 .kn-place-btn:hover{opacity:0.8;}
 .kn-place-btn.placing{outline:3px solid #E8622C;outline-offset:1px;}
-/* RFI # field */
-.kn-rfi-field{font-size:11px;font-weight:600;color:#B45309;background:#FEF3C7;border:1px solid transparent;border-radius:5px;padding:2px 4px;width:58px;flex-shrink:0;font-family:inherit;text-align:center;}
-.kn-rfi-field:focus{outline:none;border-color:#B45309;}
-.kn-text{width:100%;font-size:12px;color:var(--ink);background:none;border:none;font-family:inherit;padding:0;min-width:0;}
-.kn-text:focus{outline:none;}
-.kn-text::placeholder{color:var(--muted);}
+/* RFI # badge (read-only display in row) */
+.kn-rfi-badge{display:inline-block;font-size:11px;font-weight:600;color:#B45309;background:#FEF3C7;border:1px solid #F6C07A;border-radius:5px;padding:1px 5px;white-space:nowrap;margin-right:4px;}
+/* Text preview — multiline, wrapping, click-to-edit */
+.kn-text-preview{flex:1;font-size:12px;color:var(--ink);cursor:pointer;line-height:1.45;padding:2px 0;white-space:pre-wrap;word-break:break-word;min-height:18px;}
+.kn-text-preview:empty::before,.kn-text-preview.empty::before{content:attr(data-placeholder);color:var(--muted);}
+.kn-text-preview:hover{text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;}
 .kn-del-btn{width:18px;height:18px;border-radius:4px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;opacity:0;display:flex;align-items:center;justify-content:center;padding:0;margin:auto;}
 .kn-del-btn:hover{color:#DC2626;}
 /* Export button — matches takeoff-export-btn style */
@@ -7740,6 +7740,67 @@ function roundRect(ctx, x, y, w, h, r){
 /* ============================================================
    KEY NOTES PANEL
    ============================================================ */
+
+function openKnEditModal(id){
+  const item = (state.data.keyNotes || []).find(k => k.id === id);
+  if(!item) return;
+  const isRfi = item.category === 'rfi';
+  const color = isRfi ? KN_RFI_COLOR : KN_COLOR;
+  const catItems = (state.data.keyNotes || []).filter(k => k.category === item.category);
+  const num   = catItems.indexOf(item) + 1;
+  const label = isRfi ? `RFI ${num}` : `Key Note ${num}`;
+
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  card.style.maxWidth = '440px';
+
+  const rfiRow = isRfi ? `
+    <div style="margin-bottom:10px;">
+      <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:${color};display:block;margin-bottom:4px;">RFI Number</label>
+      <input id="knModalRfiNum" type="text" placeholder="RFI-###" value="${escapeAttr(item.rfiNumber || '')}"
+        style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;box-sizing:border-box;">
+    </div>` : '';
+
+  card.innerHTML = `
+    <div class="disp" style="color:${color};">${escapeHtml(label)}</div>
+    <div class="modal-sub">Enter the full note text. Cmd/Ctrl+Enter to save.</div>
+    ${rfiRow}
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:${color};display:block;margin-bottom:4px;">${isRfi ? 'Description' : 'Note'}</label>
+    <textarea id="knModalText" placeholder="${isRfi ? 'RFI description…' : 'Key note text…'}" style="min-height:120px;">${escapeHtml(item.text || '')}</textarea>
+    <div class="modal-row">
+      <button type="button" class="cancel">Cancel</button>
+      <button type="button" class="save">Save</button>
+    </div>`;
+
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+
+  const textarea = card.querySelector('#knModalText');
+  const rfiInput = card.querySelector('#knModalRfiNum');
+  textarea.focus();
+  textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+  function close(){ root.innerHTML = ''; }
+  card.querySelector('.cancel').addEventListener('click', close);
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
+  card.querySelector('.save').addEventListener('click', () => {
+    item.text = textarea.value;
+    if(isRfi && rfiInput){ item.rfiNumber = rfiInput.value.trim(); }
+    markDirty();
+    drawAllMarkups();
+    close();
+    renderKeyNotePanel();
+  });
+  card.addEventListener('keydown', (e) => {
+    if((e.metaKey || e.ctrlKey) && e.key === 'Enter'){ e.preventDefault(); card.querySelector('.save').click(); }
+    if(e.key === 'Escape'){ e.preventDefault(); close(); }
+  });
+}
+
 function renderKeyNotePanel(){
   const keyNotes = state.data.keyNotes || [];
   const kns  = keyNotes.filter(k => k.category === 'keynote');
@@ -7756,9 +7817,12 @@ function renderKeyNotePanel(){
       const isPlacing = state.placingKeyNoteId === item.id;
       const isFirst = idx === 0;
       const isLast  = idx === items.length - 1;
-      const rfiField = isRfi
-        ? `<input class="kn-rfi-field" data-rfi-num-id="${escapeAttr(item.id)}" placeholder="RFI-###" value="${escapeAttr(item.rfiNumber || '')}">`
+      const rfiBadge = isRfi && item.rfiNumber
+        ? `<span class="kn-rfi-badge">${escapeHtml(item.rfiNumber)}</span>`
         : '';
+      const textContent = item.text ? escapeHtml(item.text) : '';
+      const placeholder = isRfi ? 'RFI description…' : 'Key note text…';
+      const previewClass = 'kn-text-preview' + (!item.text ? ' empty' : '');
       rows += `<tr data-kn-id="${escapeAttr(item.id)}" data-kn-cat="${escapeAttr(category)}">
         <td class="kn-td-action"><button class="kn-edit-btn" data-edit-id="${escapeAttr(item.id)}" title="Edit">✎</button></td>
         <td class="kn-td-action"><button class="kn-dup-btn"  data-dup-id="${escapeAttr(item.id)}"  title="Duplicate">⧉</button></td>
@@ -7769,7 +7833,9 @@ function renderKeyNotePanel(){
         <td class="kn-td-num">
           <button class="kn-place-btn${isPlacing ? ' placing' : ''}" data-tag-id="${escapeAttr(item.id)}" title="Place tag on canvas" style="background:${color};">${num}</button>
         </td>
-        <td class="kn-td-text">${rfiField}<input class="kn-text" data-kn-id="${escapeAttr(item.id)}" placeholder="${isRfi ? 'RFI description…' : 'Key note text…'}" value="${escapeAttr(item.text || '')}"></td>
+        <td class="kn-td-text" style="white-space:normal;">
+          <div class="${previewClass}" data-kn-id="${escapeAttr(item.id)}" data-placeholder="${escapeAttr(placeholder)}">${rfiBadge}${textContent}</div>
+        </td>
         <td class="kn-td-del"><button class="kn-del-btn" data-del-id="${escapeAttr(item.id)}" title="Delete">×</button></td>
       </tr>`;
     });
@@ -7782,32 +7848,14 @@ function renderKeyNotePanel(){
   rfiList.innerHTML = buildTable(rfis, 'rfi');
 
   // Wire events
-  $('#panel').querySelectorAll('.kn-text').forEach(input => {
-    input.addEventListener('input', () => {
-      const id = input.dataset.knId;
-      const item = (state.data.keyNotes || []).find(k => k.id === id);
-      if(item){ item.text = input.value; markDirty(); }
-    });
-  });
-  $('#panel').querySelectorAll('.kn-rfi-field').forEach(input => {
-    input.addEventListener('input', () => {
-      const id = input.dataset.rfiNumId;
-      const item = (state.data.keyNotes || []).find(k => k.id === id);
-      if(item){ item.rfiNumber = input.value; markDirty(); drawAllMarkups(); }
-    });
-  });
   $('#panel').querySelectorAll('.kn-place-btn').forEach(btn => {
     btn.addEventListener('click', () => activateKeyNoteTagMode(btn.dataset.tagId));
   });
   $('#panel').querySelectorAll('.kn-edit-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.editId;
-      const item = (state.data.keyNotes || []).find(k => k.id === id);
-      if(!item) return;
-      // Focus the text field in this row
-      const tr = btn.closest('tr');
-      if(tr){ const inp = tr.querySelector('.kn-text'); if(inp) inp.focus(); }
-    });
+    btn.addEventListener('click', () => openKnEditModal(btn.dataset.editId));
+  });
+  $('#panel').querySelectorAll('.kn-text-preview').forEach(div => {
+    div.addEventListener('click', (e) => { e.stopPropagation(); openKnEditModal(div.dataset.knId); });
   });
   $('#panel').querySelectorAll('.kn-dup-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -7862,10 +7910,8 @@ function addKeyNote(category){
   state.data.keyNotes.push(item);
   markDirty();
   renderKeyNotePanel();
-  setTimeout(() => {
-    const inputs = $('#panel').querySelectorAll(`.kn-text[data-kn-id="${item.id}"]`);
-    if(inputs[0]) inputs[0].focus();
-  }, 30);
+  // Open the edit modal immediately so the user can type the note text
+  setTimeout(() => openKnEditModal(item.id), 30);
 }
 
 function deleteKeyNote(id){
