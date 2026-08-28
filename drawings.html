@@ -150,9 +150,10 @@ input,textarea{font-family:inherit;}
 .shape-btn.active{border-color:var(--navy);background:var(--surface-2);}
 
 /* ---- Right panel: notes list ---- */
-/* Panel resize handle — left edge drag to widen/narrow (desktop only) */
-.panel-resize-handle{position:absolute;left:0;top:0;bottom:0;width:5px;cursor:col-resize;z-index:10;background:transparent;}
+/* Panel resize handle — left edge drag to widen/narrow */
+.panel-resize-handle{position:absolute;left:0;top:0;bottom:0;width:5px;cursor:col-resize;z-index:10;background:transparent;touch-action:none;}
 .panel-resize-handle:hover{background:rgba(0,0,0,0.08);}
+@media (pointer:coarse){.panel-resize-handle{width:16px;left:-6px;}}
 .panel{background:var(--surface);border-left:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;position:relative;}
 .panel.panel-hidden{display:none;}
 #takeoffPanelsWrap{display:none;flex-direction:column;flex-shrink:0;background:var(--surface);border-left:1px solid var(--line);position:relative;}
@@ -223,7 +224,6 @@ input,textarea{font-family:inherit;}
 .kn-table tr{border-bottom:1px solid var(--line);}
 .kn-table tr:last-child{border-bottom:none;}
 .kn-table tr:hover{background:var(--surface-2);}
-.kn-table tr:hover .kn-del-btn{opacity:1;}
 .kn-td-action{width:22px;text-align:center;}
 .kn-td-order{width:18px;text-align:center;}
 .kn-td-num{width:26px;text-align:center;}
@@ -232,8 +232,9 @@ input,textarea{font-family:inherit;}
 /* Action buttons */
 .kn-edit-btn,.kn-dup-btn{width:20px;height:20px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:12px;border-radius:4px;display:flex;align-items:center;justify-content:center;padding:0;}
 .kn-edit-btn:hover,.kn-dup-btn:hover{color:var(--ink);background:var(--surface-2);}
-.kn-reorder-btn{display:block;width:16px;height:12px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:8px;padding:0;line-height:1;border-radius:2px;}
-.kn-reorder-btn:hover{color:var(--ink);}
+.kn-reorder-btn{display:inline-flex;width:22px;height:26px;border-radius:4px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:11px;line-height:1;padding:0;align-items:center;justify-content:center;}
+.kn-reorder-btn:hover{background:var(--surface-2);color:var(--navy);}
+.kn-reorder-btn:disabled{opacity:0.25;pointer-events:none;}
 /* ID# place badge */
 .kn-place-btn{width:24px;height:24px;border-radius:50%;border:none;color:#fff;font-weight:700;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;transition:opacity 0.12s;}
 .kn-place-btn:hover{opacity:0.8;}
@@ -244,11 +245,16 @@ input,textarea{font-family:inherit;}
 .kn-text-preview{flex:1;font-size:12px;color:var(--ink);cursor:pointer;line-height:1.45;padding:2px 0;white-space:pre-wrap;word-break:break-word;min-height:18px;}
 .kn-text-preview:empty::before,.kn-text-preview.empty::before{content:attr(data-placeholder);color:var(--muted);}
 .kn-text-preview:hover{text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;}
-.kn-del-btn{width:18px;height:18px;border-radius:4px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;opacity:0;display:flex;align-items:center;justify-content:center;padding:0;margin:auto;}
-.kn-del-btn:hover{color:#DC2626;}
+.kn-del-btn{width:22px;height:22px;border-radius:5px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;padding:0;}
+.kn-del-btn:hover{background:#fee2e2;color:#dc2626;}
 /* Export button — matches takeoff-export-btn style */
-.kn-export-btn{font-size:11px;font-weight:600;border:1px solid var(--line);border-radius:6px;padding:4px 9px;cursor:pointer;background:var(--surface);color:var(--ink);}
+.kn-export-btn{padding:5px 10px;font-size:11.5px;font-weight:600;border:1px solid var(--line);border-radius:7px;background:transparent;color:var(--navy);cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .kn-export-btn:hover{background:var(--surface-2);}
+/* Keynote tag note flyout */
+#knNoteFlyout{position:fixed;z-index:200;max-width:260px;min-width:120px;background:var(--surface);border:1px solid var(--line);border-radius:9px;box-shadow:0 4px 18px rgba(0,0,0,.18);padding:10px 13px;pointer-events:none;display:none;}
+#knNoteFlyout.visible{display:block;}
+#knNoteFlyout .kn-flyout-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;}
+#knNoteFlyout .kn-flyout-text{font-size:12px;color:var(--ink);line-height:1.5;white-space:pre-wrap;word-break:break-word;}
 
 /* ---- Bottom bar: save state ---- */
 .save-btn{background:var(--navy);color:#fff;border:none;font-weight:600;font-size:13px;padding:8px 16px;border-radius:8px;}
@@ -736,6 +742,7 @@ input,textarea{font-family:inherit;}
 </div>
 
 <div id="modalRoot"></div>
+<div id="knNoteFlyout" role="tooltip"></div>
 <div id="axisLockChip">⇧ Axis Lock — H / V only</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2/lib/msal-browser.min.js"></script>
@@ -824,9 +831,6 @@ const state = {
   filletHoverPick: null,   // nearest endpoint under cursor (for ghost highlight)
   filletInactivityTimer: null, // auto-exit timer after fillet is placed
   placingKeyNoteId: null,      // id of keyNote/RFI item currently being tagged onto canvas
-  keynotePendingAnchor: null,  // pending anchor point waiting for confirm tap
-  keynotePendingTimer: null,   // auto-cancel timer for pending keynote tag
-  keynoteSessionTimer: null,   // idle-exit timer — exits placement mode after 20s of no confirmed tag
 };
 
 const ANGLE_STEP = 15; // degrees — snap increment for Line/Run tools
@@ -841,8 +845,8 @@ const LOCKED_SHAPES = ['circle', 'square', 'triangle', 'diamond', 'hexagon'];
 const GROUPABLE_TYPES = ['line', 'multiline', 'freehand', 'shape', 'symbol', 'label', 'note', 'hatchline', 'hatcharea', 'dimension', 'elevation', 'equipment', 'photo', 'airOutletTag', 'damperTag', 'keynotetag'];
 const AXIS_SNAP_THRESHOLD = 6; // degrees — Dimension tool snaps only near horizontal/vertical, else free angle
 const JOINT_RADIUS = 15; // fixed fillet radius for multi-segment corners (diagrammatic, not exact)
-const PALETTE = ['#FF0000', '#00FF00', '#0000FF', '#FF8000', '#FF00FF', '#000000'];
-const COLOR_NAMES = { '#FF0000':'Red','#00FF00':'Green','#0000FF':'Blue','#FF8000':'Orange','#FF00FF':'Magenta','#000000':'Black' };
+const PALETTE = ['#FF0000', '#00FF00', '#0000FF', '#FF8000', '#FF00FF', '#000000', '#2563A8', '#B45309'];
+const COLOR_NAMES = { '#FF0000':'Red','#00FF00':'Green','#0000FF':'Blue','#FF8000':'Orange','#FF00FF':'Magenta','#000000':'Black','#2563A8':'KN Blue','#B45309':'KN Amber' };
 const STROKE_NAMES = { 2:'Thin', 4:'Medium', 7:'Thick' };
 const LINE_TYPES = [
   { key:'solid',    label:'Solid',     dash:[] },
@@ -3040,28 +3044,49 @@ $('#takeoffApplyOrderBtn').addEventListener('click', () => {
     const panel = document.getElementById(panelId);
     if(!handle || !panel) return;
     let dragging = false, startX = 0, startW = 0;
-    handle.addEventListener('mousedown', (e) => {
-      if(window.matchMedia('(max-width:900px)').matches) return; // desktop only
-      e.preventDefault();
+
+    function startDrag(clientX){
       dragging = true;
-      startX = e.clientX;
+      startX = clientX;
       startW = panel.offsetWidth;
-      document.body.style.cursor = 'col-resize';
       document.body.style.userSelect = 'none';
-    });
-    document.addEventListener('mousemove', (e) => {
+    }
+    function moveDrag(clientX){
       if(!dragging) return;
-      const delta = startX - e.clientX; // dragging handle leftward = wider
+      const delta = startX - clientX; // dragging handle leftward = wider
       const newW = Math.max(300, Math.min(maxW, startW + delta));
       panel.style.width = newW + 'px';
       positionFloatingControls();
-    });
-    document.addEventListener('mouseup', () => {
+    }
+    function endDrag(){
       if(!dragging) return;
       dragging = false;
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
+    }
+
+    // Mouse (desktop)
+    handle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      startDrag(e.clientX);
+      document.body.style.cursor = 'col-resize';
     });
+    document.addEventListener('mousemove', (e) => moveDrag(e.clientX));
+    document.addEventListener('mouseup', endDrag);
+
+    // Touch (iPad / mobile)
+    handle.addEventListener('touchstart', (e) => {
+      if(e.touches.length !== 1) return;
+      e.preventDefault();
+      startDrag(e.touches[0].clientX);
+    }, { passive: false });
+    document.addEventListener('touchmove', (e) => {
+      if(!dragging || e.touches.length !== 1) return;
+      e.preventDefault();
+      moveDrag(e.touches[0].clientX);
+    }, { passive: false });
+    document.addEventListener('touchend', endDrag);
+    document.addEventListener('touchcancel', endDrag);
   }
   addResizeHandle('panelResizeHandle', 'panel', 450);
   addResizeHandle('takeoffWrapResizeHandle', 'takeoffPanelsWrap', 1100);
@@ -3351,7 +3376,7 @@ function onPointerDown(e){
   } else if(state.tool === 'symbol'){
     placeSymbolMarker(p);
   } else if(state.tool === 'keynotetag'){
-    handleKeyNoteTagTap(p);
+    placeKeyNoteTag(p);
   } else if(state.tool === 'airOutletTag'){
     handleAirOutletTagTap(p);
   } else if(state.tool === 'damperTag'){
@@ -3637,7 +3662,6 @@ function switchToTool(toolName){
     state.placingKeyNoteId = null;
     renderKeyNotePanel();
   }
-  if(toolName !== 'keynotetag'){ clearKeyNotePending(); clearKeynoteSessionTimer(); }
   state.tool = toolName;
   if(toolName !== 'dimension'){ state.ghostDimPos = null; state._lastDimRawP1 = null; } // clear ghost when leaving dim tool
   if(!['label','note','elevation','equipment','keynotetag'].includes(toolName)) state.ghostLeaderPos = null;
@@ -4034,7 +4058,7 @@ function openTextEditForMarkup(m){
    then it's fully adjustable via drag handles in the Select tool) ---- */
 function placeLeaderMarkup(kind, anchor){
   const defaultColor = kind === 'note' ? DEFAULT_NOTE_COLOR : DEFAULT_LABEL_COLOR;
-  const textPos = { x: anchor.x + 50, y: anchor.y - 50 };
+  const textPos = { x: anchor.x + 40, y: anchor.y - 40 };
   const bend = defaultBendPosition(anchor, textPos);
   const markup = {
     id: genId(), type: kind, color: defaultColor, text: '', anchor, bend, textPos,
@@ -4047,7 +4071,7 @@ function placeLeaderMarkup(kind, anchor){
 }
 
 function placeElevationMarkup(anchor){
-  const textPos = { x: anchor.x + 50, y: anchor.y - 50 };
+  const textPos = { x: anchor.x + 40, y: anchor.y - 40 };
   const bend = defaultBendPosition(anchor, textPos);
   const markup = {
     id: genId(), type: 'elevation', color: DEFAULT_ELEVATION_COLOR, textTop: '', textBottom: '',
@@ -4060,7 +4084,7 @@ function placeElevationMarkup(anchor){
 }
 
 function placeEquipmentMarkup(anchor){
-  const textPos = { x: anchor.x + 50, y: anchor.y - 50 };
+  const textPos = { x: anchor.x + 40, y: anchor.y - 40 };
   const bend = defaultBendPosition(anchor, textPos);
   const markup = {
     id: genId(), type: 'equipment', color: DEFAULT_EQUIPMENT_COLOR, eqType: '', eqNumber: '',
@@ -4508,7 +4532,13 @@ function defaultBendPosition(anchor, textPos){
    SELECTION / HANDLE HIT-TESTING + DRAGGING
    ============================================================ */
 function handlePointsForMarkup(m){
-  if(m.type === 'keynotetag') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'move', p: m.textPos }];
+  if(m.type === 'keynotetag'){
+    const knItem = (state.data.keyNotes || []).find(k => k.id === m.keyNoteId);
+    const knR = (knItem && knItem.category === 'rfi') ? 20 : 14;
+    // Move grip at left edge of circle where the leader meets it (doesn't cover the number)
+    const moveGrip = { x: m.textPos.x - knR, y: m.textPos.y };
+    return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'move', p: moveGrip }];
+  }
   if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'move', p: m.textPos }];
   if(m.type === 'dimension'){
     // Grips at measurement points (p0/p1), label (textPos), and dim-line midpoint (extOffset)
@@ -4674,7 +4704,13 @@ function markupContainsPoint(m, p){
     return p.x >= x0 - 6 && p.x <= x1 + 6 && p.y >= y0 - 6 && p.y <= y1 + 6;
   }
   if(m.type === 'whiteoutFreeform') return pointInPolygon(p, m.points) || m.points.some(pt => Math.hypot(p.x - pt.x, p.y - pt.y) < 16);
-  if(m.type === 'keynotetag') return Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 28 || Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
+  if(m.type === 'keynotetag'){
+    const bend = m.bend || defaultBendPosition(m.anchor, m.textPos);
+    return Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 28
+      || Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16
+      || distToSegment(p, m.anchor, bend) < 12
+      || distToSegment(p, bend, m.textPos) < 12;
+  }
   if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment') return Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 40 || Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
   if(m.type === 'photo') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 16;
   if(m.type === 'symbol'){
@@ -4983,11 +5019,67 @@ function eraseNear(p){
 /* ---- Floating action buttons for the Select tool: "Edit text" (label/note only)
    and "Delete" (every markup type) — Select can fully manage a markup without
    switching to the Erase tool. ---- */
+function _openChangeNoteDropdown(anchorBtn, m, markupId){
+  // Remove any existing flyout
+  document.querySelectorAll('.kn-change-dd').forEach(el => el.remove());
+  const keyNotes = state.data.keyNotes || [];
+  if(!keyNotes.length) return;
+  const dd = document.createElement('div');
+  dd.className = 'kn-change-dd';
+  dd.style.cssText = `position:fixed;z-index:300;background:var(--surface);border:1px solid var(--line);border-radius:9px;box-shadow:0 4px 18px rgba(0,0,0,.18);min-width:160px;overflow:hidden;`;
+  const categories = [
+    { cat: 'keynote', label: 'Key Notes', color: KN_COLOR },
+    { cat: 'rfi',     label: 'RFI',       color: KN_RFI_COLOR },
+  ];
+  categories.forEach(({ cat, label, color }) => {
+    const items = keyNotes.filter(k => k.category === cat);
+    if(!items.length) return;
+    const hdr = document.createElement('div');
+    hdr.style.cssText = `font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${color};padding:6px 12px 2px;`;
+    hdr.textContent = label;
+    dd.appendChild(hdr);
+    items.forEach((item, idx) => {
+      const num = idx + 1;
+      const isActive = item.id === m.keyNoteId;
+      const row = document.createElement('button');
+      row.style.cssText = `display:flex;align-items:center;gap:8px;width:100%;border:none;background:${isActive ? 'var(--surface-2)' : 'transparent'};padding:6px 12px;cursor:pointer;font-size:12px;color:var(--ink);text-align:left;`;
+      const badge = document.createElement('span');
+      badge.style.cssText = `display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:${color};color:#fff;font-size:10px;font-weight:700;flex-shrink:0;`;
+      badge.textContent = String(num);
+      const txt = document.createElement('span');
+      txt.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;';
+      txt.textContent = item.text ? item.text.trim().split('\n')[0] || `(${cat === 'rfi' ? 'RFI' : 'Note'} ${num})` : `(${cat === 'rfi' ? 'RFI' : 'Note'} ${num})`;
+      row.append(badge, txt);
+      row.addEventListener('click', (e) => {
+        e.stopPropagation();
+        m.keyNoteId = item.id;
+        m.color = color;
+        dd.remove();
+        markDirty();
+        drawAllMarkups();
+        renderKeyNotePanel();
+        showMarkupActionButtons(markupId);
+      });
+      dd.appendChild(row);
+    });
+  });
+  document.body.appendChild(dd);
+  // Position below the button
+  const r = anchorBtn.getBoundingClientRect();
+  let left = r.left, top = r.bottom + 4;
+  if(left + 180 > window.innerWidth - 8) left = window.innerWidth - 188;
+  dd.style.left = left + 'px'; dd.style.top = top + 'px';
+  // Close on outside click
+  const close = (e) => { if(!dd.contains(e.target)){ dd.remove(); document.removeEventListener('pointerdown', close, true); } };
+  setTimeout(() => document.addEventListener('pointerdown', close, true), 0);
+}
+
 function clearMarkupActionButtons(){
   const bar = $('#actionBarDynamic');
   bar.innerHTML = state.whiteoutsUnlocked
     ? '<span class="action-bar-hint">Select a whiteout to move, resize, or delete it. Click Lock in the tool menu to exit.</span>'
     : '';
+  hideKnNoteFlyout();
   updatePickersVisibility();
   positionFloatingControls();
 }
@@ -5059,6 +5151,18 @@ function showMarkupActionButtons(markupId){
     });
     buttonRow.appendChild(editBtn);
   }
+  // Show note flyout on touch-select for keynotetag
+  if(m.type === 'keynotetag'){
+    showKnNoteFlyout(m);
+    // Position near the tag's circle on canvas
+    const rect = mCanvas.getBoundingClientRect();
+    const scaleX = rect.width / mCanvas.width, scaleY = rect.height / mCanvas.height;
+    const cx = rect.left + m.textPos.x * scaleX;
+    const cy = rect.top  + m.textPos.y * scaleY;
+    positionKnNoteFlyoutAtCanvas(cx + 30, cy);
+    // Auto-hide after 5s on touch or when deselected
+    hideKnNoteFlyout(5000);
+  }
   if(m.type === 'keynotetag' || m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment'){
     const leaderBtn = document.createElement('button');
     leaderBtn.textContent = m.leaderHidden ? 'Show leader' : 'Hide leader';
@@ -5070,6 +5174,16 @@ function showMarkupActionButtons(markupId){
       showMarkupActionButtons(markupId);
     });
     buttonRow.appendChild(leaderBtn);
+  }
+  // Change Note button — reassign tag to a different keynote/RFI item
+  if(m.type === 'keynotetag'){
+    const changeBtn = document.createElement('button');
+    changeBtn.textContent = 'Change Note';
+    changeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _openChangeNoteDropdown(changeBtn, m, markupId);
+    });
+    buttonRow.appendChild(changeBtn);
   }
   if(m.type === 'photo'){
     const editBtn = document.createElement('button');
@@ -5656,50 +5770,17 @@ function drawAllMarkups(){
     ctx.stroke();
     ctx.restore();
   }
-  // Ghost keynote tag — pending (frozen, higher alpha) or floating (follows cursor)
-  if(state.tool === 'keynotetag' && state.placingKeyNoteId && !state.drawing){
-    const ga = state.keynotePendingAnchor || state.ghostLeaderPos;
-    if(ga) drawKeyNoteGhost(ga, !!state.keynotePendingAnchor);
-  }
-  // Ghost leader — shows before first click on label/note/elevation/equipment (not keynotetag — handled above)
-  if(['label','note','elevation','equipment'].includes(state.tool) && !state.drawing && state.ghostLeaderPos){
-    const ctx = mCanvas.getContext('2d');
-    ctx.save();
-    ctx.globalAlpha = 0.4;
+  // Ghost leader preview — single generic function for all leader tools
+  if(['label','note','elevation','equipment','keynotetag'].includes(state.tool) && !state.drawing && state.ghostLeaderPos){
     const ga = state.ghostLeaderPos;
-    const gt = { x: ga.x + 50, y: ga.y - 50 };
-    const gb = defaultBendPosition(ga, gt);
     const ghostColor = state.tool === 'note' ? DEFAULT_NOTE_COLOR
       : state.tool === 'elevation' ? DEFAULT_ELEVATION_COLOR
       : state.tool === 'equipment' ? DEFAULT_EQUIPMENT_COLOR
-      : DEFAULT_LABEL_COLOR;
-    ctx.strokeStyle = ghostColor;
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 3]);
-    ctx.beginPath();
-    ctx.moveTo(gt.x, gt.y);
-    ctx.lineTo(gb.x, gb.y);
-    ctx.lineTo(ga.x, ga.y);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = ghostColor;
-    ctx.beginPath();
-    ctx.arc(ga.x, ga.y, 4, 0, Math.PI * 2);
-    ctx.fill();
-    // Pill outline for non-keynotetag leader tools
-    const pillW = 52, pillH = 20, pillR = 6;
-    const px = gt.x - pillW / 2, py = gt.y - pillH / 2;
-    ctx.strokeStyle = ghostColor;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(px + pillR, py);
-    ctx.arcTo(px + pillW, py, px + pillW, py + pillH, pillR);
-    ctx.arcTo(px + pillW, py + pillH, px, py + pillH, pillR);
-    ctx.arcTo(px, py + pillH, px, py, pillR);
-    ctx.arcTo(px, py, px + pillW, py, pillR);
-    ctx.closePath();
-    ctx.stroke();
-    ctx.restore();
+      : state.tool === 'keynotetag' ? ((() => {
+          const knItem = (state.data.keyNotes || []).find(k => k.id === state.placingKeyNoteId);
+          return (knItem && knItem.category === 'rfi') ? KN_RFI_COLOR : KN_COLOR;
+        })()) : DEFAULT_LABEL_COLOR;
+    drawLeaderGhost(ga, ghostColor);
   }
   // Symbol ghost — semi-transparent preview following cursor before placement
   if(state.tool === 'symbol' && state.ghostSymbolPos){
@@ -7123,7 +7204,7 @@ function drawKeyNoteTag(m){
     ctx.stroke();
     ctx.font = '700 12px Inter, sans-serif';
     ctx.fillText(String(num), m.textPos.x, m.textPos.y - R / 2);
-    ctx.font = '600 9px Inter, sans-serif';
+    ctx.font = '700 9px Inter, sans-serif';
     ctx.fillText(rfiNum || '—', m.textPos.x, m.textPos.y + R / 2);
   } else {
     ctx.font = '700 11px Inter, sans-serif';
@@ -7722,6 +7803,76 @@ function roundRect(ctx, x, y, w, h, r){
    KEY NOTES PANEL
    ============================================================ */
 
+/* ---- Keynote tag note flyout (select → touch / hover → mouse) ---- */
+const _knFlyout = document.getElementById('knNoteFlyout');
+let _knFlyoutHideTimer = null;
+
+function showKnNoteFlyout(markupOrId, anchorEl){
+  const m = typeof markupOrId === 'string'
+    ? (activeSheet() && activeSheet().markups.find(x => x.id === markupOrId))
+    : markupOrId;
+  if(!m || m.type !== 'keynotetag') return;
+  const item = (state.data.keyNotes || []).find(k => k.id === m.keyNoteId);
+  if(!item || !item.text || !item.text.trim()) return;
+  clearTimeout(_knFlyoutHideTimer);
+  const isRfi = item.category === 'rfi';
+  const color = isRfi ? KN_RFI_COLOR : KN_COLOR;
+  const catItems = (state.data.keyNotes || []).filter(k => k.category === item.category);
+  const num = catItems.indexOf(item) + 1;
+  const labelText = isRfi ? `RFI ${num}${item.rfiNumber ? ' · ' + item.rfiNumber : ''}` : `Key Note ${num}`;
+  _knFlyout.innerHTML = `
+    <div class="kn-flyout-label" style="color:${color};">${escapeHtml(labelText)}</div>
+    <div class="kn-flyout-text">${escapeHtml(item.text.trim())}</div>`;
+  _knFlyout.classList.add('visible');
+  // Position near mouse / canvas tag — use anchorEl rect if given, else center of viewport
+  if(anchorEl){
+    const r = anchorEl.getBoundingClientRect();
+    const fw = 260, fh = _knFlyout.offsetHeight || 80;
+    let left = r.left + r.width / 2 - fw / 2;
+    let top = r.top - fh - 10;
+    if(top < 8) top = r.bottom + 10;
+    if(left < 8) left = 8;
+    if(left + fw > window.innerWidth - 8) left = window.innerWidth - fw - 8;
+    _knFlyout.style.left = left + 'px';
+    _knFlyout.style.top = top + 'px';
+  }
+}
+function positionKnNoteFlyoutAtCanvas(clientX, clientY){
+  if(!_knFlyout.classList.contains('visible')) return;
+  const fw = _knFlyout.offsetWidth || 200, fh = _knFlyout.offsetHeight || 60;
+  let left = clientX + 14;
+  let top  = clientY - fh / 2;
+  if(left + fw > window.innerWidth - 8) left = clientX - fw - 14;
+  if(top < 8) top = 8;
+  if(top + fh > window.innerHeight - 8) top = window.innerHeight - fh - 8;
+  _knFlyout.style.left = left + 'px';
+  _knFlyout.style.top  = top + 'px';
+}
+function hideKnNoteFlyout(delay){
+  if(!delay){ _knFlyout.classList.remove('visible'); return; }
+  _knFlyoutHideTimer = setTimeout(() => _knFlyout.classList.remove('visible'), delay);
+}
+
+// Mouse hover on canvas — detect keynotetag under cursor (mCanvas defined at module scope above)
+mCanvas.addEventListener('mousemove', (e) => {
+  if(state.tool !== 'select') return;
+  const p = canvasPoint(e);
+  const sheet = activeSheet();
+  if(!sheet) return;
+  const hit = sheet.markups.slice().reverse().find(m => m.type === 'keynotetag' && markupContainsPoint(m, p));
+  if(hit){
+    const item = (state.data.keyNotes || []).find(k => k.id === hit.keyNoteId);
+    if(item && item.text && item.text.trim()){
+      clearTimeout(_knFlyoutHideTimer);
+      showKnNoteFlyout(hit);
+      positionKnNoteFlyoutAtCanvas(e.clientX, e.clientY);
+    }
+  } else {
+    hideKnNoteFlyout(200);
+  }
+});
+mCanvas.addEventListener('mouseleave', () => hideKnNoteFlyout(100));
+
 function openKnEditModal(id){
   const item = (state.data.keyNotes || []).find(k => k.id === id);
   if(!item) return;
@@ -7887,7 +8038,9 @@ function renderKeyNotePanel(){
 
 function addKeyNote(category){
   if(!state.data.keyNotes) state.data.keyNotes = [];
-  const item = { id: genId(), category, text: '', rfiNumber: '' };
+  // RFI notes start with a blank first line so the RFI# badge in the circle
+  // doesn't overlap the text when the tag is small
+  const item = { id: genId(), category, text: category === 'rfi' ? '\n' : '', rfiNumber: '' };
   state.data.keyNotes.push(item);
   markDirty();
   renderKeyNotePanel();
@@ -7903,8 +8056,6 @@ function deleteKeyNote(id){
   });
   if(state.placingKeyNoteId === id){
     state.placingKeyNoteId = null;
-    clearKeyNotePending();
-    clearKeynoteSessionTimer();
     switchToTool('select');
   }
   markDirty();
@@ -7915,13 +8066,10 @@ function deleteKeyNote(id){
 function activateKeyNoteTagMode(id){
   if(state.placingKeyNoteId === id){
     state.placingKeyNoteId = null;
-    clearKeyNotePending();
-    clearKeynoteSessionTimer();
     switchToTool('select');
   } else {
     state.placingKeyNoteId = id;
     switchToTool('keynotetag');
-    startKeynoteSessionTimer();
     // Show action-bar placement hint
     const item = (state.data.keyNotes || []).find(k => k.id === id);
     if(item){
@@ -7929,170 +8077,47 @@ function activateKeyNoteTagMode(id){
       const num = catItems.indexOf(item) + 1;
       const label = item.category === 'rfi' ? `RFI ${num}` : `Key Note ${num}`;
       const bar = $('#actionBarDynamic');
-      if(bar) bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(label)}</strong> — tap to aim, tap again to confirm</span>`;
+      if(bar) bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(label)}</strong> — tap canvas to place</span>`;
+      $('#actionBarPickers').classList.add('hidden'); // hide pickers so they don't overlap
     }
   }
   renderKeyNotePanel();
 }
 
-/* ---- Key Note tag placement: tap-to-aim → confirm ---- */
+/* ---- Key Note tag placement: single tap places and auto-exits to select ---- */
 
-function handleKeyNoteTagTap(p){
+function placeKeyNoteTag(p){
   if(!state.placingKeyNoteId) return;
-  if(state.keynotePendingAnchor){
-    const dist = Math.hypot(p.x - state.keynotePendingAnchor.x, p.y - state.keynotePendingAnchor.y);
-    if(dist <= 40){
-      // Second tap near pending → confirm
-      confirmKeyNotePlacement();
-    } else {
-      // Second tap far away → re-aim to new position
-      clearKeyNotePending();
-      state.keynotePendingAnchor = p;
-      state.ghostLeaderPos = p;
-      startKeyNotePendingTimer();
-      showKeyNoteConfirmBar();
-      drawAllMarkups();
-    }
-  } else {
-    // First tap — freeze ghost here, wait for confirm
-    state.keynotePendingAnchor = p;
-    state.ghostLeaderPos = p;
-    startKeyNotePendingTimer();
-    showKeyNoteConfirmBar();
-    drawAllMarkups();
-  }
-}
-
-function confirmKeyNotePlacement(){
-  const anchor = state.keynotePendingAnchor;
   const item = (state.data.keyNotes || []).find(k => k.id === state.placingKeyNoteId);
-  if(!anchor || !item) return;
-  clearKeyNotePending();
+  if(!item) return;
   const color = item.category === 'rfi' ? KN_RFI_COLOR : KN_COLOR;
-  const textPos = { x: anchor.x + 60, y: anchor.y - 60 };
-  const bend = defaultBendPosition(anchor, textPos);
+  const textPos = { x: p.x + 40, y: p.y - 40 };
+  const bend = defaultBendPosition(p, textPos);
   const markup = {
     id: genId(), type: 'keynotetag', keyNoteId: item.id,
-    color, anchor, bend, textPos, leaderHidden: false, note: '', createdAt: Date.now()
+    color, anchor: p, bend, textPos, leaderHidden: false, note: '', createdAt: Date.now()
   };
   activeSheet().markups.push(markup);
   markDirty();
-  drawAllMarkups();
-  startKeynoteSessionTimer(); // reset idle timeout after each confirmed placement
-  // Restore the placement hint
-  const catItems = (state.data.keyNotes || []).filter(k => k.category === item.category);
-  const num = catItems.indexOf(item) + 1;
-  const label = item.category === 'rfi' ? `RFI ${num}` : `Key Note ${num}`;
-  const bar = $('#actionBarDynamic');
-  if(bar) bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(label)}</strong> — tap to aim, tap again to confirm</span>`;
+  state.placingKeyNoteId = null;
+  switchToSelectAndSelect(markup.id);
 }
 
-function clearKeyNotePending(){
-  if(state.keynotePendingTimer){ clearTimeout(state.keynotePendingTimer); state.keynotePendingTimer = null; }
-  state.keynotePendingAnchor = null;
-}
-
-function startKeynoteSessionTimer(){
-  clearKeynoteSessionTimer();
-  state.keynoteSessionTimer = setTimeout(() => {
-    if(!state.placingKeyNoteId) return;
-    clearKeyNotePending();
-    state.ghostLeaderPos = null;
-    state.placingKeyNoteId = null;
-    renderKeyNotePanel();
-    switchToTool('select');
-    clearMarkupActionButtons();
-    drawAllMarkups();
-  }, 20000);
-}
-
-function clearKeynoteSessionTimer(){
-  if(state.keynoteSessionTimer){ clearTimeout(state.keynoteSessionTimer); state.keynoteSessionTimer = null; }
-}
-
-function startKeyNotePendingTimer(){
-  // Clear only the timer, not the anchor (caller already set it)
-  if(state.keynotePendingTimer){ clearTimeout(state.keynotePendingTimer); state.keynotePendingTimer = null; }
-  state.keynotePendingTimer = setTimeout(() => {
-    if(!state.keynotePendingAnchor) return;
-    const savedAnchor = state.keynotePendingAnchor;
-    state.keynotePendingAnchor = null;
-    state.keynotePendingTimer = null;
-    // Restore hint text
-    const item = (state.data.keyNotes || []).find(k => k.id === state.placingKeyNoteId);
-    if(item){
-      const catItems = (state.data.keyNotes || []).filter(k => k.category === item.category);
-      const num = catItems.indexOf(item) + 1;
-      const label = item.category === 'rfi' ? `RFI ${num}` : `Key Note ${num}`;
-      const bar = $('#actionBarDynamic');
-      if(bar) bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(label)}</strong> — tap to aim, tap again to confirm</span>`;
-    }
-    drawAllMarkups();
-  }, 4000);
-}
-
-function showKeyNoteConfirmBar(){
-  const bar = $('#actionBarDynamic');
-  if(!bar) return;
-  bar.innerHTML = `
-    <button id="knConfirmBtn" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:2px 10px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;line-height:20px;">&#10003; Place here</button>
-    <button id="knCancelAimBtn" style="background:none;border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;margin-left:4px;flex-shrink:0;line-height:20px;">&#10005; Cancel</button>
-    <span style="font-size:10px;color:var(--muted);margin-left:8px;">Tap near tag to confirm &bull; auto-cancels in 4s</span>`;
-  document.getElementById('knConfirmBtn').addEventListener('click', (e) => {
-    e.stopPropagation();
-    confirmKeyNotePlacement();
-  });
-  document.getElementById('knCancelAimBtn').addEventListener('click', (e) => {
-    e.stopPropagation();
-    clearKeyNotePending();
-    state.ghostLeaderPos = null;
-    drawAllMarkups();
-    const item = (state.data.keyNotes || []).find(k => k.id === state.placingKeyNoteId);
-    if(item){
-      const catItems = (state.data.keyNotes || []).filter(k => k.category === item.category);
-      const num = catItems.indexOf(item) + 1;
-      const label = item.category === 'rfi' ? `RFI ${num}` : `Key Note ${num}`;
-      bar.innerHTML = `<span class="action-bar-hint" style="color:var(--navy);">Placing: <strong>${escapeHtml(label)}</strong> — tap to aim, tap again to confirm</span>`;
-    }
-  });
-}
-
-function drawKeyNoteGhost(anchor, isPending){
-  const item = (state.data.keyNotes || []).find(k => k.id === state.placingKeyNoteId);
-  if(!item) return;
-  const isRfi = item.category === 'rfi';
-  const color = isRfi ? KN_RFI_COLOR : KN_COLOR;
-  const catItems = (state.data.keyNotes || []).filter(k => k.category === item.category);
-  const num = catItems.indexOf(item) + 1;
-  const rfiNum = item.rfiNumber || '';
-  const R = isRfi ? 20 : 14;
-  const textPos = { x: anchor.x + 60, y: anchor.y - 60 };
-  const bend = defaultBendPosition(anchor, textPos);
+/* Generic leader ghost — minimal dot + dashed stub + small circle, used for all
+   leader tools (label, note, elevation, equipment, keynotetag) before first tap. */
+function drawLeaderGhost(anchor, color){
+  const tip = { x: anchor.x + 40, y: anchor.y - 40 };
   const ctx = mCanvas.getContext('2d');
   ctx.save();
-  ctx.globalAlpha = isPending ? 0.78 : 0.42;
+  ctx.globalAlpha = 0.42;
   ctx.strokeStyle = color; ctx.lineWidth = 1.5;
-  ctx.setLineDash(isPending ? [] : [4, 3]);
-  ctx.beginPath();
-  ctx.moveTo(textPos.x, textPos.y);
-  ctx.lineTo(bend.x, bend.y);
-  ctx.lineTo(anchor.x, anchor.y);
-  ctx.stroke();
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.moveTo(tip.x, tip.y); ctx.lineTo(anchor.x, anchor.y); ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillStyle = color;
-  ctx.beginPath(); ctx.arc(anchor.x, anchor.y, 3.5, 0, Math.PI * 2); ctx.fill();
-  // Circle badge
+  ctx.beginPath(); ctx.arc(anchor.x, anchor.y, 4, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#fff'; ctx.strokeStyle = color; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.arc(textPos.x, textPos.y, R, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  if(isRfi){
-    ctx.beginPath(); ctx.moveTo(textPos.x - R, textPos.y); ctx.lineTo(textPos.x + R, textPos.y); ctx.stroke();
-    ctx.font = '700 12px Inter, sans-serif'; ctx.fillText(String(num), textPos.x, textPos.y - R/2);
-    ctx.font = '600 9px Inter, sans-serif'; ctx.fillText(rfiNum || '—', textPos.x, textPos.y + R/2);
-  } else {
-    ctx.font = '700 11px Inter, sans-serif'; ctx.fillText(String(num), textPos.x, textPos.y);
-  }
-  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.beginPath(); ctx.arc(tip.x, tip.y, 9, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   ctx.restore();
 }
 
