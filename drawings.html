@@ -590,6 +590,10 @@ input,textarea{font-family:inherit;}
           <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="7" cy="12" r="2" fill="#DC2626"/><line x1="10" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1.3"/></svg></button>
           <span class="fly-label">FSD Tag</span>
         </div>
+        <div class="flyout-item" data-tool="knTag" title="Key Note Tag">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="12" y="16" font-size="10" font-weight="700" fill="currentColor" text-anchor="middle" font-family="Inter,sans-serif">1</text></svg></button>
+          <span class="fly-label">KN Tag</span>
+        </div>
       </div>
       <div class="tool-sep"></div>
       <div class="whiteout-group">
@@ -2996,13 +3000,18 @@ setupToolFlyoutToggle('symbol', 'symbolRow');
       item.classList.add('active');
       $('#tagsRow').classList.add('hidden');
       // Dispatch a synthetic click on a virtual tool btn to use the existing tool-switching logic
-      switchToTool(tool);
-      // Immediately open picker for tag tools — no canvas click required
-      if(tool === 'airOutletTag'){
-        setTimeout(() => { if(state.tool === 'airOutletTag') placeAirOutletTag(); }, 10);
-      }
-      if(tool === 'damperTag'){
-        setTimeout(() => { if(state.tool === 'damperTag') placeDamperTag(); }, 10);
+      if(tool === 'knTag'){
+        // KN Tag opens a picker modal; tool switching happens inside activateKeyNoteTagMode
+        showKeyNoteTagPickerModal();
+      } else {
+        switchToTool(tool);
+        // Immediately open picker for tag tools — no canvas click required
+        if(tool === 'airOutletTag'){
+          setTimeout(() => { if(state.tool === 'airOutletTag') placeAirOutletTag(); }, 10);
+        }
+        if(tool === 'damperTag'){
+          setTimeout(() => { if(state.tool === 'damperTag') placeDamperTag(); }, 10);
+        }
       }
     });
   });
@@ -3627,11 +3636,14 @@ function onPointerMove(e){
     }
     // Snap endpoint grips to nearby geometry on existing markups (excluding the one being edited)
     const drag = state.dragHandle;
-    const isEndpointKey = drag.key === 'p0' || drag.key === 'p1' || (typeof drag.key === 'string' && drag.key.startsWith('pt'));
+    const isEndpointKey = drag.key === 'p0' || drag.key === 'p1' || drag.key === 'anchor'
+      || (typeof drag.key === 'string' && drag.key.startsWith('pt'));
     if(isEndpointKey){
       const gripSn = findSnapPoint(p, drag.markupId);
       state.snapPoint = gripSn || null;
-      applyDragHandle(drag, gripSn ? gripSn.pt : p);
+      // Geometry snap wins; fall back to grid snap when grid is on
+      const snappedPt = gripSn ? gripSn.pt : snapToGridPt(p);
+      applyDragHandle(drag, snappedPt);
     } else {
       state.snapPoint = null;
       applyDragHandle(drag, p);
@@ -4244,7 +4256,7 @@ function openTextEditForMarkup(m){
    then it's fully adjustable via drag handles in the Select tool) ---- */
 function placeLeaderMarkup(kind, anchor){
   const defaultColor = kind === 'note' ? DEFAULT_NOTE_COLOR : DEFAULT_LABEL_COLOR;
-  const textPos = { x: anchor.x + 40, y: anchor.y - 40 };
+  const textPos = { x: anchor.x + 50, y: anchor.y - 40 };
   const bend = defaultBendPosition(anchor, textPos, kind === 'note' ? NOTE_STUB_LENGTH : LEADER_STUB_LENGTH);
   const markup = {
     id: genId(), type: kind, color: defaultColor, text: '', anchor, bend, textPos,
@@ -4257,7 +4269,7 @@ function placeLeaderMarkup(kind, anchor){
 }
 
 function placeElevationMarkup(anchor){
-  const textPos = { x: anchor.x + 40, y: anchor.y - 40 };
+  const textPos = { x: anchor.x + 50, y: anchor.y - 40 };
   const bend = defaultBendPosition(anchor, textPos);
   const markup = {
     id: genId(), type: 'elevation', color: DEFAULT_ELEVATION_COLOR, textTop: '', textBottom: '',
@@ -4270,7 +4282,7 @@ function placeElevationMarkup(anchor){
 }
 
 function placeEquipmentMarkup(anchor){
-  const textPos = { x: anchor.x + 40, y: anchor.y - 40 };
+  const textPos = { x: anchor.x + 50, y: anchor.y - 40 };
   const bend = defaultBendPosition(anchor, textPos);
   const markup = {
     id: genId(), type: 'equipment', color: DEFAULT_EQUIPMENT_COLOR, eqType: '', eqNumber: '',
@@ -4727,6 +4739,58 @@ function showAirOutletTagPickerModal(){
   });
   card.querySelector('.cancel').addEventListener('click', () => { root.innerHTML = ''; switchToTool('select'); });
   backdrop.addEventListener('click', (e) => { if(e.target === backdrop){ root.innerHTML = ''; switchToTool('select'); } });
+}
+
+function showKeyNoteTagPickerModal(){
+  const root = $('#modalRoot');
+  root.innerHTML = '';
+  const keyNotes = state.data.keyNotes || [];
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+  card.innerHTML = `
+    <div class="disp">Pick key note to place</div>
+    <div class="modal-sub">Tap a row to start placing that key note tag on the canvas.</div>
+    <div id="knPickerList" style="max-height:300px;overflow-y:auto;margin-top:8px;"></div>
+    <div class="modal-row"><button type="button" class="cancel">Cancel</button></div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+  const list = card.querySelector('#knPickerList');
+
+  const close = () => { root.innerHTML = ''; switchToTool('select'); };
+
+  if(!keyNotes.length){
+    list.innerHTML = `<div style="color:var(--muted);font-size:12px;padding:8px 0;">No key notes yet — add them in the Key Notes panel.</div>`;
+  } else {
+    // Group by category
+    const cats = [...new Set(keyNotes.map(k => k.category))];
+    cats.forEach(cat => {
+      const isRfi = cat === 'rfi';
+      const color = isRfi ? KN_RFI_COLOR : KN_COLOR;
+      const catItems = keyNotes.filter(k => k.category === cat);
+      const heading = document.createElement('div');
+      heading.style.cssText = `font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${color};margin:8px 0 4px;`;
+      heading.textContent = isRfi ? 'RFIs' : 'Key Notes';
+      list.appendChild(heading);
+      catItems.forEach((item, i) => {
+        const num = i + 1;
+        const label = isRfi ? `RFI ${num}${item.rfiNumber ? ' · ' + item.rfiNumber : ''}` : `${num}`;
+        const row = document.createElement('div');
+        row.style.cssText = `padding:8px 10px;border:2px solid ${color}30;border-radius:8px;margin-bottom:5px;cursor:pointer;display:flex;align-items:center;gap:10px;`;
+        row.innerHTML = `<span style="width:22px;height:22px;border-radius:50%;border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:${color};flex-shrink:0;">${escapeHtml(label)}</span>
+          <span style="font-size:13px;">${escapeHtml(item.text && item.text.trim() ? item.text.trim() : '(no text)')}</span>`;
+        row.addEventListener('click', () => {
+          root.innerHTML = '';
+          activateKeyNoteTagMode(item.id);
+        });
+        list.appendChild(row);
+      });
+    });
+  }
+
+  card.querySelector('.cancel').addEventListener('click', close);
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) close(); });
 }
 
 // After placing a Callout, Note, or Dimension, the natural next action is
@@ -8090,18 +8154,18 @@ function showKnNoteFlyout(markupOrId){
     <div class="kn-flyout-label" style="color:${color};">${escapeHtml(labelText)}</div>
     <div class="kn-flyout-text">${escapeHtml(item.text.trim())}</div>`;
   _knFlyout.classList.add('visible');
-  // Static position: 26px right of the tag circle's right edge
-  const R = isRfi ? 20 : 14;
+  // Position centered above the tag's text bubble
   const rect = mCanvas.getBoundingClientRect();
   const scaleX = rect.width / mCanvas.width, scaleY = rect.height / mCanvas.height;
-  const cx = rect.left + (m.textPos.x + R) * scaleX + 26;
-  const cy = rect.top  + m.textPos.y * scaleY;
+  const screenX = rect.left + m.textPos.x * scaleX;
+  const screenY = rect.top  + m.textPos.y * scaleY;
   const fw = _knFlyout.offsetWidth || 200, fh = _knFlyout.offsetHeight || 60;
-  let left = cx;
-  let top  = cy - fh / 2;
-  if(left + fw > window.innerWidth - 8) left = rect.left + (m.textPos.x - R) * scaleX - fw - 26;
-  if(top < 8) top = 8;
-  if(top + fh > window.innerHeight - 8) top = window.innerHeight - fh - 8;
+  let left = screenX - fw / 2;
+  let top  = screenY - fh - 14;
+  // Keep within viewport
+  if(left < 8) left = 8;
+  if(left + fw > window.innerWidth - 8) left = window.innerWidth - fw - 8;
+  if(top < 8) top = screenY + 14; // flip below if no room above
   _knFlyout.style.left = left + 'px';
   _knFlyout.style.top  = top + 'px';
 }
