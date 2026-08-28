@@ -285,7 +285,9 @@ input,textarea{font-family:inherit;}
 .mobile-panel-toggle{display:inline-block;font-weight:700;font-size:12px;padding:6px 14px;border-radius:7px;flex-shrink:0;}
 .topbar-logo{height:32px;width:auto;flex-shrink:0;margin-right:2px;}
 .file-menu-wrap{position:relative;flex-shrink:0;}
-.file-dropdown{position:absolute;top:calc(100% + 6px);left:0;width:200px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);z-index:80;padding:4px 0;overflow:hidden;}
+.file-dropdown{position:absolute;top:calc(100% + 6px);left:0;width:200px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);z-index:80;padding:4px 0;overflow:visible;}
+.file-dropdown>.file-menu-item:first-child,.file-dropdown>.file-menu-item-wrap:first-child>.file-menu-item:first-child{border-radius:10px 10px 0 0;}
+.file-dropdown>.file-menu-item:last-child,.file-dropdown>.file-menu-item-wrap:last-child>.file-menu-item:first-child{border-radius:0 0 10px 10px;}
 .file-menu-item{padding:9px 14px;font-size:13px;color:var(--ink);cursor:pointer;font-weight:500;background:none;border:none;width:100%;text-align:left;display:block;}
 .file-menu-item:hover{background:var(--surface-2);}
 .file-menu-item:disabled{opacity:0.4;cursor:default;}
@@ -7440,6 +7442,55 @@ function drawOutlineArrowHead(ctx, from, tip, color, size = 9, thickness = 2){
 
 /// borderColor: overrides the border stroke color (defaults to same as text color)
 // centered: if true, pos is the pill's center — grip sits at pill midpoint (used by dimensions)
+// Wrap text into lines at word boundaries, max ~maxChars per line.
+function wrapTextLines(text, maxChars){
+  if(!text) return [];
+  const words = text.split(' ');
+  const lines = [];
+  let cur = '';
+  for(const w of words){
+    if(cur.length === 0){
+      cur = w;
+    } else if(cur.length + 1 + w.length <= maxChars){
+      cur += ' ' + w;
+    } else {
+      lines.push(cur);
+      cur = w;
+    }
+  }
+  if(cur) lines.push(cur);
+  return lines;
+}
+
+// Multiline text box used for Note markups.
+function drawNoteTextBox(ctx, text, pos, color){
+  const isEmpty = !text;
+  ctx.font = isEmpty ? '600 italic 11px Inter, sans-serif' : '600 12px Inter, sans-serif';
+  const padX = 7, padY = 5, lineH = 16;
+  const lines = isEmpty ? ['Add text'] : wrapTextLines(text, 30);
+  let maxW = 0;
+  for(const l of lines) maxW = Math.max(maxW, ctx.measureText(l).width);
+  const boxW = maxW + padX * 2;
+  const boxH = lines.length * lineH + padY * 2;
+  const bx = pos.x;
+  const by = pos.y - boxH / 2;
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = isEmpty ? 'rgba(20,30,50,0.35)' : color;
+  ctx.lineWidth = 1.5;
+  if(isEmpty) ctx.setLineDash([3, 2]);
+  roundRect(ctx, bx, by, boxW, boxH, 6);
+  ctx.fill();
+  ctx.stroke();
+  if(isEmpty) ctx.setLineDash([]);
+  ctx.fillStyle = isEmpty ? 'rgba(20,30,50,0.45)' : color;
+  ctx.textBaseline = 'top';
+  for(let i = 0; i < lines.length; i++){
+    ctx.fillText(lines[i], bx + padX, by + padY + i * lineH);
+  }
+  ctx.textBaseline = 'alphabetic';
+  return { x: bx, y: by, w: boxW, h: boxH };
+}
+
 function drawTextPill(ctx, text, pos, color, borderColor, centered = false){
   const bc = borderColor !== undefined ? borderColor : color;
   const isEmpty = !text;
@@ -7495,7 +7546,8 @@ function drawLeader(m){
     }
   }
 
-  drawTextPill(ctx, m.text, m.textPos, m.color);
+  if(m.type === 'note') drawNoteTextBox(ctx, m.text, m.textPos, m.color);
+  else drawTextPill(ctx, m.text, m.textPos, m.color);
 }
 
 // Elevation callout: same leader/dot mechanic as Label, but the text end is a
