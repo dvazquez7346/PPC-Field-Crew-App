@@ -4775,10 +4775,18 @@ function showKeyNoteTagPickerModal(){
       list.appendChild(heading);
       catItems.forEach((item, i) => {
         const num = i + 1;
-        const label = isRfi ? `RFI ${num}${item.rfiNumber ? ' · ' + item.rfiNumber : ''}` : `${num}`;
+        const sz = isRfi ? 32 : 24; // RFI circle is larger, matching the actual tag
+        // For RFI: show number on top half, RFI# on bottom half with divider — just like the real tag
+        const circleInner = isRfi
+          ? `<span style="display:flex;flex-direction:column;align-items:center;line-height:1;gap:0;">
+               <span style="font-size:10px;font-weight:700;">${num}</span>
+               <span style="width:${sz-4}px;height:1px;background:${color};margin:1px 0;"></span>
+               <span style="font-size:8px;font-weight:700;">${escapeHtml(item.rfiNumber || '—')}</span>
+             </span>`
+          : `<span style="font-size:11px;font-weight:700;">${num}</span>`;
         const row = document.createElement('div');
         row.style.cssText = `padding:8px 10px;border:2px solid ${color}30;border-radius:8px;margin-bottom:5px;cursor:pointer;display:flex;align-items:center;gap:10px;`;
-        row.innerHTML = `<span style="width:22px;height:22px;border-radius:50%;border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:${color};flex-shrink:0;">${escapeHtml(label)}</span>
+        row.innerHTML = `<span style="width:${sz}px;height:${sz}px;border-radius:50%;border:2px solid ${color};display:flex;align-items:center;justify-content:center;color:${color};flex-shrink:0;">${circleInner}</span>
           <span style="font-size:13px;">${escapeHtml(item.text && item.text.trim() ? item.text.trim() : '(no text)')}</span>`;
         row.addEventListener('click', () => {
           root.innerHTML = '';
