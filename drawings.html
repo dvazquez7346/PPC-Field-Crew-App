@@ -3738,6 +3738,8 @@ function onPointerMove(e){
     state.multilineGhostPos = mlGhostSn ? mlGhostSn.pt : p;
     drawAllMarkups();
     if(state.multiPoints.length > 0) drawMultilinePreview(state.multiPoints);
+    // Live length readout during hover between commits (ghost segment)
+    if(state.multiPoints.length >= 1) updateDuctRunLengthDisplay(state.multilineGhostPos);
   } else if(state.tool !== 'multiline'){
     state.multilineGhostPos = null;
   }
