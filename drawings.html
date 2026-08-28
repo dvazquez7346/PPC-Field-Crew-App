@@ -89,9 +89,9 @@ input,textarea{font-family:inherit;}
 #axisLockChip{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1B2A41;color:#fff;font-size:11.5px;font-weight:700;letter-spacing:0.04em;padding:5px 13px;border-radius:20px;box-shadow:0 2px 8px rgba(0,0,0,.28);z-index:60;pointer-events:none;display:none;white-space:nowrap;}
 #axisLockChip.visible{display:block;}
 /* Scale ruler overlay */
-#scaleRuler{position:fixed;bottom:0;left:0;right:0;height:26px;background:rgba(27,42,65,0.82);color:#CBD8EA;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;display:flex;align-items:center;pointer-events:none;z-index:50;backdrop-filter:blur(4px);display:none;}
+#scaleRuler{position:fixed;bottom:0;left:0;right:0;height:36px;background:rgba(27,42,65,0.82);color:#CBD8EA;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;display:flex;align-items:center;pointer-events:none;z-index:50;backdrop-filter:blur(4px);display:none;}
 #scaleRuler.visible{display:flex;}
-#scaleRulerCanvas{height:20px;flex:1;min-width:0;}
+#scaleRulerCanvas{height:30px;flex:1;min-width:0;}
 .run-done-btn:hover{background:#256e46;}
 .action-bar{background:var(--surface);border-bottom:1px solid var(--line);padding:0 10px;display:flex;align-items:center;height:42px;overflow:hidden;flex-wrap:nowrap;position:relative;}
 .action-bar-hint{font-size:12px;color:var(--danger);font-weight:600;}
@@ -891,7 +891,7 @@ const DEFAULT_PHOTO_COLOR = '#FF8000'; // orange
 const DEFAULT_EQUIPMENT_COLOR = '#00FF00'; // green
 const LEADER_STUB_LENGTH = 26; // fixed length of the horizontal stub nearest the text, before it bends toward the target
 const NOTE_STUB_LENGTH = 36;  // notes tags use a slightly longer stub
-const DUCT_RUN_COLORS = { supply: '#2563EB', return: '#C026D3', exhaust: '#16A34A' };
+const DUCT_RUN_COLORS = { supply: '#1A56DB', return: '#C026D3', exhaust: '#16a34a' };
 const KN_COLOR = '#2563A8';   // Key Note circle color — engineering blue
 const KN_RFI_COLOR = '#B45309'; // RFI circle color — amber
 const HATCH_TICK_SPACING = 10, HATCH_TICK_LENGTH = 9; // px, for hatch-line tick marks and area fill spacing
@@ -2352,9 +2352,9 @@ function updateRulerOverlay(){
   // Account for device pixel ratio
   const dpr = window.devicePixelRatio || 1;
   cvs.width = Math.round(W * dpr);
-  cvs.height = Math.round(20 * dpr);
+  cvs.height = Math.round(30 * dpr);
   cvs.style.width = W + 'px';
-  cvs.style.height = '20px';
+  cvs.style.height = '30px';
 
   const ctx2 = cvs.getContext('2d');
   ctx2.clearRect(0, 0, cvs.width, cvs.height);
@@ -2376,7 +2376,7 @@ function updateRulerOverlay(){
 
   ctx2.strokeStyle = 'rgba(203,216,234,0.65)';
   ctx2.fillStyle   = '#CBD8EA';
-  ctx2.font        = `500 9px 'JetBrains Mono', monospace`;
+  ctx2.font        = `500 11px 'JetBrains Mono', monospace`;
   ctx2.lineWidth   = 1;
   ctx2.textBaseline = 'top';
 
@@ -2386,10 +2386,10 @@ function updateRulerOverlay(){
     if(screenX < 0 || screenX > W) continue;
     ctx2.beginPath();
     ctx2.moveTo(screenX, 0);
-    ctx2.lineTo(screenX, 11);
+    ctx2.lineTo(screenX, 16);
     ctx2.stroke();
     const label = ft < 1 ? `${Math.round(ft * 12)}"` : `${ft}'`;
-    ctx2.fillText(label, screenX + 2, 2);
+    ctx2.fillText(label, screenX + 2, 3);
   }
   // Sub-ticks (halves)
   ctx2.strokeStyle = 'rgba(203,216,234,0.35)';
@@ -2401,7 +2401,7 @@ function updateRulerOverlay(){
     if(screenX < 0 || screenX > W) continue;
     ctx2.beginPath();
     ctx2.moveTo(screenX, 0);
-    ctx2.lineTo(screenX, 6);
+    ctx2.lineTo(screenX, 9);
     ctx2.stroke();
   }
 }
@@ -3671,6 +3671,8 @@ function onPointerMove(e){
     }
     drawAllMarkups();
     drawShape(state.currentStroke);
+    // Snap ring drawn AFTER arrowhead so it's visible on top (drawAllMarkups skips it for arrow drawing)
+    if(isArrowMove) drawSnapIndicator();
   } else if(state.tool === 'dimension' && state.drawing){
     const dimRaw = canvasPointClearFingertip(e);
     state._lastDimRawP1 = dimRaw;
@@ -3690,6 +3692,8 @@ function onPointerMove(e){
     drawAllMarkups();
     if(state.tool === 'hatchline') drawHatchLinePreview(state.multiPoints.concat([snapped]));
     else drawMultilinePreview(state.multiPoints.concat([snapped]));
+    // Live length readout update during drag (includes in-progress segment)
+    if(state.tool === 'multiline') updateDuctRunLengthDisplay(snapped);
   } else if(state.tool === 'hatcharea' && state.multiPoints){
     drawAllMarkups();
     let hatchPreviewPt = p;
@@ -3752,7 +3756,9 @@ function onPointerMove(e){
   }
   // Ghost leader anchor — before first click on label/note/elevation/equipment/keynotetag
   if(['label','note','elevation','equipment','keynotetag'].includes(state.tool) && !state.drawing){
-    state.ghostLeaderPos = p;
+    const leaderGhostSn = findSnapPoint(p);
+    state.snapPoint = leaderGhostSn || null;
+    state.ghostLeaderPos = leaderGhostSn ? leaderGhostSn.pt : p;
     drawAllMarkups();
   } else if(!['label','note','elevation','equipment','keynotetag'].includes(state.tool)){
     state.ghostLeaderPos = null;
@@ -4008,8 +4014,9 @@ function onPointerUp(e){
 /* ---- Run tool "Done" button — also used to finish a freeform hatch area,
    since both are the same "tap points, then finish" interaction pattern. ---- */
 // Duct run (multiline) length readout — computed from state.multiPoints
-// using scale calibration, displayed as a small chip near the Done button.
-function updateDuctRunLengthDisplay(){
+// using scale calibration, displayed as a small chip above the last committed point.
+// Pass an optional livePt (canvas coords) to include the in-progress drag segment.
+function updateDuctRunLengthDisplay(livePt){
   let chip = $('#ductRunLenChip');
   if(!chip){
     chip = document.createElement('div');
@@ -4020,22 +4027,36 @@ function updateDuctRunLengthDisplay(){
   const pts = state.multiPoints;
   const sh = activeSheet();
   const cal = sh && sh.scaleCalibration;
-  if(!pts || pts.length < 2 || !cal || !cal.pixelDist || !cal.realLength){
+  // Need at least 2 committed pts OR 1 committed + livePt to show anything
+  const effectivePts = (livePt && pts && pts.length >= 1) ? pts.concat([livePt]) : pts;
+  if(!effectivePts || effectivePts.length < 2 || !cal || !cal.pixelDist || !cal.realLength){
     chip.style.display = 'none';
     return;
   }
   // Sum pixel lengths then convert via calibration (pixelDist px = realLength ft)
   let totalPx = 0;
-  for(let i = 0; i < pts.length - 1; i++)
-    totalPx += Math.hypot(pts[i+1].x - pts[i].x, pts[i+1].y - pts[i].y);
+  for(let i = 0; i < effectivePts.length - 1; i++)
+    totalPx += Math.hypot(effectivePts[i+1].x - effectivePts[i].x, effectivePts[i+1].y - effectivePts[i].y);
   const totalFt = totalPx * (cal.realLength / cal.pixelDist);
   const ft = Math.floor(totalFt);
   const inches = Math.round((totalFt - ft) * 12);
   const label = inches === 0 ? `${ft}′` : `${ft}′ ${inches}″`;
   chip.textContent = label;
-  // Position: just above the Done button
+  // Position: above the last committed canvas point (projected to screen coords)
+  // Fall back to Done button if canvas geometry unavailable
+  const anchorPt = pts && pts.length > 0 ? pts[pts.length - 1] : null;
   const rb = $('#runDoneBtn');
-  if(rb && !rb.classList.contains('hidden')){
+  const canvasVisible = rb && !rb.classList.contains('hidden');
+  if(anchorPt && mCanvas && canvasVisible){
+    const mRect = mCanvas.getBoundingClientRect();
+    const scaleX = mRect.width / mCanvas.width;
+    const scaleY = mRect.height / mCanvas.height;
+    const screenX = mRect.left + anchorPt.x * scaleX;
+    const screenY = mRect.top  + anchorPt.y * scaleY;
+    chip.style.display = 'block';
+    chip.style.left = Math.max(4, screenX - 30) + 'px';
+    chip.style.top  = (screenY - 36) + 'px';
+  } else if(rb && canvasVisible){
     const rRect = rb.getBoundingClientRect();
     chip.style.display = 'block';
     chip.style.left = rRect.left + 'px';
@@ -5017,19 +5038,19 @@ function drawGrid(ctx){
   if(gridPx < 8) return; // don't draw when grid is too dense to be readable
   const W = mCanvas.width, H = mCanvas.height;
   ctx.save();
-  ctx.strokeStyle = 'rgba(47,93,138,0.18)';
+  ctx.strokeStyle = 'rgba(47,93,138,0.55)';
   ctx.lineWidth = 0.8;
   ctx.setLineDash([]);
   // Major grid every 12 grid cells (feet markers when grid=1")
   const majorEvery = 12;
   for(let x = 0; x <= W; x += gridPx){
     const isMajor = Math.round(x / gridPx) % majorEvery === 0;
-    ctx.globalAlpha = isMajor ? 0.38 : 0.15;
+    ctx.globalAlpha = isMajor ? 0.55 : 0.28;
     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
   }
   for(let y = 0; y <= H; y += gridPx){
     const isMajor = Math.round(y / gridPx) % majorEvery === 0;
-    ctx.globalAlpha = isMajor ? 0.38 : 0.15;
+    ctx.globalAlpha = isMajor ? 0.55 : 0.28;
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
   }
   ctx.globalAlpha = 1;
@@ -6212,31 +6233,40 @@ function drawAllMarkups(){
     octx.restore();
   }
 
-  // Snap indicator — cyan ring + crosshair at the active snap point
-  if(state.snapPoint){
-    const { pt, type } = state.snapPoint;
-    const sctx = mCanvas.getContext('2d');
-    sctx.save();
-    sctx.strokeStyle = '#00C8D4';
-    sctx.lineWidth = 1.5;
-    const r = type === 'segment' ? 7 : 9;
-    sctx.beginPath();
-    sctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
-    sctx.stroke();
-    if(type === 'midpoint'){
-      // Small triangle marker inside for midpoint
-      sctx.beginPath();
-      sctx.moveTo(pt.x, pt.y - 5); sctx.lineTo(pt.x + 4.5, pt.y + 3); sctx.lineTo(pt.x - 4.5, pt.y + 3);
-      sctx.closePath(); sctx.stroke();
-    } else {
-      // Crosshair for endpoint and segment
-      sctx.beginPath();
-      sctx.moveTo(pt.x - 5, pt.y); sctx.lineTo(pt.x + 5, pt.y);
-      sctx.moveTo(pt.x, pt.y - 5); sctx.lineTo(pt.x, pt.y + 5);
-      sctx.stroke();
-    }
-    sctx.restore();
+  // Snap indicator — drawn here for all tools except arrow drawing (where drawSnapIndicator() is called after drawShape)
+  const isArrowDrawing = state.tool === 'shape' && state.drawing &&
+    (state.shapeType === 'arrowFilled' || state.shapeType === 'arrowOutline');
+  if(state.snapPoint && !isArrowDrawing){
+    drawSnapIndicator();
   }
+}
+
+// Draw the cyan snap ring + crosshair for state.snapPoint — callable separately so
+// it can be painted on top of drawShape() when the arrowhead would otherwise cover it.
+function drawSnapIndicator(){
+  if(!state.snapPoint) return;
+  const { pt, type } = state.snapPoint;
+  const sctx = mCanvas.getContext('2d');
+  sctx.save();
+  sctx.strokeStyle = '#00C8D4';
+  sctx.lineWidth = 1.5;
+  const r = type === 'segment' ? 7 : 9;
+  sctx.beginPath();
+  sctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
+  sctx.stroke();
+  if(type === 'midpoint'){
+    // Small triangle marker inside for midpoint
+    sctx.beginPath();
+    sctx.moveTo(pt.x, pt.y - 5); sctx.lineTo(pt.x + 4.5, pt.y + 3); sctx.lineTo(pt.x - 4.5, pt.y + 3);
+    sctx.closePath(); sctx.stroke();
+  } else {
+    // Crosshair for endpoint and segment
+    sctx.beginPath();
+    sctx.moveTo(pt.x - 5, pt.y); sctx.lineTo(pt.x + 5, pt.y);
+    sctx.moveTo(pt.x, pt.y - 5); sctx.lineTo(pt.x, pt.y + 5);
+    sctx.stroke();
+  }
+  sctx.restore();
 }
 
 function drawHandles(m){
