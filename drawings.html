@@ -4166,18 +4166,15 @@ function updateDuctRunLengthDisplay(livePt){
     totalChip.style.display = 'none';
   }
 
-  if(segLabel && livePt && anchor){
-    // Position seg chip near the live cursor (livePt projected to screen)
-    const liveSc = screenPos(livePt);
+  // Seg chip sits directly to the right of the total chip — static, out of the way
+  if(segLabel && livePt && totalChip.style.display === 'block'){
     segChip.textContent = segLabel;
     segChip.style.display = 'block';
-    if(liveSc){
-      segChip.style.left = Math.max(4, liveSc.x + 10) + 'px';
-      segChip.style.top  = (liveSc.y - 28) + 'px';
-    } else {
-      segChip.style.left = totalChip.style.left;
-      segChip.style.top  = (parseInt(totalChip.style.top) - 22) + 'px';
-    }
+    const tLeft = parseInt(totalChip.style.left) || 0;
+    const tTop  = totalChip.style.top;
+    const tWidth = totalChip.offsetWidth || 70;
+    segChip.style.left = (tLeft + tWidth + 6) + 'px';
+    segChip.style.top  = tTop;
   } else {
     segChip.style.display = 'none';
   }
@@ -4256,7 +4253,7 @@ function finishMultiline(){
       renderKeyNotePanel();
       createdId = markup.id;
     } else if(state.tool === 'multiline'){
-      const markup = { id: genId(), type: 'multiline', color: state.color, thickness: state.thickness, lineType: state.lineType || 'solid', points: state.multiPoints, note: '', createdAt: Date.now() };
+      const markup = { id: genId(), type: 'multiline', color: state.color, thickness: state.thickness, lineType: state.lineType || 'solid', points: state.multiPoints, jointRadius: sessionJointRadius ?? JOINT_RADIUS, note: '', createdAt: Date.now() };
       activeSheet().markups.push(markup);
       markDirty();
       renderKeyNotePanel();
@@ -5944,6 +5941,62 @@ function showMarkupActionButtons(markupId){
     });
     buttonRow.appendChild(rmPtBtn);
   }
+  // Joint Radius button — lets user tune corner rounding per route line
+  if(m.type === 'multiline'){
+    const jrBtn = document.createElement('button');
+    const sh2 = activeSheet(); const cal2 = sh2 && sh2.scaleCalibration;
+    const curRpx = m.jointRadius ?? JOINT_RADIUS;
+    let jrLabel = 'Joint Radius';
+    if(cal2 && cal2.pixelDist && cal2.realLength){
+      const pxPerIn = (cal2.pixelDist / cal2.realLength) / 12;
+      const inVal = Math.round(curRpx / pxPerIn * 2) / 2;
+      jrLabel = `Radius: ${inVal}"`;
+    }
+    jrBtn.textContent = jrLabel;
+    jrBtn.title = 'Change corner rounding radius for this route line';
+    jrBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // Inline per-markup radius modal
+      const root = $('#modalRoot');
+      if(!root) return;
+      root.innerHTML = '';
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop';
+      const card = document.createElement('div');
+      card.className = 'modal-card';
+      const sh3 = activeSheet(); const cal3 = sh3 && sh3.scaleCalibration;
+      const hasScale3 = cal3 && cal3.pixelDist && cal3.realLength;
+      const pxPerIn3 = hasScale3 ? (cal3.pixelDist / cal3.realLength) / 12 : null;
+      const defIn = pxPerIn3 ? Math.round((m.jointRadius ?? JOINT_RADIUS) / pxPerIn3 * 2) / 2 : 0;
+      card.innerHTML = `
+        <div class="disp">Joint Radius</div>
+        <div class="modal-sub">${hasScale3 ? 'Corner radius for this route line only.' : '<span style="color:var(--warn)">⚠ No scale — pixels used as fallback.</span>'}</div>
+        <div style="display:flex;align-items:center;gap:10px;margin:12px 0 4px;">
+          <label style="font-size:12px;font-weight:600;min-width:32px;">Inches</label>
+          <input id="jrMIn" type="number" min="0" max="120" step="0.5" value="${defIn}" style="width:80px;font-size:15px;font-family:'JetBrains Mono',monospace;padding:6px 8px;border:1.5px solid var(--line);border-radius:8px;">
+        </div>
+        <div class="modal-row" style="gap:8px;margin-top:8px;">
+          <button type="button" class="save" id="jrMOK">Apply</button>
+          <button type="button" class="cancel" id="jrMCancel">Cancel</button>
+        </div>`;
+      backdrop.appendChild(card); root.appendChild(backdrop);
+      const inp = card.querySelector('#jrMIn');
+      setTimeout(() => { inp.focus(); inp.select(); }, 60);
+      function applyRadius(){
+        const inch = parseFloat(inp.value);
+        if(isNaN(inch) || inch < 0){ inp.style.borderColor = 'var(--danger)'; return; }
+        m.jointRadius = hasScale3 ? (inch / 12) * (cal3.pixelDist / cal3.realLength) : Math.max(1, inch * 4);
+        root.innerHTML = '';
+        markDirty(); drawAllMarkups();
+        showMarkupActionButtons(markupId);
+      }
+      card.querySelector('#jrMOK').addEventListener('click', applyRadius);
+      card.querySelector('#jrMCancel').addEventListener('click', () => root.innerHTML = '');
+      backdrop.addEventListener('click', (ev) => { if(ev.target === backdrop) root.innerHTML = ''; });
+      card.addEventListener('keydown', (ev) => { if(ev.key === 'Enter') applyRadius(); if(ev.key === 'Escape') root.innerHTML = ''; });
+    });
+    buttonRow.appendChild(jrBtn);
+  }
   if(m.type === 'airOutletTag'){
     const editBtn = document.createElement('button');
     editBtn.textContent = 'Edit';
@@ -6800,7 +6853,7 @@ function drawMultiline(m){
   const lt = m.lineType || (m.hatched ? 'hatch' : 'solid');
   const ltDef = LINE_TYPE_MAP[lt];
   if(ltDef && ltDef.dash && ltDef.dash.length > 0) ctx.setLineDash(ltDef.dash);
-  drawRoundedPolyline(ctx, m.points, sessionJointRadius ?? JOINT_RADIUS);
+  drawRoundedPolyline(ctx, m.points, m.jointRadius ?? JOINT_RADIUS);
   ctx.setLineDash([]);
   if(lt === 'hatch') drawHatchTicksAlongPath(ctx, m.points);
 }
