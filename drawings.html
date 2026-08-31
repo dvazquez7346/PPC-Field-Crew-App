@@ -528,9 +528,9 @@ input,textarea{font-family:inherit;}
   <div class="main">
     <div class="toolrail" id="toolrail">
       <!-- Navigation -->
-      <button class="tool-btn active" data-tool="pan" title="Pan"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M9 5l3-3 3 3M12 2v6M15 19l-3 3-3-3M12 22v-6M19 9l3 3-3 3M22 12h-6M5 15l-3-3 3-3M2 12h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <button class="tool-btn" data-tool="pan" title="Pan"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M9 5l3-3 3 3M12 2v6M15 19l-3 3-3-3M12 22v-6M19 9l3 3-3 3M22 12h-6M5 15l-3-3 3-3M2 12h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <div class="tool-label">Pan</div>
-      <button class="tool-btn" data-tool="select" title="Select / move / edit / delete a markup"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M6 3l3 17 2.5-6.5L18 12z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+      <button class="tool-btn active" data-tool="select" title="Select / move / edit / delete a markup"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M6 3l3 17 2.5-6.5L18 12z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
       <div class="tool-label">Select</div>
       <button class="tool-btn" data-tool="mselect" title="Multi-select: tap multiple items or drag a box, then move/delete/color/group them together"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2.5"/><circle cx="8" cy="8" r="1.8" fill="currentColor"/><circle cx="16" cy="16" r="1.8" fill="currentColor"/></svg></button>
       <div class="tool-label">M-Sel</div>
@@ -546,6 +546,8 @@ input,textarea{font-family:inherit;}
       <div class="tool-label">Dim</div>
       <button class="tool-btn" data-tool="draw" title="Freehand draw">✎</button>
       <div class="tool-label">Draw</div>
+      <button class="tool-btn" data-tool="line" title="Single line — drag to set length, Shift for 0/45/90°"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="3" y1="21" x2="21" y2="3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+      <div class="tool-label">Line</div>
       <button class="tool-btn" data-tool="multiline" title="Route: multi-segment run, snapped, rounded joints"><svg width="20" height="20" viewBox="0 0 24 24"><polyline points="3,18 8,18 8,6 20,6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="3" cy="18" r="1.8" fill="currentColor"/><circle cx="20" cy="6" r="1.8" fill="currentColor"/></svg></button>
       <div class="tool-label">Route</div>
       <button class="tool-btn" data-tool="ductrun" title="Duct Run: place air terminal + flex duct + route in sequence"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="12" width="10" height="10"/><line x1="1" y1="12" x2="11" y2="22"/><line x1="1" y1="22" x2="11" y2="12"/><line x1="6" y1="17" x2="20" y2="17"/><line x1="20" y1="17" x2="20" y2="3"/><polyline points="17,7 20,3 23,7"/></svg></button>
@@ -609,11 +611,16 @@ input,textarea{font-family:inherit;}
         </div>
       </div>
       <div class="tool-sep"></div>
-      <div class="whiteout-group">
-        <div class="tool-label whiteout-label">WHTOUT</div>
-        <div class="whiteout-buttons">
-          <button class="tool-btn" data-tool="whiteoutRect" title="Whiteout (rectangle)"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2"/></svg></button>
-          <button class="tool-btn" data-tool="whiteoutFreeform" title="Whiteout (freeform)"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M4 6 L11 3 L16 7 L21 6 L20 13 L22 18 L16 21 L11 18 L6 21 L3 15 L7 11 Z" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2" stroke-linejoin="round"/></svg></button>
+      <button class="tool-btn" id="whiteoutToolBtn" title="Whiteout ▸"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2"/></svg></button>
+      <div class="tool-label">Whtout ▸</div>
+      <div class="tool-flyout flyout-vertical hidden" id="whiteoutRow">
+        <div class="flyout-item" data-tool="whiteoutRect" title="Whiteout (rectangle)">
+          <button class="tool-btn" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2"/></svg></button>
+          <span class="fly-label">Rect</span>
+        </div>
+        <div class="flyout-item" data-tool="whiteoutFreeform" title="Whiteout (freeform)">
+          <button class="tool-btn" tabindex="-1"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M4 6 L11 3 L16 7 L21 6 L20 13 L22 18 L16 21 L11 18 L6 21 L3 15 L7 11 Z" fill="white" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2.5 2" stroke-linejoin="round"/></svg></button>
+          <span class="fly-label">Freeform</span>
         </div>
       </div>
       <button class="whiteout-lock-btn" id="whiteoutLockBtn" title="Unlock whiteouts to edit them (locks out every other tool until you lock again)"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></button>
@@ -803,7 +810,7 @@ const state = {
   lastModified: null,
   activeSheetIndex: 0,
   pdfDoc: null, pageViewport: null,
-  tool: 'pan', color: '#FF0000', thickness: 2, lineType: 'solid', shapeType: 'circle', symbolType: 'flexduct',
+  tool: 'select', color: '#FF0000', thickness: 2, lineType: 'solid', shapeType: 'circle', symbolType: 'flexduct',
   dirty: false,
   drawing: false, currentStroke: null,
   multiPoints: null, routeDragging: false, routeSegmentStart: null,
@@ -875,6 +882,7 @@ const LOCKED_SHAPES = ['circle', 'square', 'triangle', 'diamond', 'hexagon'];
 const GROUPABLE_TYPES = ['line', 'multiline', 'freehand', 'shape', 'symbol', 'label', 'note', 'hatchline', 'hatcharea', 'dimension', 'elevation', 'equipment', 'photo', 'airOutletTag', 'damperTag', 'keynotetag'];
 const AXIS_SNAP_THRESHOLD = 6; // degrees — Dimension tool snaps only near horizontal/vertical, else free angle
 const JOINT_RADIUS = 15; // fixed fillet radius for multi-segment corners (diagrammatic, not exact)
+let sessionJointRadius = null; // user-set override (inches → px via calibration); null = use JOINT_RADIUS
 const PALETTE = ['#FF0000', '#00FF00', '#0000FF', '#FF8000', '#FF00FF', '#000000', '#2563A8', '#B45309'];
 const COLOR_NAMES = { '#FF0000':'Red','#00FF00':'Green','#0000FF':'Blue','#FF8000':'Orange','#FF00FF':'Magenta','#000000':'Black','#2563A8':'KN Blue','#B45309':'KN Amber' };
 const STROKE_NAMES = { 2:'Thin', 4:'Medium', 7:'Thick' };
@@ -1391,7 +1399,7 @@ function exitToBlankCanvas(){
   state.selectedMarkupId = null;
   state.multiSelectedIds = new Set();
   state.dirty = false;
-  state.tool = 'pan';
+  state.tool = 'select';
   state.naturalWidth = 0;
   state.naturalHeight = 0;
   state.pageViewport = null;
@@ -2542,6 +2550,7 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     if(state.filletMode && btn.dataset.tool !== 'fillet') exitFilletMode();
     if(state.tool !== 'shape') $('#shapeRow').classList.add('hidden');
     if(state.tool !== 'symbol') $('#symbolRow').classList.add('hidden');
+    if(state.tool !== 'whiteoutRect' && state.tool !== 'whiteoutFreeform') { const wr = $('#whiteoutRow'); if(wr) wr.classList.add('hidden'); }
     if(state.tool !== 'mselect'){
       state.multiSelectedIds.clear();
       state.marqueeStart = null;
@@ -2552,6 +2561,7 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     $('#canvasArea').classList.remove('panning');
     clearMarkupActionButtons();
     hideRunDoneBtn();
+    if(typeof hideDistEntryHud === 'function') hideDistEntryHud();
     updatePickersVisibility();
     drawAllMarkups();
     if(state.tool === 'airOutletTag'){
@@ -2574,6 +2584,18 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     if(mCv) mCv.classList.toggle('erase-active', state.tool === 'erase');
   });
 });
+
+// Route (multiline) button also opens the Joint Radius Modal so user can tune
+// corner rounding before or during drawing.
+(function(){
+  const mlBtn = document.querySelector('[data-tool="multiline"]');
+  if(mlBtn){
+    mlBtn.addEventListener('click', () => {
+      // Short delay so global handler finishes first (state.tool already set)
+      setTimeout(() => { if(state.tool === 'multiline') showJointRadiusModal(); }, 15);
+    });
+  }
+})();
 
 // Governs hit-testing everywhere a markup could be selected/clicked. Locked
 // whiteouts are invisible to clicks in normal mode (so drawing/placing things
@@ -2992,6 +3014,31 @@ function setupToolFlyoutToggle(toolName, flyoutId, btnEl){
 }
 setupToolFlyoutToggle('shape', 'shapeRow');
 setupToolFlyoutToggle('symbol', 'symbolRow');
+// Whiteout flyout setup
+(function(){
+  const woBtn = $('#whiteoutToolBtn');
+  if(!woBtn) return;
+  woBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const flyout = $('#whiteoutRow');
+    if(!flyout) return;
+    if(flyout.classList.contains('hidden')) openToolFlyout(null, 'whiteoutRow', woBtn);
+    else flyout.classList.add('hidden');
+  });
+  document.querySelectorAll('#whiteoutRow .flyout-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const tool = item.dataset.tool;
+      if(!tool) return;
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+      woBtn.classList.add('active');
+      document.querySelectorAll('#whiteoutRow .flyout-item').forEach(it => it.classList.remove('active'));
+      item.classList.add('active');
+      $('#whiteoutRow').classList.add('hidden');
+      switchToTool(tool);
+    });
+  });
+})();
 // Tags flyout setup
 (function(){
   const tagsBtn = $('#tagsToolBtn');
@@ -3688,6 +3735,7 @@ function onPointerMove(e){
     state.currentStroke.p1 = lineSn ? lineSn.pt : angleSnap(state.currentStroke.p0, p);
     drawAllMarkups();
     drawLine(state.currentStroke);
+    if(typeof updateDistEntryHud === 'function') updateDistEntryHud(state.currentStroke.p0, state.currentStroke.p1, e.clientX, e.clientY);
   } else if(state.tool === 'shape' && state.drawing){
     const isArrowMove = state.shapeType === 'arrowFilled' || state.shapeType === 'arrowOutline';
     if(isArrowMove){
@@ -3722,7 +3770,10 @@ function onPointerMove(e){
     if(state.tool === 'hatchline') drawHatchLinePreview(state.multiPoints.concat([snapped]));
     else drawMultilinePreview(state.multiPoints.concat([snapped]));
     // Live length readout update during drag (includes in-progress segment)
-    if(state.tool === 'multiline') updateDuctRunLengthDisplay(snapped);
+    if(state.tool === 'multiline'){
+      updateDuctRunLengthDisplay(snapped);
+      if(typeof updateDistEntryHud === 'function') updateDistEntryHud(state.routeSegmentStart, snapped, e.clientX, e.clientY);
+    }
   } else if(state.tool === 'hatcharea' && state.multiPoints){
     drawAllMarkups();
     let hatchPreviewPt = p;
@@ -3891,6 +3942,8 @@ function onPointerUp(e){
     const dist = Math.hypot(snapped.x - state.routeSegmentStart.x, snapped.y - state.routeSegmentStart.y);
     if(dist > 4) state.multiPoints.push(snapped);
     positionRunDoneBtn();
+    if(typeof hideDistEntryHud === 'function') hideDistEntryHud();
+    if(state.tool === 'multiline') updateDuctRunLengthDisplay(null);
     drawAllMarkups();
     // Keep the committed-so-far polyline visible after the lift — it isn't a
     // saved markup yet, so drawAllMarkups() alone won't render it; without
@@ -3930,12 +3983,8 @@ function onPointerUp(e){
     return;
   }
   if((state.tool === 'pan' || state.tool === 'select') && state.panState){
-    const dragDist = Math.hypot(e.clientX - state.panState.startX, e.clientY - state.panState.startY);
     state.panState = null;
     $('#canvasArea').classList.remove('panning');
-    if(dragDist < 8 && checkDoubleTap(e)){
-      switchToTool(state.tool === 'pan' ? 'select' : 'pan');
-    }
     return;
   }
 
@@ -3968,6 +4017,7 @@ function onPointerUp(e){
   } else if(state.tool === 'line' && state.drawing){
     state.drawing = false;
     state.snapPoint = null;
+    if(typeof hideDistEntryHud === 'function') hideDistEntryHud();
     if(Math.hypot(state.currentStroke.p1.x - state.currentStroke.p0.x, state.currentStroke.p1.y - state.currentStroke.p0.y) > 4){
       state.currentStroke.createdAt = Date.now();
       activeSheet().markups.push(state.currentStroke);
@@ -4047,53 +4097,89 @@ function onPointerUp(e){
 // Duct run (multiline) length readout — computed from state.multiPoints
 // using scale calibration, displayed as a small chip above the last committed point.
 // Pass an optional livePt (canvas coords) to include the in-progress drag segment.
-function updateDuctRunLengthDisplay(livePt){
-  let chip = $('#ductRunLenChip');
-  if(!chip){
-    chip = document.createElement('div');
-    chip.id = 'ductRunLenChip';
-    chip.style.cssText = 'position:fixed;background:#1B2A41;color:#CBD8EA;font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;z-index:60;pointer-events:none;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.28);';
-    document.body.appendChild(chip);
+function _pxToFtInLabel(px, cal){
+  if(!cal || !cal.pixelDist || !cal.realLength || px < 0.5) return null;
+  const ft = px * (cal.realLength / cal.pixelDist);
+  const f = Math.floor(ft);
+  const i = Math.round((ft - f) * 12);
+  return i === 0 ? `${f}′` : `${f}′ ${i}″`;
+}
+function _getOrCreateChip(id, extraCss){
+  let c = document.getElementById(id);
+  if(!c){
+    c = document.createElement('div');
+    c.id = id;
+    c.style.cssText = 'position:fixed;background:#1B2A41;color:#CBD8EA;font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;z-index:60;pointer-events:none;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.28);display:none;' + (extraCss||'');
+    document.body.appendChild(c);
   }
+  return c;
+}
+function updateDuctRunLengthDisplay(livePt){
+  const totalChip = _getOrCreateChip('mlTotalChip', '');
+  const segChip   = _getOrCreateChip('mlSegChip', 'opacity:0.72;font-size:10px;padding:2px 7px;');
   const pts = state.multiPoints;
   const sh = activeSheet();
   const cal = sh && sh.scaleCalibration;
-  // Need at least 2 committed pts OR 1 committed + livePt to show anything
-  const effectivePts = (livePt && pts && pts.length >= 1) ? pts.concat([livePt]) : pts;
-  if(!effectivePts || effectivePts.length < 2 || !cal || !cal.pixelDist || !cal.realLength){
-    chip.style.display = 'none';
-    return;
-  }
-  // Sum pixel lengths then convert via calibration (pixelDist px = realLength ft)
-  let totalPx = 0;
-  for(let i = 0; i < effectivePts.length - 1; i++)
-    totalPx += Math.hypot(effectivePts[i+1].x - effectivePts[i].x, effectivePts[i+1].y - effectivePts[i].y);
-  const totalFt = totalPx * (cal.realLength / cal.pixelDist);
-  const ft = Math.floor(totalFt);
-  const inches = Math.round((totalFt - ft) * 12);
-  const label = inches === 0 ? `${ft}′` : `${ft}′ ${inches}″`;
-  chip.textContent = label;
-  // Position: above the last committed canvas point (projected to screen coords)
-  // Fall back to Done button if canvas geometry unavailable
-  const anchorPt = pts && pts.length > 0 ? pts[pts.length - 1] : null;
   const rb = $('#runDoneBtn');
   const canvasVisible = rb && !rb.classList.contains('hidden');
-  if(anchorPt && mCanvas && canvasVisible){
+
+  // Committed total length (pts only, no livePt)
+  let committedPx = 0;
+  if(pts && pts.length >= 2){
+    for(let i = 0; i < pts.length - 1; i++)
+      committedPx += Math.hypot(pts[i+1].x - pts[i].x, pts[i+1].y - pts[i].y);
+  }
+  const totalLabel = _pxToFtInLabel(committedPx, cal);
+
+  // Live segment length (last committed pt → livePt)
+  let segPx = 0;
+  if(livePt && pts && pts.length >= 1){
+    const last = pts[pts.length - 1];
+    segPx = Math.hypot(livePt.x - last.x, livePt.y - last.y);
+  }
+  const segLabel = _pxToFtInLabel(segPx, cal);
+
+  // Anchor position: last committed point projected to screen
+  const anchorPt = pts && pts.length > 0 ? pts[pts.length - 1] : null;
+  function screenPos(canvasPt){
+    if(!canvasPt || !mCanvas || !canvasVisible) return null;
     const mRect = mCanvas.getBoundingClientRect();
-    const scaleX = mRect.width / mCanvas.width;
-    const scaleY = mRect.height / mCanvas.height;
-    const screenX = mRect.left + anchorPt.x * scaleX;
-    const screenY = mRect.top  + anchorPt.y * scaleY;
-    chip.style.display = 'block';
-    chip.style.left = Math.max(4, screenX - 30) + 'px';
-    chip.style.top  = (screenY - 36) + 'px';
-  } else if(rb && canvasVisible){
+    return {
+      x: mRect.left + canvasPt.x * (mRect.width / mCanvas.width),
+      y: mRect.top  + canvasPt.y * (mRect.height / mCanvas.height)
+    };
+  }
+  const anchor = screenPos(anchorPt);
+
+  if(totalLabel && anchor){
+    totalChip.textContent = '∑ ' + totalLabel;
+    totalChip.style.display = 'block';
+    totalChip.style.left = Math.max(4, anchor.x - 36) + 'px';
+    totalChip.style.top  = (anchor.y - 42) + 'px';
+  } else if(totalLabel && rb && canvasVisible){
     const rRect = rb.getBoundingClientRect();
-    chip.style.display = 'block';
-    chip.style.left = rRect.left + 'px';
-    chip.style.top  = (rRect.top - 28) + 'px';
+    totalChip.textContent = '∑ ' + totalLabel;
+    totalChip.style.display = 'block';
+    totalChip.style.left = rRect.left + 'px';
+    totalChip.style.top  = (rRect.top - 28) + 'px';
   } else {
-    chip.style.display = 'none';
+    totalChip.style.display = 'none';
+  }
+
+  if(segLabel && livePt && anchor){
+    // Position seg chip near the live cursor (livePt projected to screen)
+    const liveSc = screenPos(livePt);
+    segChip.textContent = segLabel;
+    segChip.style.display = 'block';
+    if(liveSc){
+      segChip.style.left = Math.max(4, liveSc.x + 10) + 'px';
+      segChip.style.top  = (liveSc.y - 28) + 'px';
+    } else {
+      segChip.style.left = totalChip.style.left;
+      segChip.style.top  = (parseInt(totalChip.style.top) - 22) + 'px';
+    }
+  } else {
+    segChip.style.display = 'none';
   }
 }
 
@@ -4128,7 +4214,8 @@ function hideRunDoneBtn(){
   $('#runDoneBtn').classList.add('hidden');
   $('#multilineUndoBtn').classList.add('hidden');
   hideMSelectClearBtn();
-  const lc = $('#ductRunLenChip'); if(lc) lc.style.display = 'none';
+  const lc = document.getElementById('mlTotalChip'); if(lc) lc.style.display = 'none';
+  const ls = document.getElementById('mlSegChip'); if(ls) ls.style.display = 'none';
   // If we were in an airOutletTag placement run, end it and clear all ghost state
   if(state.airOutletRunItem){
     clearAirOutletSessionTimer();
@@ -4174,6 +4261,8 @@ function finishMultiline(){
       markDirty();
       renderKeyNotePanel();
       createdId = markup.id;
+      // Restore global color if duct run had temporarily overridden it
+      if(state._preRunColor !== undefined){ state.color = state._preRunColor; delete state._preRunColor; }
     } else if(state.tool === 'hatchline'){
       const markup = { id: genId(), type: 'hatchline', color: HATCH_COLOR, thickness: state.thickness, points: state.multiPoints, note: '', createdAt: Date.now() };
       activeSheet().markups.push(markup);
@@ -4185,6 +4274,7 @@ function finishMultiline(){
   state.multiPoints = null;
   state.routeDragging = false;
   state.routeSegmentStart = null;
+  if(typeof hideDistEntryHud === 'function') hideDistEntryHud();
   hideRunDoneBtn();
   if(createdId) switchToSelectAndSelect(createdId);
   else drawAllMarkups();
@@ -4198,6 +4288,170 @@ $('#multilineUndoBtn').addEventListener('click', () => {
     else drawMultilinePreview(state.multiPoints);
   }
 });
+
+// ---- Direct Distance Entry HUD ----------------------------------------
+// Floating chip shown while drawing a line segment (line tool drag or
+// multiline segment drag). Shows live Length + Angle fields; user can edit
+// either and hit Enter to commit the endpoint at the exact typed values.
+(function(){
+  const hud = document.createElement('div');
+  hud.id = 'distEntryHud';
+  hud.style.cssText = 'position:fixed;display:none;align-items:center;gap:6px;background:#1B2A41;border-radius:12px;padding:5px 10px;z-index:90;box-shadow:0 2px 12px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.08);';
+  hud.innerHTML = `
+    <span style="color:#7eb3d8;font-size:10px;font-weight:700;letter-spacing:.04em;">L</span>
+    <input id="hudLen" type="text" placeholder="1'-6&quot;" autocomplete="off"
+      style="width:72px;background:#0e1a28;color:#e8f0fa;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;border:1.5px solid #2a4060;border-radius:7px;padding:3px 7px;outline:none;">
+    <span style="color:#7eb3d8;font-size:10px;font-weight:700;letter-spacing:.04em;">∠</span>
+    <input id="hudAngle" type="text" placeholder="90°" autocomplete="off"
+      style="width:54px;background:#0e1a28;color:#e8f0fa;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;border:1.5px solid #2a4060;border-radius:7px;padding:3px 7px;outline:none;">
+    <span style="color:#4a6a8a;font-size:10px;">↵</span>`;
+  document.body.appendChild(hud);
+
+  const hudLen   = document.getElementById('hudLen');
+  const hudAngle = document.getElementById('hudAngle');
+
+  // Parse architectural length string → feet (float), or null
+  function parseLen(str){
+    str = str.trim();
+    let m;
+    // 1'6" or 1' 6"
+    m = str.match(/^(\d+\.?\d*)'\s*(?:(\d+\.?\d*)")?$/);
+    if(m) return parseFloat(m[1]) + (m[2] ? parseFloat(m[2])/12 : 0);
+    // 18"
+    m = str.match(/^(\d+\.?\d*)"$/);
+    if(m) return parseFloat(m[1])/12;
+    // bare number → feet
+    m = str.match(/^(\d+\.?\d*)$/);
+    if(m) return parseFloat(m[1]);
+    return null;
+  }
+
+  // Convert feet → canvas pixels using calibration
+  function ftToPx(ft){
+    const sh = activeSheet();
+    const cal = sh && sh.scaleCalibration;
+    if(!cal || !cal.pixelDist || !cal.realLength) return null;
+    return ft * (cal.pixelDist / cal.realLength);
+  }
+
+  // Get the origin of the current segment in canvas coords
+  function segOrigin(){
+    if(state.tool === 'line' && state.drawing && state.currentStroke) return state.currentStroke.p0;
+    if(state.tool === 'multiline' && state.routeDragging && state.routeSegmentStart) return state.routeSegmentStart;
+    return null;
+  }
+
+  // Format ft-in for length input
+  function fmtFtIn(ft){
+    const f = Math.floor(ft);
+    const i = Math.round((ft - f) * 12);
+    if(i === 0) return `${f}'`;
+    return `${f}'${i}"`;
+  }
+
+  // Compute endpoint from origin + lengthPx + angleDeg (display: 0=East,90=North)
+  function computeEndpoint(origin, lengthPx, angleDeg){
+    const rad = -angleDeg * Math.PI / 180; // flip y: display up = canvas negative y
+    return { x: origin.x + Math.cos(rad) * lengthPx, y: origin.y + Math.sin(rad) * lengthPx };
+  }
+
+  // Commit the typed values
+  function commitHud(){
+    const origin = segOrigin();
+    if(!origin) return;
+    const lenFt = parseLen(hudLen.value);
+    const angleDeg = parseFloat(hudAngle.value);
+    if(lenFt === null || isNaN(lenFt) || lenFt <= 0){ hudLen.style.borderColor = '#c44'; return; } else { hudLen.style.borderColor = '#2a4060'; }
+    const lenPx = ftToPx(lenFt);
+    if(lenPx === null){ hudLen.style.borderColor = '#c44'; return; }
+    const angle = isNaN(angleDeg) ? 0 : angleDeg;
+    const ep = computeEndpoint(origin, lenPx, angle);
+
+    if(state.tool === 'line' && state.drawing && state.currentStroke){
+      // Set endpoint and finalize line
+      state.currentStroke.p1 = ep;
+      state.drawing = false;
+      state.snapPoint = null;
+      if(Math.hypot(ep.x - origin.x, ep.y - origin.y) > 4){
+        state.currentStroke.createdAt = Date.now();
+        activeSheet().markups.push(state.currentStroke);
+        markDirty();
+        renderKeyNotePanel();
+        const cid = state.currentStroke.id;
+        state.currentStroke = null;
+        hideDistEntryHud();
+        drawAllMarkups();
+        switchToSelectAndSelect(cid);
+      } else {
+        state.currentStroke = null;
+        hideDistEntryHud();
+        drawAllMarkups();
+      }
+    } else if(state.tool === 'multiline' && state.routeDragging){
+      // Commit this segment endpoint, set up next segment
+      if(!state.multiPoints) state.multiPoints = [origin];
+      state.multiPoints.push(ep);
+      state.routeSegmentStart = ep;
+      state.routeDragging = false;
+      drawAllMarkups();
+      drawMultilinePreview(state.multiPoints);
+      updateDuctRunLengthDisplay(null);
+      hideDistEntryHud();
+    }
+  }
+
+  // Expose show/hide/update globally
+  window.showDistEntryHud = function(screenX, screenY){
+    hud.style.display = 'flex';
+    // Position below-right of anchor; clamp to viewport
+    const W = window.innerWidth, H = window.innerHeight;
+    const hw = 240, hh = 38;
+    let lx = Math.min(screenX + 14, W - hw - 8);
+    let ly = Math.min(screenY + 20, H - hh - 8);
+    hud.style.left = Math.max(4, lx) + 'px';
+    hud.style.top  = Math.max(4, ly) + 'px';
+  };
+
+  window.hideDistEntryHud = function(){
+    hud.style.display = 'none';
+    hudLen.value = '';
+    hudAngle.value = '';
+  };
+
+  // Update live values from current drag position
+  window.updateDistEntryHud = function(origin, currentPt, screenX, screenY){
+    if(!origin) return;
+    const dx = currentPt.x - origin.x, dy = currentPt.y - origin.y;
+    const pxDist = Math.hypot(dx, dy);
+    // Only update fields if user hasn't typed into them
+    if(document.activeElement !== hudLen){
+      const sh = activeSheet();
+      const cal = sh && sh.scaleCalibration;
+      if(cal && cal.pixelDist && cal.realLength){
+        const ft = pxDist * (cal.realLength / cal.pixelDist);
+        hudLen.value = fmtFtIn(ft);
+      }
+    }
+    if(document.activeElement !== hudAngle){
+      const displayDeg = -Math.atan2(dy, dx) * 180 / Math.PI; // 0=East, 90=North
+      hudAngle.value = Math.round(displayDeg * 10) / 10;
+    }
+    if(document.activeElement !== hudLen && document.activeElement !== hudAngle){
+      window.showDistEntryHud(screenX, screenY);
+    }
+  };
+
+  [hudLen, hudAngle].forEach(inp => {
+    inp.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){ e.preventDefault(); commitHud(); }
+      if(e.key === 'Escape'){ e.preventDefault(); hideDistEntryHud(); }
+      e.stopPropagation();
+    });
+    inp.addEventListener('click', (e) => e.stopPropagation());
+    inp.addEventListener('pointerdown', (e) => e.stopPropagation());
+  });
+})();
+// ---- End Direct Distance Entry HUD ------------------------------------
 $('#runDoneBtn').addEventListener('click', () => {
   if(state.airOutletRunItem){
     // End air outlet placement run
@@ -4500,7 +4754,9 @@ function handleDuctRunTap(p){
 
     clearDuctRunState();
     // Transition to multiline tool with the first point pre-seeded
-    // Carry the run color into the multiline tool so the duct line matches
+    // Carry the run color into the multiline tool so the duct line matches.
+    // Save and restore global color after to prevent bleed into other tools.
+    state._preRunColor = state.color;
     state.color = runColor;
     switchToTool('multiline');
     state.multiPoints = [mlStart];
@@ -5460,6 +5716,29 @@ function showMarkupActionButtons(markupId){
   const buttonRow = document.createElement('div');
   buttonRow.className = 'markup-action-row';
   buttonRow.style.cssText = 'display:flex;align-items:center;gap:5px;flex:1;overflow:hidden;';
+
+  // ---- Total length badge — far left, for line and multiline only ----
+  if(m.type === 'line' || m.type === 'multiline'){
+    const sh2 = activeSheet();
+    const cal2 = sh2 && sh2.scaleCalibration;
+    let totalPx2 = 0;
+    if(m.type === 'line'){
+      totalPx2 = Math.hypot((m.p1.x||0)-(m.p0.x||0), (m.p1.y||0)-(m.p0.y||0));
+    } else if(m.points && m.points.length >= 2){
+      for(let i = 0; i < m.points.length - 1; i++)
+        totalPx2 += Math.hypot(m.points[i+1].x - m.points[i].x, m.points[i+1].y - m.points[i].y);
+    }
+    const lenLabel2 = _pxToFtInLabel(totalPx2, cal2);
+    if(lenLabel2){
+      const lenBadge = document.createElement('span');
+      lenBadge.textContent = lenLabel2;
+      lenBadge.title = 'Total length';
+      lenBadge.style.cssText = 'font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;color:var(--text-secondary,#8899aa);white-space:nowrap;padding:2px 6px;background:var(--panel-bg,rgba(255,255,255,.06));border-radius:6px;';
+      buttonRow.appendChild(lenBadge);
+      buttonRow.appendChild(Object.assign(document.createElement('span'), {className:'action-bar-divider'}));
+    }
+  }
+
   if(m.type === 'label' || m.type === 'note' || m.type === 'dimension'){
     const editBtn = document.createElement('button');
     editBtn.textContent = m.text ? 'Edit text' : 'Add text';
@@ -5479,6 +5758,26 @@ function showMarkupActionButtons(markupId){
       });
     });
     buttonRow.appendChild(editBtn);
+    // Restore calculated length button — only for dimensions with a custom override
+    if(m.type === 'dimension'){
+      const restoreBtn = document.createElement('button');
+      restoreBtn.textContent = 'Restore Length';
+      restoreBtn.title = 'Restore the auto-calculated dimension length';
+      restoreBtn.style.opacity = m.textIsCustom ? '1' : '0.4';
+      restoreBtn.style.cursor = m.textIsCustom ? 'pointer' : 'default';
+      restoreBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const pixelDist = Math.hypot(m.p1.x - m.p0.x, m.p1.y - m.p0.y);
+        const suggestion = suggestDimensionLength(pixelDist);
+        if(suggestion){
+          m.text = suggestion;
+          m.textIsCustom = false;
+          markDirty(); drawAllMarkups(); renderKeyNotePanel();
+          showMarkupActionButtons(markupId);
+        }
+      });
+      buttonRow.appendChild(restoreBtn);
+    }
   }
   // Scale reference is now set via the Scale chip in the action bar (not per-dimension)
   if(m.type === 'elevation'){
@@ -5623,39 +5922,11 @@ function showMarkupActionButtons(markupId){
     });
     buttonRow.appendChild(flexToggleBtn);
   }
-  if(m.type === 'line' || m.type === 'multiline'){
-    // Line Type dropdown button (replaces old Hatch toggle)
-    const lt = m.lineType || (m.hatched ? 'hatch' : 'solid');
-    const ltBtn = document.createElement('button');
-    ltBtn.className = 'picker-dd-btn';
-    const ltSvg = makeLineTypeSvg(lt, 36, 12);
-    ltBtn.appendChild(ltSvg);
-    const ltLbl = document.createElement('span');
-    ltLbl.textContent = (LINE_TYPE_MAP[lt] || LINE_TYPES[0]).label;
-    ltBtn.appendChild(ltLbl);
-    const ltArr = document.createElement('span');
-    ltArr.className = 'picker-dd-arrow';
-    ltArr.textContent = '▾';
-    ltBtn.appendChild(ltArr);
-    ltBtn.title = 'Line type';
-    ltBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      _openLineTypeDropdown(ltBtn, (key) => {
-        m.lineType = key;
-        m.hatched = (key === 'hatch'); // keep backward compat flag in sync
-        markDirty();
-        drawAllMarkups();
-        renderKeyNotePanel();
-        showMarkupActionButtons(markupId);
-      });
-    });
-    buttonRow.appendChild(ltBtn);
-  }
   // Split button — any multiline with at least 2 points (one segment)
   if(m.type === 'multiline' && m.points && m.points.length >= 2){
     const splitBtn = document.createElement('button');
-    splitBtn.textContent = 'Split';
-    splitBtn.title = 'Split this route into two at a point you tap';
+    splitBtn.textContent = 'Break Line';
+    splitBtn.title = 'Break this route into two at a point you tap';
     splitBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       enterSplitMode(markupId);
@@ -5665,7 +5936,7 @@ function showMarkupActionButtons(markupId){
   // Remove Point button — any multiline with at least 3 points (so removing one leaves at least 2)
   if(m.type === 'multiline' && m.points && m.points.length >= 3){
     const rmPtBtn = document.createElement('button');
-    rmPtBtn.textContent = 'Remove Pt';
+    rmPtBtn.textContent = 'Remove Point';
     rmPtBtn.title = 'Tap a corner point on the route to remove it';
     rmPtBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -5700,18 +5971,7 @@ function showMarkupActionButtons(markupId){
     buttonRow.appendChild(editBtn);
   }
   if(m.type !== 'airOutletTag' && m.type !== 'damperTag'){
-    if(m.type === 'multiline'){
-      // Multiline: Offset button launches the offset distance modal then enters picker mode
-      const offsetBtn = document.createElement('button');
-      offsetBtn.textContent = 'Offset';
-      offsetBtn.title = 'Copy this route parallel at a specified distance';
-      offsetBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        clearMarkupActionButtons();
-        switchToTool('offset');
-        showOffsetDistanceModal();
-      });
-      buttonRow.appendChild(offsetBtn);
+    if(false){ // Offset button removed
     } else {
       const dupBtn = document.createElement('button');
       dupBtn.textContent = 'Duplicate';
@@ -5772,6 +6032,34 @@ function showMarkupActionButtons(markupId){
       });
     });
     buttonRow.appendChild(strokeBtn);
+  }
+
+  // ---- Line Type dropdown — right after stroke, only for line/multiline ----
+  if(m.type === 'line' || m.type === 'multiline'){
+    buttonRow.appendChild(Object.assign(document.createElement('span'), {className:'action-bar-divider'}));
+    const lt = m.lineType || (m.hatched ? 'hatch' : 'solid');
+    const ltBtn = document.createElement('button');
+    ltBtn.className = 'picker-dd-btn';
+    const ltSvg = makeLineTypeSvg(lt, 36, 12);
+    ltBtn.appendChild(ltSvg);
+    const ltLbl = document.createElement('span');
+    ltLbl.textContent = (LINE_TYPE_MAP[lt] || LINE_TYPES[0]).label;
+    ltBtn.appendChild(ltLbl);
+    const ltArr = document.createElement('span');
+    ltArr.className = 'picker-dd-arrow';
+    ltArr.textContent = '▾';
+    ltBtn.appendChild(ltArr);
+    ltBtn.title = 'Line type';
+    ltBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _openLineTypeDropdown(ltBtn, (key) => {
+        m.lineType = key;
+        m.hatched = (key === 'hatch');
+        markDirty(); drawAllMarkups(); renderKeyNotePanel();
+        showMarkupActionButtons(markupId);
+      });
+    });
+    buttonRow.appendChild(ltBtn);
   }
 
   // ---- Delete button — right after stroke ----
@@ -6512,7 +6800,7 @@ function drawMultiline(m){
   const lt = m.lineType || (m.hatched ? 'hatch' : 'solid');
   const ltDef = LINE_TYPE_MAP[lt];
   if(ltDef && ltDef.dash && ltDef.dash.length > 0) ctx.setLineDash(ltDef.dash);
-  drawRoundedPolyline(ctx, m.points, JOINT_RADIUS);
+  drawRoundedPolyline(ctx, m.points, sessionJointRadius ?? JOINT_RADIUS);
   ctx.setLineDash([]);
   if(lt === 'hatch') drawHatchTicksAlongPath(ctx, m.points);
 }
@@ -6525,7 +6813,7 @@ function drawMultilinePreview(points){
   const lt = state.lineType || 'solid';
   const ltDef = LINE_TYPE_MAP[lt];
   if(ltDef && ltDef.dash && ltDef.dash.length > 0) ctx.setLineDash(ltDef.dash);
-  drawRoundedPolyline(ctx, points, JOINT_RADIUS);
+  drawRoundedPolyline(ctx, points, sessionJointRadius ?? JOINT_RADIUS);
   ctx.setLineDash([]);
   if(lt === 'hatch') drawHatchTicksAlongPath(ctx, points);
   ctx.restore();
@@ -7070,6 +7358,69 @@ function showFilletRadiusModal(){
   card.querySelector('#filletCancel').addEventListener('click', () => { root.innerHTML = ''; switchToTool('select'); });
   backdrop.addEventListener('click', (e) => { if(e.target === backdrop){ root.innerHTML = ''; switchToTool('select'); } });
   card.addEventListener('keydown', (e) => { if(e.key === 'Enter') confirm(); if(e.key === 'Escape'){ root.innerHTML = ''; switchToTool('select'); } });
+}
+
+// Joint Radius Modal — called when user taps the Route (multiline) tool button.
+// Sets sessionJointRadius (in canvas pixels) for all subsequent multiline renders.
+function showJointRadiusModal(){
+  const root = $('#modalRoot');
+  if(!root) return;
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  const card = document.createElement('div');
+  card.className = 'modal-card';
+
+  const sh = activeSheet();
+  const cal = sh && sh.scaleCalibration;
+  const hasScale = cal && cal.pixelDist && cal.realLength;
+
+  // Display current radius in inches for the default value
+  let currentIn = 0;
+  if(sessionJointRadius !== null && hasScale){
+    const pxPerIn = (cal.pixelDist / cal.realLength) / 12;
+    currentIn = Math.round(sessionJointRadius / pxPerIn * 2) / 2; // round to nearest 0.5″
+  } else if(sessionJointRadius === null && hasScale){
+    const pxPerIn = (cal.pixelDist / cal.realLength) / 12;
+    currentIn = Math.round(JOINT_RADIUS / pxPerIn * 2) / 2;
+  }
+
+  card.innerHTML = `
+    <div class="disp">Joint Radius</div>
+    <div class="modal-sub">${hasScale ? 'Sets the corner rounding radius for all route lines.' : '<span style="color:var(--warn)">⚠ No scale set — radius uses screen pixels as a fallback.</span>'}</div>
+    <div style="display:flex;align-items:center;gap:10px;margin:12px 0 4px;">
+      <label style="font-size:12px;font-weight:600;min-width:32px;">Inches</label>
+      <input id="jrIn" type="number" min="0" max="120" step="0.5" value="${currentIn}" style="width:80px;font-size:15px;font-family:'JetBrains Mono',monospace;padding:6px 8px;border:1.5px solid var(--line);border-radius:8px;">
+    </div>
+    <div class="modal-row" style="gap:8px;margin-top:8px;">
+      <button type="button" class="save" id="jrOK">Set & Draw</button>
+      <button type="button" class="cancel" id="jrReset">Reset Default</button>
+      <button type="button" class="cancel" id="jrCancel">Cancel</button>
+    </div>`;
+  backdrop.appendChild(card);
+  root.appendChild(backdrop);
+
+  const inIn = card.querySelector('#jrIn');
+  setTimeout(() => { inIn.focus(); inIn.select(); }, 60);
+
+  function confirm(){
+    const inch = parseFloat(inIn.value);
+    if(isNaN(inch) || inch < 0){ inIn.style.borderColor = 'var(--danger)'; return; }
+    if(hasScale){
+      const pxPerFt = cal.pixelDist / cal.realLength;
+      sessionJointRadius = (inch / 12) * pxPerFt;
+    } else {
+      sessionJointRadius = inch > 0 ? inch * 4 : JOINT_RADIUS; // fallback: 4px per inch
+    }
+    root.innerHTML = '';
+    drawAllMarkups();
+  }
+
+  card.querySelector('#jrOK').addEventListener('click', confirm);
+  card.querySelector('#jrReset').addEventListener('click', () => { sessionJointRadius = null; root.innerHTML = ''; drawAllMarkups(); });
+  card.querySelector('#jrCancel').addEventListener('click', () => { root.innerHTML = ''; });
+  backdrop.addEventListener('click', (e) => { if(e.target === backdrop) root.innerHTML = ''; });
+  card.addEventListener('keydown', (e) => { if(e.key === 'Enter') confirm(); if(e.key === 'Escape') root.innerHTML = ''; });
 }
 
 function enterFilletMode(radiusPx){
