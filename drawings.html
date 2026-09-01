@@ -586,7 +586,7 @@ input,textarea{font-family:inherit;}
           <span class="fly-label">Dim</span>
         </div>
         <div class="flyout-item" data-tool="angulardim" title="Angular Dim — free angle">
-          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="3" y1="3" x2="21" y2="21"/><line x1="21" y1="3" x2="3" y2="21"/></svg></button>
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="3" y1="18" x2="3" y2="7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="21" y1="18" x2="21" y2="7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="3" y1="13" x2="21" y2="11" stroke="currentColor" stroke-width="1.8"/><polygon points="3,13 7,10.2 7,15.8" fill="currentColor"/><polygon points="21,11 17,8.2 17,13.8" fill="currentColor"/></svg></button>
           <span class="fly-label">Ang Dim</span>
         </div>
         <div class="flyout-item" data-tool="anglemeasure" title="Angle — 3-point arc">
@@ -678,7 +678,7 @@ input,textarea{font-family:inherit;}
         <div class="flyout-item" data-symbol="union" title="Union"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24"><line x1="2" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="9" y1="7" x2="9" y2="17" stroke="currentColor" stroke-width="1.6"/><line x1="15" y1="7" x2="15" y2="17" stroke="currentColor" stroke-width="1.6"/></svg></button><span class="fly-label">Union</span></div>
         <div class="flyout-item" data-symbol="flowarrow" title="Flow direction"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24"><line x1="3" y1="12" x2="18" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><polygon points="18,7 23,12 18,17" fill="currentColor"/></svg></button><span class="fly-label">Flow</span></div>
         <div class="flyout-item" data-symbol="poc" title="POC"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M13 13 L13 2.5 A10.5 10.5 0 0 1 23.5 13 Z" fill="currentColor"/><path d="M13 13 L13 23.5 A10.5 10.5 0 0 1 2.5 13 Z" fill="currentColor"/></svg></button><span class="fly-label">POC/D</span></div>
-        <div class="flyout-item" data-symbol="airterminal" title="Air Terminal (Supply/Return/Exhaust)"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="1.3"/><line x1="12" y1="3" x2="12" y2="21" stroke="currentColor" stroke-width="1.3"/></svg></button><span class="fly-label">A/T</span></div>
+        <div class="flyout-item" data-symbol="airterminal" title="Air Terminal (Supply/Return/Exhaust)"><button class="tool-btn" tabindex="-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="3" y1="3" x2="21" y2="21"/><line x1="21" y1="3" x2="3" y2="21"/></svg></button><span class="fly-label">A/T</span></div>
       </div>
     </div>
 
@@ -4365,9 +4365,14 @@ function onPointerUp(e){
         dim.textIsCustom = (text !== suggested);
         // Position text near the dim line midpoint
         if(dim.dimMode === 'h'){
-          dim.textPos = { x: (dim.p0.x + dim.p1.x) / 2, y: dim.p1.y - 16 };
+          // Store dim line position separately; constrain both measurement points to same Y
+          dim.dimLinePos = dim.p1.y;          // dim line floats at cursor Y
+          dim.p1 = { x: dim.p1.x, y: dim.p0.y }; // p1 measurement point on same Y as p0
+          dim.textPos = { x: (dim.p0.x + dim.p1.x) / 2, y: dim.dimLinePos - 16 };
         } else if(dim.dimMode === 'v'){
-          dim.textPos = { x: dim.p1.x + 16, y: (dim.p0.y + dim.p1.y) / 2 };
+          dim.dimLinePos = dim.p1.x;          // dim line floats at cursor X
+          dim.p1 = { x: dim.p0.x, y: dim.p1.y }; // p1 measurement point on same X as p0
+          dim.textPos = { x: dim.dimLinePos + 16, y: (dim.p0.y + dim.p1.y) / 2 };
         } else {
           const dv = normalizePt(dim.p0, dim.p1);
           const perp = { x: -dv.y, y: dv.x };
@@ -5500,8 +5505,12 @@ function handlePointsForMarkup(m){
   if(m.type === 'diameterdim') return [{ key: 'move', p: m.textPos }, { key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
   if(m.type === 'dimension'){
     if(m.dimMode){
-      // H/V dim: p0 (anchor), p1 (2nd point / dim-line offset), textPos
-      return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'textPos', p: m.textPos }];
+      // H/V dim: p0 and p1 are measurement endpoints; dimLine grip slides the dim line
+      const dlp = m.dimLinePos != null ? m.dimLinePos : (m.dimMode === 'h' ? m.p1.y : m.p1.x);
+      const dimLineGrip = m.dimMode === 'h'
+        ? { x: (m.p0.x + m.p1.x) / 2, y: dlp }
+        : { x: dlp, y: (m.p0.y + m.p1.y) / 2 };
+      return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'dimLine', p: dimLineGrip }, { key: 'textPos', p: m.textPos }];
     }
     // Legacy free-angle: include extOffset midpoint grip
     const dv_h = normalizePt(m.p0, m.p1);
@@ -5653,14 +5662,16 @@ function markupContainsPoint(m, p){
   if(m.type === 'dimension'){
     if(m.textPos && Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 24) return true;
     if(m.dimMode === 'h'){
-      const dim_y = m.p1.y;
+      const dim_y = m.dimLinePos != null ? m.dimLinePos : m.p1.y;
       return distToSegment(p, {x:m.p0.x,y:dim_y}, {x:m.p1.x,y:dim_y}) < 18
-          || distToSegment(p, m.p0, {x:m.p0.x,y:dim_y}) < 18;
+          || distToSegment(p, m.p0, {x:m.p0.x,y:dim_y}) < 18
+          || distToSegment(p, m.p1, {x:m.p1.x,y:dim_y}) < 18;
     }
     if(m.dimMode === 'v'){
-      const dim_x = m.p1.x;
+      const dim_x = m.dimLinePos != null ? m.dimLinePos : m.p1.x;
       return distToSegment(p, {x:dim_x,y:m.p0.y}, {x:dim_x,y:m.p1.y}) < 18
-          || distToSegment(p, m.p0, {x:dim_x,y:m.p0.y}) < 18;
+          || distToSegment(p, m.p0, {x:dim_x,y:m.p0.y}) < 18
+          || distToSegment(p, m.p1, {x:dim_x,y:m.p1.y}) < 18;
     }
     // Legacy free-angle
     const dv = normalizePt(m.p0, m.p1);
@@ -5938,16 +5949,28 @@ function applyDragHandle(drag, p){
     }
     return;
   }
+  if(m.type === 'dimension' && m.dimMode && drag.key === 'dimLine'){
+    // Slide the floating dim line perpendicular to the measurement axis
+    if(m.dimMode === 'h'){
+      m.dimLinePos = p.y;
+      if(!m.textIsCustom) m.textPos = { x: (m.p0.x + m.p1.x) / 2, y: m.dimLinePos - 16 };
+    } else {
+      m.dimLinePos = p.x;
+      if(!m.textIsCustom) m.textPos = { x: m.dimLinePos + 16, y: (m.p0.y + m.p1.y) / 2 };
+    }
+    return;
+  }
   if(m.type === 'dimension' && m.dimMode && (drag.key === 'p0' || drag.key === 'p1')){
-    // H/V dim: move point freely; update measurement text and textPos
+    // H/V dim: move measurement point freely; update text and textPos using dimLinePos
     if(drag.key === 'p0') m.p0 = p; else m.p1 = p;
+    const dlp = m.dimLinePos != null ? m.dimLinePos : (m.dimMode === 'h' ? m.p1.y : m.p1.x);
     if(!m.textIsCustom){
       const dist = m.dimMode === 'h' ? Math.abs(m.p1.x - m.p0.x) : Math.abs(m.p1.y - m.p0.y);
       const suggestion = suggestDimensionLength(dist);
       if(suggestion) m.text = suggestion;
       m.textPos = m.dimMode === 'h'
-        ? { x: (m.p0.x + m.p1.x) / 2, y: m.p1.y - 16 }
-        : { x: m.p1.x + 16, y: (m.p0.y + m.p1.y) / 2 };
+        ? { x: (m.p0.x + m.p1.x) / 2, y: dlp - 16 }
+        : { x: dlp + 16, y: (m.p0.y + m.p1.y) / 2 };
     }
     return;
   }
@@ -8887,18 +8910,20 @@ function drawDimension(m){
   ctx.lineCap = 'round';
 
   if(m.dimMode === 'h'){
-    // Horizontal dim: dim line at p1.y, extension lines vertical from p0 and p1
-    const dim_y = m.p1.y;
-    const over = 8 * (dim_y >= m.p0.y ? 1 : -1);
+    // Horizontal dim: dim line floats at dimLinePos (Y), extension lines from p0 and p1 to it
+    const dim_y = m.dimLinePos != null ? m.dimLinePos : m.p1.y;
+    const avgY = (m.p0.y + m.p1.y) / 2;
+    const over = 8 * (dim_y >= avgY ? 1 : -1);
     ctx.beginPath(); ctx.moveTo(m.p0.x, m.p0.y); ctx.lineTo(m.p0.x, dim_y + over); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(m.p1.x, m.p1.y); ctx.lineTo(m.p1.x, dim_y + over); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(m.p0.x, dim_y); ctx.lineTo(m.p1.x, dim_y); ctx.stroke();
     drawArrowHead(ctx, {x:m.p1.x,y:dim_y}, {x:m.p0.x,y:dim_y}, m.color);
     drawArrowHead(ctx, {x:m.p0.x,y:dim_y}, {x:m.p1.x,y:dim_y}, m.color);
   } else if(m.dimMode === 'v'){
-    // Vertical dim: dim line at p1.x, extension lines horizontal from p0 and p1
-    const dim_x = m.p1.x;
-    const over = 8 * (dim_x >= m.p0.x ? 1 : -1);
+    // Vertical dim: dim line floats at dimLinePos (X), extension lines from p0 and p1 to it
+    const dim_x = m.dimLinePos != null ? m.dimLinePos : m.p1.x;
+    const avgX = (m.p0.x + m.p1.x) / 2;
+    const over = 8 * (dim_x >= avgX ? 1 : -1);
     ctx.beginPath(); ctx.moveTo(m.p0.x, m.p0.y); ctx.lineTo(dim_x + over, m.p0.y); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(m.p1.x, m.p1.y); ctx.lineTo(dim_x + over, m.p1.y); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(dim_x, m.p0.y); ctx.lineTo(dim_x, m.p1.y); ctx.stroke();
@@ -8931,21 +8956,27 @@ function drawDimensionPreview(p0, p1, dimMode){
   ctx.lineWidth = 2;
   ctx.lineCap = 'round';
   if(dimMode === 'h'){
+    // During preview: p1.y is the dim line position; p0.y is the anchor measurement Y
     const dim_y = p1.y;
-    const over = 8 * (dim_y >= p0.y ? 1 : -1);
-    ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p0.x, dim_y + over); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p1.x, dim_y + over); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(p0.x, dim_y); ctx.lineTo(p1.x, dim_y); ctx.stroke();
-    drawArrowHead(ctx, {x:p1.x,y:dim_y}, {x:p0.x,y:dim_y}, DEFAULT_DIMENSION_COLOR);
-    drawArrowHead(ctx, {x:p0.x,y:dim_y}, {x:p1.x,y:dim_y}, DEFAULT_DIMENSION_COLOR);
+    const snapP0y = p0.y; // p0 is fixed measurement point
+    const snapP1x = p1.x; // p1.x is the second measurement X
+    const avgY = (snapP0y + snapP0y) / 2; // both measurement pts at p0.y during preview
+    const over = 8 * (dim_y >= snapP0y ? 1 : -1);
+    ctx.beginPath(); ctx.moveTo(p0.x, snapP0y); ctx.lineTo(p0.x, dim_y + over); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(snapP1x, snapP0y); ctx.lineTo(snapP1x, dim_y + over); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p0.x, dim_y); ctx.lineTo(snapP1x, dim_y); ctx.stroke();
+    drawArrowHead(ctx, {x:snapP1x,y:dim_y}, {x:p0.x,y:dim_y}, DEFAULT_DIMENSION_COLOR);
+    drawArrowHead(ctx, {x:p0.x,y:dim_y}, {x:snapP1x,y:dim_y}, DEFAULT_DIMENSION_COLOR);
   } else if(dimMode === 'v'){
     const dim_x = p1.x;
-    const over = 8 * (dim_x >= p0.x ? 1 : -1);
-    ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(dim_x + over, p0.y); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(dim_x + over, p1.y); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(dim_x, p0.y); ctx.lineTo(dim_x, p1.y); ctx.stroke();
-    drawArrowHead(ctx, {x:dim_x,y:p1.y}, {x:dim_x,y:p0.y}, DEFAULT_DIMENSION_COLOR);
-    drawArrowHead(ctx, {x:dim_x,y:p0.y}, {x:dim_x,y:p1.y}, DEFAULT_DIMENSION_COLOR);
+    const snapP0x = p0.x;
+    const snapP1y = p1.y;
+    const over = 8 * (dim_x >= snapP0x ? 1 : -1);
+    ctx.beginPath(); ctx.moveTo(snapP0x, p0.y); ctx.lineTo(dim_x + over, p0.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(snapP0x, snapP1y); ctx.lineTo(dim_x + over, snapP1y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(dim_x, p0.y); ctx.lineTo(dim_x, snapP1y); ctx.stroke();
+    drawArrowHead(ctx, {x:dim_x,y:snapP1y}, {x:dim_x,y:p0.y}, DEFAULT_DIMENSION_COLOR);
+    drawArrowHead(ctx, {x:dim_x,y:p0.y}, {x:dim_x,y:snapP1y}, DEFAULT_DIMENSION_COLOR);
   } else {
     const dv = normalizePt(p0, p1);
     const perp = { x: -dv.y, y: dv.x };
