@@ -534,52 +534,83 @@ input,textarea{font-family:inherit;}
       <div class="tool-label">Select</div>
       <button class="tool-btn" data-tool="mselect" title="Multi-select: tap multiple items or drag a box, then move/delete/color/group them together"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2.5"/><circle cx="8" cy="8" r="1.8" fill="currentColor"/><circle cx="16" cy="16" r="1.8" fill="currentColor"/></svg></button>
       <div class="tool-label">M-Sel</div>
-      <div class="tool-sep"></div>
       <!-- Utility -->
-      <button class="tool-btn" data-tool="photo" title="Photo marker with direction cone"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13.5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
-      <div class="tool-label">Photo</div>
       <button class="tool-btn" data-tool="erase" title="Erase a markup"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M2 4 L2 2 L14 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M22 22 L22 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><path d="M2 22 L2 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.6 2.4" stroke-linecap="round"/><g transform="rotate(-45 12 12)"><rect x="4" y="8.5" width="16" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="12" y1="8.5" x2="12" y2="15.5" stroke="currentColor" stroke-width="1.8"/></g></svg></button>
       <div class="tool-label">Erase</div>
       <div class="tool-sep"></div>
-      <!-- Drawing -->
-      <button class="tool-btn" data-tool="dimension" title="Dimension line with arrowheads and text"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2"/><polygon points="4,12 8,9 8,15" fill="currentColor"/><polygon points="20,12 16,9 16,15" fill="currentColor"/></svg></button>
-      <div class="tool-label">Dim</div>
-      <button class="tool-btn" data-tool="draw" title="Freehand draw">✎</button>
-      <div class="tool-label">Draw</div>
-      <button class="tool-btn" data-tool="line" title="Single line — drag to set length, Shift for 0/45/90°"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="3" y1="21" x2="21" y2="3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
-      <div class="tool-label">Line</div>
-      <button class="tool-btn" data-tool="multiline" title="Route: multi-segment run, snapped, rounded joints"><svg width="20" height="20" viewBox="0 0 24 24"><polyline points="3,18 8,18 8,6 20,6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="3" cy="18" r="1.8" fill="currentColor"/><circle cx="20" cy="6" r="1.8" fill="currentColor"/></svg></button>
-      <div class="tool-label">Route</div>
-      <button class="tool-btn" data-tool="ductrun" title="Duct Run: place air terminal + flex duct + route in sequence"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="12" width="10" height="10"/><line x1="1" y1="12" x2="11" y2="22"/><line x1="1" y1="22" x2="11" y2="12"/><line x1="6" y1="17" x2="20" y2="17"/><line x1="20" y1="17" x2="20" y2="3"/><polyline points="17,7 20,3 23,7"/></svg></button>
-      <div class="tool-label">DctRun</div>
-      <button class="tool-btn" data-tool="offset" title="Offset: copy a line segment parallel at a set distance">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <line x1="3" y1="8" x2="21" y2="8"/>
-          <line x1="3" y1="16" x2="21" y2="16"/>
-        </svg>
-      </button>
-      <div class="tool-label">Offset</div>
-      <button class="tool-btn" data-tool="fillet" title="Fillet: join two line endpoints with a smooth radius arc">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3,20 L13,20 Q20,20 20,13 L20,3"/>
-        </svg>
-      </button>
-      <div class="tool-label">Fillet</div>
+      <button class="tool-btn" data-tool="photo" title="Photo marker with direction cone"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13.5" r="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
+      <div class="tool-label">Photo</div>
+      <!-- Draw flyout -->
+      <button class="tool-btn" id="drawGroupBtn" title="Drawing tools"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg></button>
+      <div class="tool-label" id="drawGroupLabel">Draw ▸</div>
+      <div class="tool-flyout flyout-vertical hidden" id="drawRow">
+        <div class="flyout-item" data-tool="draw" title="Freehand draw">
+          <button class="tool-btn" tabindex="-1">✎</button>
+          <span class="fly-label">Freehand</span>
+        </div>
+        <div class="flyout-item" data-tool="line" title="Single line">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="3" y1="21" x2="21" y2="3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+          <span class="fly-label">Line</span>
+        </div>
+        <div class="flyout-item" data-tool="multiline" title="Route: multi-segment run">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><polyline points="3,18 8,18 8,6 20,6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="3" cy="18" r="1.8" fill="currentColor"/><circle cx="20" cy="6" r="1.8" fill="currentColor"/></svg></button>
+          <span class="fly-label">Route</span>
+        </div>
+        <div class="flyout-item" data-tool="ductrun" title="Duct Run">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="12" width="10" height="10"/><line x1="1" y1="12" x2="11" y2="22"/><line x1="1" y1="22" x2="11" y2="12"/><line x1="6" y1="17" x2="20" y2="17"/><line x1="20" y1="17" x2="20" y2="3"/><polyline points="17,7 20,3 23,7"/></svg></button>
+          <span class="fly-label">Duct Run</span>
+        </div>
+        <div class="flyout-item" data-tool="hatchline" title="Demo Line: cross-out a run">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="7" y1="8" x2="9" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="11" y1="8" x2="13" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="15" y1="8" x2="17" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+          <span class="fly-label">Demo</span>
+        </div>
+        <div class="flyout-item" data-tool="hatcharea" title="Hatch area">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="4" y1="12" x2="12" y2="4" stroke="currentColor" stroke-width="1.2"/><line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="1.2"/><line x1="12" y1="20" x2="20" y2="12" stroke="currentColor" stroke-width="1.2"/></svg></button>
+          <span class="fly-label">Hatch</span>
+        </div>
+        <div class="flyout-item" data-tool="offset" title="Offset: copy parallel">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="8" x2="21" y2="8"/><line x1="3" y1="16" x2="21" y2="16"/></svg></button>
+          <span class="fly-label">Offset</span>
+        </div>
+        <div class="flyout-item" data-tool="fillet" title="Fillet: join endpoints with arc">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3,20 L13,20 Q20,20 20,13 L20,3"/></svg></button>
+          <span class="fly-label">Fillet</span>
+        </div>
+      </div>
+      <!-- Dims flyout -->
+      <button class="tool-btn" id="dimsGroupBtn" title="Dimension tools"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="4" y1="18" x2="4" y2="7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="20" y1="18" x2="20" y2="7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="1.8"/><polygon points="4,12 8,9 8,15" fill="currentColor"/><polygon points="20,12 16,9 16,15" fill="currentColor"/></svg></button>
+      <div class="tool-label">Dims ▸</div>
+      <div class="tool-flyout flyout-vertical hidden" id="dimsRow">
+        <div class="flyout-item" data-tool="dimension" title="Dimension — H/V only (Shift=free)">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="4" y1="18" x2="4" y2="7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="20" y1="18" x2="20" y2="7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="1.8"/><polygon points="4,12 8,9 8,15" fill="currentColor"/><polygon points="20,12 16,9 16,15" fill="currentColor"/></svg></button>
+          <span class="fly-label">Dim</span>
+        </div>
+        <div class="flyout-item" data-tool="angulardim" title="Angular Dim — free angle">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="3" y1="18" x2="3" y2="7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="21" y1="18" x2="21" y2="7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="3" y1="13" x2="21" y2="11" stroke="currentColor" stroke-width="1.8"/><polygon points="3,13 7,10.2 7,15.8" fill="currentColor"/><polygon points="21,11 17,8.2 17,13.8" fill="currentColor"/></svg></button>
+          <span class="fly-label">Ang Dim</span>
+        </div>
+        <div class="flyout-item" data-tool="anglemeasure" title="Angle — 3-point arc">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="20" x2="20" y2="20"/><line x1="4" y1="20" x2="14" y2="5"/><path d="M8 20 A8 8 0 0 1 12.5 12.5" stroke-width="1.5"/></svg></button>
+          <span class="fly-label">Angle</span>
+        </div>
+        <div class="flyout-item" data-tool="radiusdim" title="Radius — click a circle">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="13" r="7"/><line x1="9" y1="13" x2="16" y2="6"/><text x="17" y="8" font-size="6" font-weight="700" fill="currentColor" stroke="none" font-family="Inter,sans-serif">R</text></svg></button>
+          <span class="fly-label">Radius</span>
+        </div>
+        <div class="flyout-item" data-tool="diameterdim" title="Diameter — click a circle">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="13" r="7"/><line x1="5" y1="13" x2="19" y2="13"/><text x="8" y="7" font-size="6" font-weight="700" fill="currentColor" stroke="none" font-family="Inter,sans-serif">Ø</text></svg></button>
+          <span class="fly-label">Diameter</span>
+        </div>
+      </div>
       <div class="tool-sep"></div>
       <button class="tool-btn" data-tool="shape" title="Shapes">⬡</button>
       <div class="tool-label">Shapes ▸</div>
       <button class="tool-btn" data-tool="symbol" title="Trade symbols (flex duct, valve, etc.)"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 12 L10 7 L10 17 Z M21 12 L14 7 L14 17 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
       <div class="tool-label">Symb ▸</div>
       <div class="tool-sep"></div>
-      <!-- Demo / Hatch -->
-      <button class="tool-btn" data-tool="hatchline" title="Demo Line: cross-out a run"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="7" y1="8" x2="9" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="11" y1="8" x2="13" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="15" y1="8" x2="17" y2="16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
-      <div class="tool-label">Demo</div>
-      <button class="tool-btn" data-tool="hatcharea" title="Hatch: freeform hatched area (demo'd zone)"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="4" y1="12" x2="12" y2="4" stroke="currentColor" stroke-width="1.2"/><line x1="4" y1="20" x2="20" y2="4" stroke="currentColor" stroke-width="1.2"/><line x1="12" y1="20" x2="20" y2="12" stroke="currentColor" stroke-width="1.2"/></svg></button>
-      <div class="tool-label">Hatch</div>
-      <div class="tool-sep"></div>
       <!-- Tags -->
-      <button class="tool-btn" id="tagsToolBtn" title="Tags — Callout, Note, Elev, Equip, A/O Tag"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 6h6l3 4-3 4H3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="9" y1="10" x2="13" y2="10" stroke="currentColor" stroke-width="1.6"/><line x1="13" y1="10" x2="16" y2="16" stroke="currentColor" stroke-width="1.6"/><circle cx="16" cy="16" r="1.6" fill="currentColor"/></svg></button>
-      <div class="tool-label">Tags ▸</div>
+      <button class="tool-btn" id="tagsToolBtn" title="Text tools"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 6h6l3 4-3 4H3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="9" y1="10" x2="13" y2="10" stroke="currentColor" stroke-width="1.6"/><line x1="13" y1="10" x2="16" y2="16" stroke="currentColor" stroke-width="1.6"/><circle cx="16" cy="16" r="1.6" fill="currentColor"/></svg></button>
+      <div class="tool-label">Text ▸</div>
       <div class="tool-flyout flyout-vertical hidden" id="tagsRow">
         <div class="flyout-item" data-tool="label" title="Callout">
           <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="4" width="12" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="15" y1="7.5" x2="19" y2="7.5" stroke="currentColor" stroke-width="1.6"/><line x1="19" y1="7.5" x2="21" y2="15" stroke="currentColor" stroke-width="1.6"/><circle cx="21" cy="15" r="1.6" fill="currentColor"/></svg></button>
@@ -669,7 +700,7 @@ input,textarea{font-family:inherit;}
         <button id="zoomInBtn" title="Zoom in">+</button>
         <button id="zoomFitBtn" title="Fit to screen">⤢</button>
         <button id="zoomOutBtn" title="Zoom out">−</button>
-        <button id="gridToggleBtn" title="Toggle snap grid" style="font-size:13px;opacity:0.55;" aria-pressed="false">#</button>
+        <button id="gridToggleBtn" title="Toggle snap grid" style="font-size:13px;opacity:0.85;background:#3A4A5C;color:#fff;border-radius:6px;" aria-pressed="false">#</button>
       </div>
       <button class="run-done-btn hidden" id="multilineUndoBtn" style="background:#7A3E9D;border:none;color:#fff;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>Undo</button>
       <button class="run-done-btn hidden" id="runDoneBtn">Done ✓</button>
@@ -812,7 +843,7 @@ const state = {
   pdfDoc: null, pageViewport: null,
   tool: 'select', color: '#FF0000', thickness: 2, lineType: 'solid', shapeType: 'circle', symbolType: 'flexduct',
   dirty: false,
-  drawing: false, currentStroke: null,
+  drawing: false, currentStroke: null, anglePoints: null,
   multiPoints: null, routeDragging: false, routeSegmentStart: null,
   lastTapTime: 0, lastTapX: 0, lastTapY: 0,
   snapPoint: null,   // {pt:{x,y}, type:'endpoint'|'midpoint'|'segment'} — active geometry snap
@@ -881,8 +912,19 @@ const LOCKED_SHAPES = ['circle', 'square', 'triangle', 'diamond', 'hexagon'];
 // have their own mechanics that don't benefit from rigid grouping.
 const GROUPABLE_TYPES = ['line', 'multiline', 'freehand', 'shape', 'symbol', 'label', 'note', 'hatchline', 'hatcharea', 'dimension', 'elevation', 'equipment', 'photo', 'airOutletTag', 'damperTag', 'keynotetag'];
 const AXIS_SNAP_THRESHOLD = 6; // degrees — Dimension tool snaps only near horizontal/vertical, else free angle
-const JOINT_RADIUS = 15; // fixed fillet radius for multi-segment corners (diagrammatic, not exact)
-let sessionJointRadius = null; // user-set override (inches → px via calibration); null = use JOINT_RADIUS
+// JOINT_RADIUS is the pixel fallback when no scale calibration is set.
+// The real default is 12" computed from calibration via getDefaultJointRadius().
+const JOINT_RADIUS = 15;
+let sessionJointRadius = null; // null = use getDefaultJointRadius()
+
+function getDefaultJointRadius(){
+  const sh = activeSheet();
+  const cal = sh && sh.scaleCalibration;
+  if(cal && cal.pixelDist && cal.realLength){
+    return (cal.pixelDist / cal.realLength); // 12" = 1 foot = pxPerFt
+  }
+  return JOINT_RADIUS;
+}
 const PALETTE = ['#FF0000', '#00FF00', '#0000FF', '#FF8000', '#FF00FF', '#000000', '#2563A8', '#B45309'];
 const COLOR_NAMES = { '#FF0000':'Red','#00FF00':'Green','#0000FF':'Blue','#FF8000':'Orange','#FF00FF':'Magenta','#000000':'Black','#2563A8':'KN Blue','#B45309':'KN Amber' };
 const STROKE_NAMES = { 2:'Thin', 4:'Medium', 7:'Thick' };
@@ -2326,9 +2368,9 @@ $('#zoomOutBtn').addEventListener('click', () => setZoom(state.zoom - ZOOM_STEP)
 $('#gridToggleBtn').addEventListener('click', () => {
   state.snapGrid = !state.snapGrid;
   const btn = $('#gridToggleBtn');
-  btn.style.opacity = state.snapGrid ? '1' : '0.55';
-  btn.style.background = state.snapGrid ? 'var(--blueprint)' : '';
-  btn.style.color = state.snapGrid ? '#fff' : '';
+  btn.style.opacity = '1';
+  btn.style.background = state.snapGrid ? 'var(--blueprint)' : '#3A4A5C';
+  btn.style.color = '#fff';
   btn.setAttribute('aria-pressed', state.snapGrid ? 'true' : 'false');
   updateRulerOverlay();
   drawAllMarkups();
@@ -2542,6 +2584,7 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     state.multiPoints = null;
     state.routeDragging = false;
     state.routeSegmentStart = null;
+    state.anglePoints = null;
     state.selectedMarkupId = null;
     if(state.ductRunPhase && btn.dataset.tool !== 'ductrun') clearDuctRunState();
     if(state.splitMode) exitSplitMode();
@@ -2582,20 +2625,10 @@ document.querySelectorAll('.tool-btn').forEach(btn => {
     // Erase cursor
     const mCv = document.getElementById('markupCanvas');
     if(mCv) mCv.classList.toggle('erase-active', state.tool === 'erase');
+    updateDrawGroupFace();
   });
 });
 
-// Route (multiline) button also opens the Joint Radius Modal so user can tune
-// corner rounding before or during drawing.
-(function(){
-  const mlBtn = document.querySelector('[data-tool="multiline"]');
-  if(mlBtn){
-    mlBtn.addEventListener('click', () => {
-      // Short delay so global handler finishes first (state.tool already set)
-      setTimeout(() => { if(state.tool === 'multiline') showJointRadiusModal(); }, 15);
-    });
-  }
-})();
 
 // Governs hit-testing everywhere a markup could be selected/clicked. Locked
 // whiteouts are invisible to clicks in normal mode (so drawing/placing things
@@ -3109,16 +3142,103 @@ document.querySelectorAll('#symbolRow .flyout-item').forEach(item => {
   });
 });
 document.addEventListener('click', (e) => {
-  [['shape', 'shapeRow'], ['symbol', 'symbolRow'], [null, 'tagsRow']].forEach(([toolName, flyoutId]) => {
+  [['shape', 'shapeRow'], ['symbol', 'symbolRow'], [null, 'tagsRow'], [null, 'drawRow'], [null, 'dimsRow']].forEach(([toolName, flyoutId]) => {
     const flyout = document.getElementById(flyoutId);
     if(!flyout || flyout.classList.contains('hidden')) return;
-    const isTagsFlyout = flyoutId === 'tagsRow';
-    const triggerBtn = isTagsFlyout ? $('#tagsToolBtn') : (toolName ? document.querySelector(`.tool-btn[data-tool="${toolName}"]`) : null);
-    if(!e.target.closest(`#${flyoutId}`) && (!triggerBtn || !e.target.closest('#tagsToolBtn')) && !e.target.closest(`[data-tool="${toolName}"]`)){
+    const triggerBtn = flyoutId === 'tagsRow' ? $('#tagsToolBtn') :
+                       flyoutId === 'drawRow' ? $('#drawGroupBtn') :
+                       flyoutId === 'dimsRow' ? $('#dimsGroupBtn') :
+                       (toolName ? document.querySelector(`.tool-btn[data-tool="${toolName}"]`) : null);
+    const triggerBtnId = flyoutId === 'tagsRow' ? '#tagsToolBtn' :
+                         flyoutId === 'drawRow' ? '#drawGroupBtn' :
+                         flyoutId === 'dimsRow' ? '#dimsGroupBtn' : null;
+    if(!e.target.closest(`#${flyoutId}`) && (!triggerBtn || (triggerBtnId && !e.target.closest(triggerBtnId))) && (!toolName || !e.target.closest(`[data-tool="${toolName}"]`))){
       flyout.classList.add('hidden');
     }
   });
 });
+
+// Draw flyout — context-sensitive: normal = tool picker; when route active = joint radius settings
+const DRAW_TOOLS = ['draw','line','multiline','ductrun','hatchline','hatcharea','offset','fillet'];
+const DRAW_PENCIL_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`;
+const DRAW_SETTINGS_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>`;
+
+function updateDrawGroupFace(){
+  const btn = $('#drawGroupBtn');
+  const lbl = $('#drawGroupLabel');
+  if(!btn || !lbl) return;
+  if(state.tool === 'multiline'){
+    btn.innerHTML = DRAW_SETTINGS_SVG;
+    lbl.textContent = 'Settings';
+  } else {
+    btn.innerHTML = DRAW_PENCIL_SVG;
+    lbl.textContent = 'Draw ▸';
+  }
+  // Active state: highlight trigger when any Draw tool is active
+  btn.classList.toggle('active', DRAW_TOOLS.includes(state.tool));
+}
+
+(function(){
+  const btn = $('#drawGroupBtn');
+  if(!btn) return;
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if(state.tool === 'multiline'){
+      // Route is active → open joint radius modal
+      showJointRadiusModal();
+      return;
+    }
+    const flyout = $('#drawRow');
+    if(!flyout) return;
+    if(flyout.classList.contains('hidden')) openToolFlyout(null, 'drawRow', btn);
+    else flyout.classList.add('hidden');
+  });
+
+  document.querySelectorAll('#drawRow .flyout-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const tool = item.dataset.tool;
+      if(!tool) return;
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#drawRow .flyout-item').forEach(it => it.classList.remove('active'));
+      item.classList.add('active');
+      $('#drawRow').classList.add('hidden');
+      switchToTool(tool);
+      updateDrawGroupFace();
+      if(tool === 'offset') setTimeout(() => { if(state.tool === 'offset') showOffsetDistanceModal(); }, 10);
+      if(tool === 'fillet') setTimeout(() => { if(state.tool === 'fillet') showFilletRadiusModal(); }, 10);
+      if(tool === 'ductrun') setTimeout(() => { if(state.tool === 'ductrun') showDuctRunModePicker(); }, 10);
+    });
+  });
+})();
+
+// Dims flyout
+const DIMS_TOOLS = ['dimension','angulardim','anglemeasure','radiusdim','diameterdim'];
+(function(){
+  const btn = $('#dimsGroupBtn');
+  if(!btn) return;
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const flyout = $('#dimsRow');
+    if(!flyout) return;
+    if(flyout.classList.contains('hidden')) openToolFlyout(null, 'dimsRow', btn);
+    else flyout.classList.add('hidden');
+  });
+
+  document.querySelectorAll('#dimsRow .flyout-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const tool = item.dataset.tool;
+      if(!tool) return;
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('#dimsRow .flyout-item').forEach(it => it.classList.remove('active'));
+      item.classList.add('active');
+      $('#dimsRow').classList.add('hidden');
+      switchToTool(tool);
+    });
+  });
+})();
 
 /* ============================================================
    MOBILE PANEL TOGGLE
@@ -3337,6 +3457,17 @@ function axisSnap(from, to){
   return { x: from.x + Math.cos(snapped) * dist, y: from.y + Math.sin(snapped) * dist };
 }
 
+// Hard H/V snap: snaps to horizontal OR vertical only (whichever is closer).
+// Used by the dimension tool (default behavior; Shift releases to free angle).
+function hvSnap(from, to){
+  const dx = to.x - from.x, dy = to.y - from.y;
+  const dist = Math.hypot(dx, dy);
+  if(dist < 1) return to;
+  const angle = Math.atan2(dy, dx);
+  const snapped = Math.round(angle / (Math.PI / 2)) * (Math.PI / 2);
+  return { x: from.x + Math.cos(snapped) * dist, y: from.y + Math.sin(snapped) * dist };
+}
+
 function groupMemberIds(m){
   if(!m.groupId) return [m.id];
   const sheet = activeSheet();
@@ -3539,7 +3670,7 @@ function onPointerDown(e){
     state.snapPoint = arrowP0Sn || null;
     const shapeP0 = arrowP0Sn ? arrowP0Sn.pt : snapToGridPt(p);
     state.currentStroke = { id: genId(), type: 'shape', shape: state.shapeType, color: state.color, thickness: state.thickness, rotation: 0, p0: shapeP0, p1: shapeP0, note: '' };
-  } else if(state.tool === 'dimension'){
+  } else if(state.tool === 'dimension' || state.tool === 'angulardim'){
     state.drawing = true;
     const rawDp = canvasPointClearFingertip(e);
     const dimSnap = state.snapPoint || findSnapPoint(rawDp);
@@ -3547,6 +3678,73 @@ function onPointerDown(e){
     state.ghostDimPos = null; // clear ghost when drawing starts
     state.snapPoint = null;
     state.currentStroke = { id: genId(), type: 'dimension', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: dp, p1: dp, text: '', textPos: dp, note: '', extOffset: 15 };
+  } else if(state.tool === 'anglemeasure'){
+    // Three-point angle: vertex → armA → armB
+    const sn = findSnapPoint(p);
+    const pt = sn ? sn.pt : snapToGridPt(p);
+    if(!state.anglePoints) state.anglePoints = [];
+    state.anglePoints.push(pt);
+    if(state.anglePoints.length === 3){
+      const [vertex, armA, armB] = state.anglePoints;
+      const angA = Math.atan2(armA.y - vertex.y, armA.x - vertex.x);
+      const angB = Math.atan2(armB.y - vertex.y, armB.x - vertex.x);
+      let diff = angB - angA;
+      while(diff < 0) diff += Math.PI * 2;
+      if(diff > Math.PI) diff = Math.PI * 2 - diff;
+      const deg = Math.round(diff * 180 / Math.PI * 10) / 10;
+      const text = deg + '°';
+      const midAng = angA + diff / 2;
+      const arcR = Math.min(Math.hypot(armA.x-vertex.x, armA.y-vertex.y), Math.hypot(armB.x-vertex.x, armB.y-vertex.y)) * 0.45;
+      const textPos = { x: vertex.x + Math.cos(midAng) * (arcR + 14), y: vertex.y + Math.sin(midAng) * (arcR + 14) };
+      const m = { id: genId(), type: 'anglemeasure', color: DEFAULT_DIMENSION_COLOR, thickness: 2, vertex, armA, armB, angleDeg: deg, text, textPos, note: '', createdAt: Date.now() };
+      const sh = activeSheet();
+      sh.markups.push(m);
+      markDirty();
+      state.anglePoints = null;
+      switchToSelectAndSelect(m.id);
+    } else {
+      drawAllMarkups();
+    }
+  } else if(state.tool === 'radiusdim' || state.tool === 'diameterdim'){
+    // Click on a circle shape markup to annotate it
+    const sh = activeSheet();
+    const hit = sh.markups.find(m2 => m2.type === 'shape' && m2.shape === 'circle' && isMarkupInteractable(m2) && markupContainsPoint(m2, p));
+    if(hit){
+      const x0 = Math.min(hit.p0.x, hit.p1.x), y0 = Math.min(hit.p0.y, hit.p1.y);
+      const w = Math.abs(hit.p1.x - hit.p0.x), h = Math.abs(hit.p1.y - hit.p0.y);
+      const cx = x0 + w / 2, cy = y0 + h / 2;
+      const radiusPx = Math.min(w, h) / 2;
+      // Convert to inches using calibration
+      const cal = sh.scaleCalibration;
+      let label = '?';
+      if(cal && cal.pixelDist && cal.realLength){
+        const pxPerIn = (cal.pixelDist / cal.realLength) / 12;
+        if(state.tool === 'radiusdim'){
+          const inVal = Math.round(radiusPx / pxPerIn * 2) / 2;
+          label = 'R ' + inVal + '"';
+        } else {
+          const inVal = Math.round(radiusPx * 2 / pxPerIn * 2) / 2;
+          label = 'Ø ' + inVal + '"';
+        }
+      }
+      // Direction from center toward click point
+      const dx = p.x - cx, dy = p.y - cy;
+      const dist = Math.hypot(dx, dy) || radiusPx;
+      const ux = dx / dist, uy = dy / dist;
+      const edge = { x: cx + ux * radiusPx, y: cy + uy * radiusPx };
+      const textPos = { x: cx + ux * (radiusPx + 16), y: cy + uy * (radiusPx + 16) };
+      let m;
+      if(state.tool === 'radiusdim'){
+        m = { id: genId(), type: 'radiusdim', color: DEFAULT_DIMENSION_COLOR, thickness: 2, center: {x:cx,y:cy}, edge, text: label, textPos, note: '', createdAt: Date.now() };
+      } else {
+        const opp = { x: cx - ux * radiusPx, y: cy - uy * radiusPx };
+        const tPos = { x: cx, y: cy - radiusPx - 12 };
+        m = { id: genId(), type: 'diameterdim', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: opp, p1: edge, text: label, textPos: tPos, note: '', createdAt: Date.now() };
+      }
+      sh.markups.push(m);
+      markDirty();
+      switchToSelectAndSelect(m.id);
+    }
   } else if(state.tool === 'whiteoutRect'){
     state.drawing = true;
     state.currentStroke = { id: genId(), type: 'whiteoutRect', p0: p, p1: p, note: '' };
@@ -3750,12 +3948,17 @@ function onPointerMove(e){
     drawShape(state.currentStroke);
     // Snap ring drawn AFTER arrowhead so it's visible on top (drawAllMarkups skips it for arrow drawing)
     if(isArrowMove) drawSnapIndicator();
-  } else if(state.tool === 'dimension' && state.drawing){
+  } else if((state.tool === 'dimension' || state.tool === 'angulardim') && state.drawing){
     const dimRaw = canvasPointClearFingertip(e);
     state._lastDimRawP1 = dimRaw;
     const dimSn = findSnapPoint(dimRaw);
     state.snapPoint = dimSn || null;
-    state.currentStroke.p1 = dimSn ? dimSn.pt : (state.shiftDown ? axisSnap(state.currentStroke.p0, dimRaw) : dimRaw);
+    if(state.tool === 'dimension'){
+      state.currentStroke.p1 = dimSn ? dimSn.pt : (state.shiftDown ? dimRaw : hvSnap(state.currentStroke.p0, dimRaw));
+    } else {
+      // angulardim: free angle always; shift = H/V lock
+      state.currentStroke.p1 = dimSn ? dimSn.pt : (state.shiftDown ? hvSnap(state.currentStroke.p0, dimRaw) : dimRaw);
+    }
     drawAllMarkups();
     drawDimensionPreview(state.currentStroke.p0, state.currentStroke.p1);
     showDimLiveChip(state.currentStroke.p0, state.currentStroke.p1);
@@ -3831,7 +4034,7 @@ function onPointerMove(e){
     state.ghostSymbolPos = null;
   }
   // Ghost dim arrowhead — before first click
-  if(state.tool === 'dimension' && !state.drawing){
+  if((state.tool === 'dimension' || state.tool === 'angulardim') && !state.drawing){
     const dimGhostSn = findSnapPoint(canvasPointClearFingertip(e));
     state.snapPoint = dimGhostSn || null;
     state.ghostDimPos = dimGhostSn ? dimGhostSn.pt : p;
@@ -3876,7 +4079,9 @@ function switchToTool(toolName){
     renderKeyNotePanel();
   }
   state.tool = toolName;
-  if(toolName !== 'dimension'){ state.ghostDimPos = null; state._lastDimRawP1 = null; _hideDimLiveChip(); } // clear ghost when leaving dim tool
+  if(typeof updateDrawGroupFace === 'function') updateDrawGroupFace();
+  if(toolName !== 'dimension' && toolName !== 'angulardim'){ state.ghostDimPos = null; state._lastDimRawP1 = null; _hideDimLiveChip(); } // clear ghost when leaving dim tool
+  if(toolName !== 'anglemeasure') state.anglePoints = null;
   if(!['label','note','elevation','equipment','keynotetag'].includes(toolName)) state.ghostLeaderPos = null;
 }
 
@@ -4049,7 +4254,7 @@ function onPointerUp(e){
     }
     state.currentStroke = null;
     drawAllMarkups();
-  } else if(state.tool === 'dimension' && state.drawing){
+  } else if((state.tool === 'dimension' || state.tool === 'angulardim') && state.drawing){
     _hideDimLiveChip();
     state.drawing = false;
     const dim = state.currentStroke;
@@ -4284,7 +4489,7 @@ function finishMultiline(){
       renderKeyNotePanel();
       createdId = markup.id;
     } else if(state.tool === 'multiline'){
-      const markup = { id: genId(), type: 'multiline', color: state.color, thickness: state.thickness, lineType: state.lineType || 'solid', points: state.multiPoints, jointRadius: sessionJointRadius ?? JOINT_RADIUS, note: '', createdAt: Date.now() };
+      const markup = { id: genId(), type: 'multiline', color: state.color, thickness: state.thickness, lineType: state.lineType || 'solid', points: state.multiPoints, jointRadius: sessionJointRadius ?? getDefaultJointRadius(), note: '', createdAt: Date.now() };
       activeSheet().markups.push(markup);
       markDirty();
       renderKeyNotePanel();
@@ -5141,7 +5346,33 @@ function handlePointsForMarkup(m){
     const moveGrip = { x: m.textPos.x - knR, y: m.textPos.y };
     return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'move', p: moveGrip }];
   }
-  if(m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'move', p: m.textPos }];
+  if(m.type === 'label' || m.type === 'elevation' || m.type === 'equipment') return [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'move', p: m.textPos }];
+  if(m.type === 'note'){
+    const handles = [{ key: 'anchor', p: m.anchor }, { key: 'bend', p: m.bend }, { key: 'move', p: m.textPos }];
+    // Box resize grip: right-center of the note text box
+    const padX = 7, padY = 5, lineH = 16;
+    const tmpCanvas = document.createElement('canvas');
+    const tmpCtx = tmpCanvas.getContext('2d');
+    tmpCtx.font = '600 12px Inter, sans-serif';
+    let bW;
+    if(m.boxW){
+      bW = m.boxW;
+    } else {
+      const lines = m.text ? wrapTextLines(m.text, 30) : ['Add text'];
+      let maxW = 0;
+      for(const l of lines) maxW = Math.max(maxW, tmpCtx.measureText(l).width);
+      bW = maxW + padX * 2;
+    }
+    const lines2 = m.text ? (m.boxW ? wrapTextPixels(tmpCtx, m.text, bW - padX * 2) : wrapTextLines(m.text, 30)) : ['Add text'];
+    const bH = lines2.length * lineH + padY * 2;
+    const bx = m.textPos.x;
+    const by = m.textPos.y - bH / 2;
+    handles.push({ key: 'boxResize', p: { x: bx + bW, y: by + bH / 2 }, diamond: true });
+    return handles;
+  }
+  if(m.type === 'anglemeasure') return [{ key: 'move', p: m.textPos }];
+  if(m.type === 'radiusdim') return [{ key: 'move', p: m.textPos }, { key: 'edge', p: m.edge }];
+  if(m.type === 'diameterdim') return [{ key: 'move', p: m.textPos }, { key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
   if(m.type === 'dimension'){
     // Grips at measurement points (p0/p1), label (textPos), and dim-line midpoint (extOffset)
     const dv_h = normalizePt(m.p0, m.p1);
@@ -5207,7 +5438,7 @@ function handlePointsForMarkup(m){
 }
 function cloneMarkupPoints(m){ return JSON.parse(JSON.stringify(m)); }
 function markupCenterPoint(m){
-  if(m.type === 'keynotetag' || m.type === 'label' || m.type === 'note' || m.type === 'dimension' || m.type === 'elevation' || m.type === 'equipment') return m.textPos;
+  if(m.type === 'keynotetag' || m.type === 'label' || m.type === 'note' || m.type === 'dimension' || m.type === 'elevation' || m.type === 'equipment' || m.type === 'anglemeasure' || m.type === 'radiusdim' || m.type === 'diameterdim') return m.textPos;
   if(m.type === 'arc') return { x: m.cx, y: m.cy };
   if(m.type === 'line' || m.type === 'shape' || m.type === 'whiteoutRect') return { x: (m.p0.x + m.p1.x) / 2, y: (m.p0.y + m.p1.y) / 2 };
   if(m.type === 'multiline' || m.type === 'freehand' || m.type === 'hatcharea' || m.type === 'whiteoutFreeform' || m.type === 'hatchline'){
@@ -5587,6 +5818,22 @@ function applyDragHandle(drag, p){
       x: (m.p0.x + m.p1.x) / 2 + perp2.x * (off2 + 12),
       y: (m.p0.y + m.p1.y) / 2 + perp2.y * (off2 + 12)
     };
+    return;
+  }
+  if(m.type === 'anglemeasure' && drag.key === 'move'){ m.textPos = p; return; }
+  if(m.type === 'radiusdim'){
+    if(drag.key === 'move'){ m.textPos = p; return; }
+    if(drag.key === 'edge'){ m.edge = p; return; }
+  }
+  if(m.type === 'diameterdim'){
+    if(drag.key === 'move'){ m.textPos = p; return; }
+    if(drag.key === 'p0'){ m.p0 = p; return; }
+    if(drag.key === 'p1'){ m.p1 = p; return; }
+  }
+  if(m.type === 'note' && drag.key === 'boxResize'){
+    // p.x = new right edge; compute new boxW from that
+    const newW = Math.max(60, p.x - m.textPos.x);
+    m.boxW = newW;
     return;
   }
   if(m.type === 'shape' && (drag.key === 'p0' || drag.key === 'p1')){
@@ -6373,6 +6620,9 @@ function drawAllMarkups(){
     else if(m.type === 'photo') drawPhoto(m);
     else if(m.type === 'symbol') drawSymbolMarker(m);
     else if(m.type === 'dimension') drawDimension(m);
+    else if(m.type === 'anglemeasure') drawAngleMeasure(m);
+    else if(m.type === 'radiusdim') drawRadiusDim(m);
+    else if(m.type === 'diameterdim') drawDiameterDim(m);
     else if(m.type === 'hatchline') drawHatchLine(m);
     else if(m.type === 'hatcharea') drawHatchArea(m);
     else if(m.type === 'airOutletTag') drawAirOutletTag(m);
@@ -6485,7 +6735,7 @@ function drawAllMarkups(){
     if(pos) drawDamperGhost(pos, !!state.damperPendingAnchor);
   }
   // Ghost dim arrowhead — shows before first click to indicate where p0 will be placed
-  if(state.tool === 'dimension' && !state.drawing && state.ghostDimPos){
+  if((state.tool === 'dimension' || state.tool === 'angulardim') && !state.drawing && state.ghostDimPos){
     const ctx = mCanvas.getContext('2d');
     ctx.save();
     ctx.globalAlpha = 0.45;
@@ -6827,6 +7077,18 @@ function drawHandles(m){
       ctx.restore();
       return;
     }
+    if(h.diamond){
+      ctx.save();
+      ctx.translate(h.p.x, h.p.y);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = '#2F5D8A';
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(-5, -5, 10, 10);
+      ctx.strokeRect(-5, -5, 10, 10);
+      ctx.restore();
+      return;
+    }
     ctx.beginPath();
     ctx.arc(h.p.x, h.p.y, 5.25, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
@@ -6897,7 +7159,7 @@ function drawMultilinePreview(points){
   const lt = state.lineType || 'solid';
   const ltDef = LINE_TYPE_MAP[lt];
   if(ltDef && ltDef.dash && ltDef.dash.length > 0) ctx.setLineDash(ltDef.dash);
-  drawRoundedPolyline(ctx, points, sessionJointRadius ?? JOINT_RADIUS);
+  drawRoundedPolyline(ctx, points, sessionJointRadius ?? getDefaultJointRadius());
   ctx.setLineDash([]);
   if(lt === 'hatch') drawHatchTicksAlongPath(ctx, points);
   ctx.restore();
@@ -7465,8 +7727,7 @@ function showJointRadiusModal(){
     const pxPerIn = (cal.pixelDist / cal.realLength) / 12;
     currentIn = Math.round(sessionJointRadius / pxPerIn * 2) / 2; // round to nearest 0.5″
   } else if(sessionJointRadius === null && hasScale){
-    const pxPerIn = (cal.pixelDist / cal.realLength) / 12;
-    currentIn = Math.round(JOINT_RADIUS / pxPerIn * 2) / 2;
+    currentIn = 12; // default is always 12"
   }
 
   card.innerHTML = `
@@ -7897,15 +8158,41 @@ function wrapTextLines(text, maxChars){
   return lines;
 }
 
+function wrapTextPixels(ctx, text, maxPxW){
+  if(!text) return [''];
+  const words = text.split(' ');
+  const lines = [];
+  let cur = '';
+  for(const w of words){
+    const test = cur ? cur + ' ' + w : w;
+    if(ctx.measureText(test).width <= maxPxW - 0.5){
+      cur = test;
+    } else {
+      if(cur) lines.push(cur);
+      cur = w;
+    }
+  }
+  if(cur) lines.push(cur);
+  return lines.length ? lines : [''];
+}
+
 // Multiline text box used for Note markups.
-function drawNoteTextBox(ctx, text, pos, color){
+function drawNoteTextBox(ctx, text, pos, color, markup){
   const isEmpty = !text;
   ctx.font = isEmpty ? '600 italic 11px Inter, sans-serif' : '600 12px Inter, sans-serif';
   const padX = 7, padY = 5, lineH = 16;
-  const lines = isEmpty ? ['Add text'] : wrapTextLines(text, 30);
-  let maxW = 0;
-  for(const l of lines) maxW = Math.max(maxW, ctx.measureText(l).width);
-  const boxW = maxW + padX * 2;
+  let lines, boxW;
+  if(markup && markup.boxW){
+    boxW = markup.boxW;
+    lines = isEmpty ? ['Add text'] : wrapTextPixels(ctx, text, boxW - padX * 2);
+    if(!lines.length) lines = [''];
+  } else {
+    lines = isEmpty ? ['Add text'] : wrapTextLines(text, 30);
+    let maxW = 0;
+    ctx.font = isEmpty ? '600 italic 11px Inter, sans-serif' : '600 12px Inter, sans-serif';
+    for(const l of lines) maxW = Math.max(maxW, ctx.measureText(l).width);
+    boxW = maxW + padX * 2;
+  }
   const boxH = lines.length * lineH + padY * 2;
   const bx = pos.x;
   const by = pos.y - boxH / 2;
@@ -7981,7 +8268,7 @@ function drawLeader(m){
     }
   }
 
-  if(m.type === 'note') drawNoteTextBox(ctx, m.text, m.textPos, m.color);
+  if(m.type === 'note') drawNoteTextBox(ctx, m.text, m.textPos, m.color, m);
   else drawTextPill(ctx, m.text, m.textPos, m.color);
 }
 
@@ -8456,6 +8743,66 @@ function drawDimensionPreview(p0, p1){
   drawArrowHead(ctx, dl1, dl0, DEFAULT_DIMENSION_COLOR);
   drawArrowHead(ctx, dl0, dl1, DEFAULT_DIMENSION_COLOR);
   ctx.restore();
+}
+
+// ── Angle measure: three-point arc annotation ──────────────────────────────
+// Stored as {type:'anglemeasure', vertex, armA, armB, angleDeg, text, textPos}
+function drawAngleMeasure(m){
+  const ctx = mCanvas.getContext('2d');
+  const v = m.vertex, a = m.armA, b = m.armB;
+  const angA = Math.atan2(a.y - v.y, a.x - v.x);
+  const angB = Math.atan2(b.y - v.y, b.x - v.x);
+  const distA = Math.hypot(a.x - v.x, a.y - v.y);
+  const distB = Math.hypot(b.x - v.x, b.y - v.y);
+  const arcR = Math.min(distA, distB) * 0.45;
+  ctx.strokeStyle = m.color || DEFAULT_DIMENSION_COLOR;
+  ctx.lineWidth = m.thickness || 2;
+  // arm lines
+  ctx.beginPath(); ctx.moveTo(v.x, v.y); ctx.lineTo(a.x, a.y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(v.x, v.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  // arc
+  let startAng = angA, endAng = angB;
+  let diff = endAng - startAng;
+  while(diff < 0) diff += Math.PI * 2;
+  if(diff > Math.PI) { const tmp = startAng; startAng = endAng; endAng = tmp; diff = Math.PI * 2 - diff; }
+  ctx.beginPath();
+  ctx.arc(v.x, v.y, arcR, startAng, endAng);
+  ctx.stroke();
+  // label
+  const midAng = startAng + diff / 2;
+  const tp = m.textPos || { x: v.x + Math.cos(midAng) * (arcR + 14), y: v.y + Math.sin(midAng) * (arcR + 14) };
+  if(m.text) drawTextPill(ctx, m.text, tp, m.color || DEFAULT_DIMENSION_COLOR, '#ffffff', true);
+}
+
+// ── Radius dimension: radial line from circle center to edge ───────────────
+// Stored as {type:'radiusdim', center, edge, text, textPos}
+function drawRadiusDim(m){
+  const ctx = mCanvas.getContext('2d');
+  ctx.strokeStyle = m.color || DEFAULT_DIMENSION_COLOR;
+  ctx.lineWidth = m.thickness || 2;
+  ctx.beginPath();
+  ctx.moveTo(m.center.x, m.center.y);
+  ctx.lineTo(m.edge.x, m.edge.y);
+  ctx.stroke();
+  drawArrowHead(ctx, m.center, m.edge, m.color || DEFAULT_DIMENSION_COLOR);
+  const tp = m.textPos || { x: (m.center.x + m.edge.x) / 2, y: (m.center.y + m.edge.y) / 2 - 10 };
+  if(m.text) drawTextPill(ctx, m.text, tp, m.color || DEFAULT_DIMENSION_COLOR, '#ffffff', true);
+}
+
+// ── Diameter dimension: line through center of circle ─────────────────────
+// Stored as {type:'diameterdim', p0, p1, text, textPos}
+function drawDiameterDim(m){
+  const ctx = mCanvas.getContext('2d');
+  ctx.strokeStyle = m.color || DEFAULT_DIMENSION_COLOR;
+  ctx.lineWidth = m.thickness || 2;
+  ctx.beginPath();
+  ctx.moveTo(m.p0.x, m.p0.y);
+  ctx.lineTo(m.p1.x, m.p1.y);
+  ctx.stroke();
+  drawArrowHead(ctx, m.p1, m.p0, m.color || DEFAULT_DIMENSION_COLOR);
+  drawArrowHead(ctx, m.p0, m.p1, m.color || DEFAULT_DIMENSION_COLOR);
+  const tp = m.textPos || { x: (m.p0.x + m.p1.x) / 2, y: (m.p0.y + m.p1.y) / 2 - 12 };
+  if(m.text) drawTextPill(ctx, m.text, tp, m.color || DEFAULT_DIMENSION_COLOR, '#ffffff', true);
 }
 
 // Repeated short diagonal ticks along a path — the shared "struck through /
@@ -11025,12 +11372,15 @@ document.addEventListener('keydown', (e) => {
 function _refreshDrawPreview(){
   if(state.tool === 'line' && state.drawing && state.currentStroke){
     drawAllMarkups(); drawLine(state.currentStroke);
-  } else if(state.tool === 'dimension' && state.drawing && state.currentStroke){
-    // Recompute p1 from last known raw position respecting updated shiftDown
+  } else if((state.tool === 'dimension' || state.tool === 'angulardim') && state.drawing && state.currentStroke){
     if(state._lastDimRawP1){
       const sn = state.snapPoint;
       const p0 = state.currentStroke.p0;
-      state.currentStroke.p1 = sn ? sn.pt : (state.shiftDown ? axisSnap(p0, state._lastDimRawP1) : state._lastDimRawP1);
+      if(state.tool === 'dimension'){
+        state.currentStroke.p1 = sn ? sn.pt : (state.shiftDown ? state._lastDimRawP1 : hvSnap(p0, state._lastDimRawP1));
+      } else {
+        state.currentStroke.p1 = sn ? sn.pt : (state.shiftDown ? hvSnap(p0, state._lastDimRawP1) : state._lastDimRawP1);
+      }
     }
     drawAllMarkups();
     drawDimensionPreview(state.currentStroke.p0, state.currentStroke.p1);
