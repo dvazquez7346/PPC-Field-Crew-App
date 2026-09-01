@@ -5499,10 +5499,10 @@ function handlePointsForMarkup(m){
     { key: 'armA', p: m.armA },
     { key: 'vertex', p: m.vertex },
     { key: 'armB', p: m.armB },
-    { key: 'move', p: m.textPos }
+    { key: 'textPos', p: m.textPos }
   ];
-  if(m.type === 'radiusdim') return [{ key: 'move', p: m.textPos }, { key: 'edge', p: m.edge }];
-  if(m.type === 'diameterdim') return [{ key: 'move', p: m.textPos }, { key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
+  if(m.type === 'radiusdim') return [{ key: 'textPos', p: m.textPos }, { key: 'edge', p: m.edge }];
+  if(m.type === 'diameterdim') return [{ key: 'textPos', p: m.textPos }, { key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
   if(m.type === 'dimension'){
     if(m.dimMode){
       // H/V dim: p0 and p1 are measurement endpoints; dimLine grip slides the dim line
@@ -6009,7 +6009,7 @@ function applyDragHandle(drag, p){
     return;
   }
   if(m.type === 'anglemeasure'){
-    if(drag.key === 'move'){ m.textPos = p; return; }
+    if(drag.key === 'textPos'){ m.textPos = p; return; }
     if(drag.key === 'armA'){ m.armA = p; }
     else if(drag.key === 'vertex'){ m.vertex = p; }
     else if(drag.key === 'armB'){ m.armB = p; }
@@ -6030,13 +6030,15 @@ function applyDragHandle(drag, p){
     return;
   }
   if(m.type === 'radiusdim'){
-    if(drag.key === 'move'){ m.textPos = p; return; }
+    if(drag.key === 'textPos'){ m.textPos = p; return; }
     if(drag.key === 'edge'){ m.edge = p; return; }
+    return;
   }
   if(m.type === 'diameterdim'){
-    if(drag.key === 'move'){ m.textPos = p; return; }
+    if(drag.key === 'textPos'){ m.textPos = p; return; }
     if(drag.key === 'p0'){ m.p0 = p; return; }
     if(drag.key === 'p1'){ m.p1 = p; return; }
+    return;
   }
   if(m.type === 'note' && drag.key === 'boxResize'){
     // p.x = new right edge; compute new boxW from that
@@ -6071,6 +6073,20 @@ function translateMarkup(m, origin, dx, dy){
   } else if(m.type === 'dimension'){
     m.p0 = { x: origin.p0.x + dx, y: origin.p0.y + dy };
     m.p1 = { x: origin.p1.x + dx, y: origin.p1.y + dy };
+    m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
+    if(origin.dimLinePos != null) m.dimLinePos = origin.dimLinePos + (m.dimMode === 'v' ? dx : dy);
+  } else if(m.type === 'radiusdim'){
+    m.center  = { x: origin.center.x  + dx, y: origin.center.y  + dy };
+    m.edge    = { x: origin.edge.x    + dx, y: origin.edge.y    + dy };
+    m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
+  } else if(m.type === 'diameterdim'){
+    m.p0      = { x: origin.p0.x      + dx, y: origin.p0.y      + dy };
+    m.p1      = { x: origin.p1.x      + dx, y: origin.p1.y      + dy };
+    m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
+  } else if(m.type === 'anglemeasure'){
+    m.vertex  = { x: origin.vertex.x  + dx, y: origin.vertex.y  + dy };
+    m.armA    = { x: origin.armA.x    + dx, y: origin.armA.y    + dy };
+    m.armB    = { x: origin.armB.x    + dx, y: origin.armB.y    + dy };
     m.textPos = { x: origin.textPos.x + dx, y: origin.textPos.y + dy };
   } else if(m.type === 'keynotetag' || m.type === 'label' || m.type === 'note' || m.type === 'elevation' || m.type === 'equipment'){
     m.anchor = { x: origin.anchor.x + dx, y: origin.anchor.y + dy };
@@ -9025,17 +9041,22 @@ function drawAngleMeasure(m){
 
 // ── Radius dimension: radial line from circle center to edge ───────────────
 // Stored as {type:'radiusdim', center, edge, text, textPos}
+// Draws as a leader: line from textPos (label) to edge (arc surface), arrowhead at edge.
 function drawRadiusDim(m){
   const ctx = mCanvas.getContext('2d');
-  ctx.strokeStyle = m.color || DEFAULT_DIMENSION_COLOR;
+  const col = m.color || DEFAULT_DIMENSION_COLOR;
+  ctx.strokeStyle = col;
   ctx.lineWidth = m.thickness || 2;
+  ctx.lineCap = 'round';
+  const tp = m.textPos || { x: m.edge.x + 24, y: m.edge.y - 24 };
+  // Leader line from text label to arc surface
   ctx.beginPath();
-  ctx.moveTo(m.center.x, m.center.y);
+  ctx.moveTo(tp.x, tp.y);
   ctx.lineTo(m.edge.x, m.edge.y);
   ctx.stroke();
-  drawArrowHead(ctx, m.center, m.edge, m.color || DEFAULT_DIMENSION_COLOR);
-  const tp = m.textPos || { x: (m.center.x + m.edge.x) / 2, y: (m.center.y + m.edge.y) / 2 - 10 };
-  if(m.text) drawTextPill(ctx, m.text, tp, m.color || DEFAULT_DIMENSION_COLOR, '#ffffff', true);
+  // Arrowhead at the arc edge, pointing in from text
+  drawArrowHead(ctx, tp, m.edge, col);
+  if(m.text) drawTextPill(ctx, m.text, tp, col, '#ffffff', true);
 }
 
 // ── Diameter dimension: line through center of circle ─────────────────────
