@@ -586,19 +586,19 @@ input,textarea{font-family:inherit;}
           <span class="fly-label">Dim</span>
         </div>
         <div class="flyout-item" data-tool="angulardim" title="Angular Dim — free angle">
-          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><line x1="3" y1="18" x2="3" y2="7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="21" y1="18" x2="21" y2="7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="3" y1="13" x2="21" y2="11" stroke="currentColor" stroke-width="1.8"/><polygon points="3,13 7,10.2 7,15.8" fill="currentColor"/><polygon points="21,11 17,8.2 17,13.8" fill="currentColor"/></svg></button>
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="3" y1="3" x2="21" y2="21"/><line x1="21" y1="3" x2="3" y2="21"/></svg></button>
           <span class="fly-label">Ang Dim</span>
         </div>
         <div class="flyout-item" data-tool="anglemeasure" title="Angle — 3-point arc">
-          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="20" x2="20" y2="20"/><line x1="4" y1="20" x2="14" y2="5"/><path d="M8 20 A8 8 0 0 1 12.5 12.5" stroke-width="1.5"/></svg></button>
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><line x1="4" y1="19" x2="19" y2="19"/><line x1="4" y1="19" x2="14" y2="5"/><path d="M 9.5 19 A 5.5 5.5 0 0 0 6.5 13.5" stroke-width="1.5"/></svg></button>
           <span class="fly-label">Angle</span>
         </div>
-        <div class="flyout-item" data-tool="radiusdim" title="Radius — click a circle">
-          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="13" r="7"/><line x1="9" y1="13" x2="16" y2="6"/><text x="17" y="8" font-size="6" font-weight="700" fill="currentColor" stroke="none" font-family="Inter,sans-serif">R</text></svg></button>
+        <div class="flyout-item" data-tool="radiusdim" title="Radius — click a circle or joint">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="13" r="7.5" stroke-width="1.6"/><line x1="10" y1="13" x2="15.3" y2="7.7" stroke-width="1.8"/><polygon points="15.3,7.7 12.5,9.8 13.2,6.9" fill="currentColor" stroke="none"/></svg></button>
           <span class="fly-label">Radius</span>
         </div>
-        <div class="flyout-item" data-tool="diameterdim" title="Diameter — click a circle">
-          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="13" r="7"/><line x1="5" y1="13" x2="19" y2="13"/><text x="8" y="7" font-size="6" font-weight="700" fill="currentColor" stroke="none" font-family="Inter,sans-serif">Ø</text></svg></button>
+        <div class="flyout-item" data-tool="diameterdim" title="Diameter — click a circle or joint">
+          <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><circle cx="12" cy="12" r="7" stroke-width="1.8"/><line x1="6" y1="18" x2="18" y2="6" stroke-width="1.8"/></svg></button>
           <span class="fly-label">Diameter</span>
         </div>
       </div>
@@ -609,8 +609,8 @@ input,textarea{font-family:inherit;}
       <div class="tool-label">Symb ▸</div>
       <div class="tool-sep"></div>
       <!-- Tags -->
-      <button class="tool-btn" id="tagsToolBtn" title="Text tools"><svg width="20" height="20" viewBox="0 0 24 24"><path d="M3 6h6l3 4-3 4H3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><line x1="9" y1="10" x2="13" y2="10" stroke="currentColor" stroke-width="1.6"/><line x1="13" y1="10" x2="16" y2="16" stroke="currentColor" stroke-width="1.6"/><circle cx="16" cy="16" r="1.6" fill="currentColor"/></svg></button>
-      <div class="tool-label">Text ▸</div>
+      <button class="tool-btn" id="tagsToolBtn" title="Text tools"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="4" width="12" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="15" y1="7.5" x2="19" y2="7.5" stroke="currentColor" stroke-width="1.6"/><line x1="19" y1="7.5" x2="21" y2="15" stroke="currentColor" stroke-width="1.6"/><circle cx="21" cy="15" r="1.6" fill="currentColor"/></svg></button>
+      <div class="tool-label">Tags ▸</div>
       <div class="tool-flyout flyout-vertical hidden" id="tagsRow">
         <div class="flyout-item" data-tool="label" title="Callout">
           <button class="tool-btn" tabindex="-1"><svg width="20" height="20" viewBox="0 0 24 24"><rect x="3" y="4" width="12" height="7" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/><line x1="15" y1="7.5" x2="19" y2="7.5" stroke="currentColor" stroke-width="1.6"/><line x1="19" y1="7.5" x2="21" y2="15" stroke="currentColor" stroke-width="1.6"/><circle cx="21" cy="15" r="1.6" fill="currentColor"/></svg></button>
@@ -2577,6 +2577,7 @@ function twoFingersActive(){ return state.activePointers.size >= 2; }
    ============================================================ */
 document.querySelectorAll('.tool-btn').forEach(btn => {
   btn.addEventListener('click', () => {
+    if(!btn.dataset.tool) return; // flyout group buttons (drawGroupBtn, dimsGroupBtn, etc.) have no data-tool
     document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     state.tool = btn.dataset.tool;
@@ -3017,6 +3018,10 @@ document.querySelectorAll('#symbolRow .shape-btn').forEach(btn => {
 // auto-closes once something is picked or you tap anywhere else — same
 // dismiss pattern as the job dropdown.
 function openToolFlyout(toolName, flyoutId, btnEl){
+  // Close all other flyouts first so they never overlap
+  ['shapeRow','symbolRow','tagsRow','whiteoutRow','drawRow','dimsRow'].forEach(id => {
+    if(id !== flyoutId){ const f = document.getElementById(id); if(f) f.classList.add('hidden'); }
+  });
   const btn = btnEl || document.querySelector(`.tool-btn[data-tool="${toolName}"]`);
   const flyout = document.getElementById(flyoutId);
   if(!flyout) return;
@@ -3161,7 +3166,7 @@ document.addEventListener('click', (e) => {
 // Draw flyout — context-sensitive: normal = tool picker; when route active = joint radius settings
 const DRAW_TOOLS = ['draw','line','multiline','ductrun','hatchline','hatcharea','offset','fillet'];
 const DRAW_PENCIL_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`;
-const DRAW_SETTINGS_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>`;
+const DRAW_SETTINGS_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
 
 function updateDrawGroupFace(){
   const btn = $('#drawGroupBtn');
@@ -3679,13 +3684,14 @@ function onPointerDown(e){
     state.snapPoint = null;
     state.currentStroke = { id: genId(), type: 'dimension', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: dp, p1: dp, text: '', textPos: dp, note: '', extOffset: 15 };
   } else if(state.tool === 'anglemeasure'){
-    // Three-point angle: vertex → armA → armB
+    // Three-point angle: armA → vertex/corner → armB (click order)
     const sn = findSnapPoint(p);
     const pt = sn ? sn.pt : snapToGridPt(p);
     if(!state.anglePoints) state.anglePoints = [];
     state.anglePoints.push(pt);
+    _updateAngleStepHud(state.anglePoints.length);
     if(state.anglePoints.length === 3){
-      const [vertex, armA, armB] = state.anglePoints;
+      const [armA, vertex, armB] = state.anglePoints;
       const angA = Math.atan2(armA.y - vertex.y, armA.x - vertex.x);
       const angB = Math.atan2(armB.y - vertex.y, armB.x - vertex.x);
       let diff = angB - angA;
@@ -3701,12 +3707,13 @@ function onPointerDown(e){
       sh.markups.push(m);
       markDirty();
       state.anglePoints = null;
+      _hideAngleStepHud();
       switchToSelectAndSelect(m.id);
     } else {
       drawAllMarkups();
     }
   } else if(state.tool === 'radiusdim' || state.tool === 'diameterdim'){
-    // Click on a circle shape markup to annotate it
+    // Click on a circle shape OR a multiline joint/fillet to annotate it
     const sh = activeSheet();
     const hit = sh.markups.find(m2 => m2.type === 'shape' && m2.shape === 'circle' && isMarkupInteractable(m2) && markupContainsPoint(m2, p));
     if(hit){
@@ -3744,6 +3751,57 @@ function onPointerDown(e){
       sh.markups.push(m);
       markDirty();
       switchToSelectAndSelect(m.id);
+    } else {
+      // Try multiline joint/fillet: find nearest joint within click tolerance
+      const mlines = sh.markups.filter(ml => ml.type === 'multiline' && isMarkupInteractable(ml) && ml.points && ml.points.length >= 3);
+      let bestJoint = null, bestDist = Infinity;
+      for(const ml of mlines){
+        const jrPx = ml.jointRadius ?? JOINT_RADIUS;
+        if(jrPx < 2) continue;
+        for(let i = 1; i < ml.points.length - 1; i++){
+          const pp0 = ml.points[i-1], pp1 = ml.points[i], pp2 = ml.points[i+1];
+          const d1 = Math.hypot(pp1.x-pp0.x, pp1.y-pp0.y);
+          const d2 = Math.hypot(pp2.x-pp1.x, pp2.y-pp1.y);
+          const effectiveR = Math.min(jrPx, d1/2, d2/2);
+          if(effectiveR < 2) continue;
+          const dist = Math.hypot(p.x - pp1.x, p.y - pp1.y);
+          if(dist < effectiveR + 20 && dist < bestDist){
+            bestDist = dist;
+            bestJoint = { center: pp1, radius: effectiveR };
+          }
+        }
+      }
+      if(bestJoint){
+        const { center, radius: radiusPx } = bestJoint;
+        const cal = sh.scaleCalibration;
+        let label = '?';
+        if(cal && cal.pixelDist && cal.realLength){
+          const pxPerIn = (cal.pixelDist / cal.realLength) / 12;
+          if(state.tool === 'radiusdim'){
+            const inVal = Math.round(radiusPx / pxPerIn * 2) / 2;
+            label = 'R ' + inVal + '"';
+          } else {
+            const inVal = Math.round(radiusPx * 2 / pxPerIn * 2) / 2;
+            label = 'Ø ' + inVal + '"';
+          }
+        }
+        const dx2 = p.x - center.x, dy2 = p.y - center.y;
+        const dist2 = Math.hypot(dx2, dy2) || radiusPx;
+        const ux = dx2 / dist2, uy = dy2 / dist2;
+        const edge = { x: center.x + ux * radiusPx, y: center.y + uy * radiusPx };
+        const textPos2 = { x: center.x + ux * (radiusPx + 16), y: center.y + uy * (radiusPx + 16) };
+        let mj;
+        if(state.tool === 'radiusdim'){
+          mj = { id: genId(), type: 'radiusdim', color: DEFAULT_DIMENSION_COLOR, thickness: 2, center, edge, text: label, textPos: textPos2, note: '', createdAt: Date.now() };
+        } else {
+          const opp2 = { x: center.x - ux * radiusPx, y: center.y - uy * radiusPx };
+          const tPos2 = { x: center.x, y: center.y - radiusPx - 12 };
+          mj = { id: genId(), type: 'diameterdim', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: opp2, p1: edge, text: label, textPos: tPos2, note: '', createdAt: Date.now() };
+        }
+        sh.markups.push(mj);
+        markDirty();
+        switchToSelectAndSelect(mj.id);
+      }
     }
   } else if(state.tool === 'whiteoutRect'){
     state.drawing = true;
@@ -3954,14 +4012,23 @@ function onPointerMove(e){
     const dimSn = findSnapPoint(dimRaw);
     state.snapPoint = dimSn || null;
     if(state.tool === 'dimension'){
-      state.currentStroke.p1 = dimSn ? dimSn.pt : (state.shiftDown ? dimRaw : hvSnap(state.currentStroke.p0, dimRaw));
+      // H/V dim: drag direction determines axis; second point = raw cursor (no 45° snap)
+      const p1raw = dimSn ? dimSn.pt : dimRaw;
+      const dx = p1raw.x - state.currentStroke.p0.x;
+      const dy = p1raw.y - state.currentStroke.p0.y;
+      state.currentStroke.dimMode = Math.abs(dx) >= Math.abs(dy) ? 'h' : 'v';
+      state.currentStroke.p1 = p1raw;
     } else {
       // angulardim: free angle always; shift = H/V lock
       state.currentStroke.p1 = dimSn ? dimSn.pt : (state.shiftDown ? hvSnap(state.currentStroke.p0, dimRaw) : dimRaw);
     }
     drawAllMarkups();
-    drawDimensionPreview(state.currentStroke.p0, state.currentStroke.p1);
-    showDimLiveChip(state.currentStroke.p0, state.currentStroke.p1);
+    drawDimensionPreview(state.currentStroke.p0, state.currentStroke.p1, state.currentStroke.dimMode);
+    // Show live measurement along the locked axis only
+    const _lp0 = state.currentStroke.p0, _lp1 = state.currentStroke.p1;
+    const _dm = state.currentStroke.dimMode;
+    const _chipP1 = _dm === 'h' ? {x: _lp1.x, y: _lp0.y} : _dm === 'v' ? {x: _lp0.x, y: _lp1.y} : _lp1;
+    showDimLiveChip(_lp0, _chipP1);
   } else if(state.tool === 'whiteoutRect' && state.drawing){
     state.currentStroke.p1 = p;
     drawAllMarkups();
@@ -4033,6 +4100,33 @@ function onPointerMove(e){
   } else {
     state.ghostSymbolPos = null;
   }
+  // Ghost angle lines — as user places armA and vertex
+  if(state.tool === 'anglemeasure'){
+    const sn = findSnapPoint(p);
+    state.snapPoint = sn || null;
+    const curPt = sn ? sn.pt : p;
+    if(state.anglePoints && state.anglePoints.length > 0){
+      const pts = state.anglePoints;
+      drawAllMarkups();
+      const actx = mCanvas.getContext('2d');
+      actx.save();
+      actx.globalAlpha = 0.5;
+      actx.strokeStyle = DEFAULT_DIMENSION_COLOR;
+      actx.lineWidth = 1.5;
+      actx.setLineDash([5, 3]);
+      actx.lineCap = 'round';
+      if(pts.length === 1){
+        // armA placed — draw ghost line from armA to cursor (heading toward vertex)
+        actx.beginPath(); actx.moveTo(pts[0].x, pts[0].y); actx.lineTo(curPt.x, curPt.y); actx.stroke();
+      } else if(pts.length === 2){
+        // armA + vertex placed — draw both arms + ghost second arm to cursor
+        actx.beginPath(); actx.moveTo(pts[0].x, pts[0].y); actx.lineTo(pts[1].x, pts[1].y); actx.stroke();
+        actx.beginPath(); actx.moveTo(pts[1].x, pts[1].y); actx.lineTo(curPt.x, curPt.y); actx.stroke();
+      }
+      actx.restore();
+      drawSnapIndicator();
+    }
+  }
   // Ghost dim arrowhead — before first click
   if((state.tool === 'dimension' || state.tool === 'angulardim') && !state.drawing){
     const dimGhostSn = findSnapPoint(canvasPointClearFingertip(e));
@@ -4081,7 +4175,7 @@ function switchToTool(toolName){
   state.tool = toolName;
   if(typeof updateDrawGroupFace === 'function') updateDrawGroupFace();
   if(toolName !== 'dimension' && toolName !== 'angulardim'){ state.ghostDimPos = null; state._lastDimRawP1 = null; _hideDimLiveChip(); } // clear ghost when leaving dim tool
-  if(toolName !== 'anglemeasure') state.anglePoints = null;
+  if(toolName !== 'anglemeasure'){ state.anglePoints = null; _hideAngleStepHud(); }
   if(!['label','note','elevation','equipment','keynotetag'].includes(toolName)) state.ghostLeaderPos = null;
 }
 
@@ -4259,21 +4353,30 @@ function onPointerUp(e){
     state.drawing = false;
     const dim = state.currentStroke;
     state.currentStroke = null;
-    const pixelDist = Math.hypot(dim.p1.x - dim.p0.x, dim.p1.y - dim.p0.y);
+    // For H/V dims, measure along the locked axis only
+    const pixelDist = dim.dimMode === 'h' ? Math.abs(dim.p1.x - dim.p0.x)
+                    : dim.dimMode === 'v' ? Math.abs(dim.p1.y - dim.p0.y)
+                    : Math.hypot(dim.p1.x - dim.p0.x, dim.p1.y - dim.p0.y);
     if(pixelDist > 4){
       const sh = activeSheet();
       function commitDim(text, suggested){
         if(!text) return;
         dim.text = text;
         dim.textIsCustom = (text !== suggested);
-        // Position text above the dim line midpoint (accounting for extension lines)
-        const dv = normalizePt(dim.p0, dim.p1);
-        const perp = { x: -dv.y, y: dv.x };
-        const off = dim.extOffset != null ? dim.extOffset : 15;
-        dim.textPos = {
-          x: (dim.p0.x + dim.p1.x) / 2 + perp.x * (off + 12),
-          y: (dim.p0.y + dim.p1.y) / 2 + perp.y * (off + 12)
-        };
+        // Position text near the dim line midpoint
+        if(dim.dimMode === 'h'){
+          dim.textPos = { x: (dim.p0.x + dim.p1.x) / 2, y: dim.p1.y - 16 };
+        } else if(dim.dimMode === 'v'){
+          dim.textPos = { x: dim.p1.x + 16, y: (dim.p0.y + dim.p1.y) / 2 };
+        } else {
+          const dv = normalizePt(dim.p0, dim.p1);
+          const perp = { x: -dv.y, y: dv.x };
+          const off = dim.extOffset != null ? dim.extOffset : 15;
+          dim.textPos = {
+            x: (dim.p0.x + dim.p1.x) / 2 + perp.x * (off + 12),
+            y: (dim.p0.y + dim.p1.y) / 2 + perp.y * (off + 12)
+          };
+        }
         dim.createdAt = Date.now();
         sh.markups.push(dim);
         markDirty();
@@ -4314,6 +4417,23 @@ function _pxToFtInLabel(px, cal){
 function _hideDimLiveChip(){
   const c = document.getElementById('dimLiveChip');
   if(c) c.style.display = 'none';
+}
+// Angle tool step indicator
+function _updateAngleStepHud(step){
+  let hud = document.getElementById('angleStepHud');
+  if(!hud){
+    hud = document.createElement('div');
+    hud.id = 'angleStepHud';
+    hud.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(30,58,95,0.92);color:#CBD8EA;font-size:12px;font-weight:600;letter-spacing:0.08em;padding:6px 14px;border-radius:20px;border:1px solid #4A9EDB;pointer-events:none;z-index:9999;font-family:-apple-system,BlinkMacSystemFont,sans-serif;';
+    document.body.appendChild(hud);
+  }
+  const msgs = ['', 'Click corner (vertex)', 'Click 2nd arm end'];
+  hud.textContent = msgs[step] || '';
+  hud.style.display = step >= 1 && step <= 2 ? 'block' : 'none';
+}
+function _hideAngleStepHud(){
+  const hud = document.getElementById('angleStepHud');
+  if(hud) hud.style.display = 'none';
 }
 function showDimLiveChip(p0, p1){
   const sh = activeSheet();
@@ -5370,11 +5490,20 @@ function handlePointsForMarkup(m){
     handles.push({ key: 'boxResize', p: { x: bx + bW, y: by + bH / 2 }, diamond: true });
     return handles;
   }
-  if(m.type === 'anglemeasure') return [{ key: 'move', p: m.textPos }];
+  if(m.type === 'anglemeasure') return [
+    { key: 'armA', p: m.armA },
+    { key: 'vertex', p: m.vertex },
+    { key: 'armB', p: m.armB },
+    { key: 'move', p: m.textPos }
+  ];
   if(m.type === 'radiusdim') return [{ key: 'move', p: m.textPos }, { key: 'edge', p: m.edge }];
   if(m.type === 'diameterdim') return [{ key: 'move', p: m.textPos }, { key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }];
   if(m.type === 'dimension'){
-    // Grips at measurement points (p0/p1), label (textPos), and dim-line midpoint (extOffset)
+    if(m.dimMode){
+      // H/V dim: p0 (anchor), p1 (2nd point / dim-line offset), textPos
+      return [{ key: 'p0', p: m.p0 }, { key: 'p1', p: m.p1 }, { key: 'textPos', p: m.textPos }];
+    }
+    // Legacy free-angle: include extOffset midpoint grip
     const dv_h = normalizePt(m.p0, m.p1);
     const perp_h = { x: -dv_h.y, y: dv_h.x };
     const off_h = m.extOffset != null ? m.extOffset : 15;
@@ -5522,6 +5651,18 @@ function markupContainsPoint(m, p){
   }
   if(m.type === 'line') return distToSegment(p, m.p0, m.p1) < 12 || (m.textPos && Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 24);
   if(m.type === 'dimension'){
+    if(m.textPos && Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 24) return true;
+    if(m.dimMode === 'h'){
+      const dim_y = m.p1.y;
+      return distToSegment(p, {x:m.p0.x,y:dim_y}, {x:m.p1.x,y:dim_y}) < 18
+          || distToSegment(p, m.p0, {x:m.p0.x,y:dim_y}) < 18;
+    }
+    if(m.dimMode === 'v'){
+      const dim_x = m.p1.x;
+      return distToSegment(p, {x:dim_x,y:m.p0.y}, {x:dim_x,y:m.p1.y}) < 18
+          || distToSegment(p, m.p0, {x:dim_x,y:m.p0.y}) < 18;
+    }
+    // Legacy free-angle
     const dv = normalizePt(m.p0, m.p1);
     const perp = { x: -dv.y, y: dv.x };
     const off = m.extOffset != null ? m.extOffset : 0;
@@ -5529,8 +5670,7 @@ function markupContainsPoint(m, p){
     const dl1 = { x: m.p1.x + perp.x * off, y: m.p1.y + perp.y * off };
     return distToSegment(p, dl0, dl1) < 18
         || distToSegment(p, m.p0, dl0) < 18
-        || distToSegment(p, m.p1, dl1) < 18
-        || (m.textPos && Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 24);
+        || distToSegment(p, m.p1, dl1) < 18;
   }
   if(m.type === 'shape' || m.type === 'whiteoutRect'){
     const x0 = Math.min(m.p0.x, m.p1.x), x1 = Math.max(m.p0.x, m.p1.x);
@@ -5562,6 +5702,22 @@ function markupContainsPoint(m, p){
   }
   if(m.type === 'airOutletTag') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 40;
   if(m.type === 'damperTag') return Math.hypot(p.x - m.anchor.x, p.y - m.anchor.y) < 40;
+  if(m.type === 'anglemeasure'){
+    if(m.textPos && Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 24) return true;
+    if(m.vertex && m.armA && distToSegment(p, m.vertex, m.armA) < 12) return true;
+    if(m.vertex && m.armB && distToSegment(p, m.vertex, m.armB) < 12) return true;
+    return false;
+  }
+  if(m.type === 'radiusdim'){
+    if(m.textPos && Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 24) return true;
+    if(m.center && m.edge && distToSegment(p, m.center, m.edge) < 12) return true;
+    return false;
+  }
+  if(m.type === 'diameterdim'){
+    if(m.textPos && Math.hypot(p.x - m.textPos.x, p.y - m.textPos.y) < 24) return true;
+    if(m.p0 && m.p1 && distToSegment(p, m.p0, m.p1) < 12) return true;
+    return false;
+  }
   return false;
 }
 function pointInPolygon(p, points){
@@ -5782,15 +5938,26 @@ function applyDragHandle(drag, p){
     }
     return;
   }
-  if(m.type === 'dimension' && drag.key === 'extOffset'){
-    // Drag the dim-line midpoint grip perpendicular to the measurement axis
+  if(m.type === 'dimension' && m.dimMode && (drag.key === 'p0' || drag.key === 'p1')){
+    // H/V dim: move point freely; update measurement text and textPos
+    if(drag.key === 'p0') m.p0 = p; else m.p1 = p;
+    if(!m.textIsCustom){
+      const dist = m.dimMode === 'h' ? Math.abs(m.p1.x - m.p0.x) : Math.abs(m.p1.y - m.p0.y);
+      const suggestion = suggestDimensionLength(dist);
+      if(suggestion) m.text = suggestion;
+      m.textPos = m.dimMode === 'h'
+        ? { x: (m.p0.x + m.p1.x) / 2, y: m.p1.y - 16 }
+        : { x: m.p1.x + 16, y: (m.p0.y + m.p1.y) / 2 };
+    }
+    return;
+  }
+  if(m.type === 'dimension' && !m.dimMode && drag.key === 'extOffset'){
+    // Legacy free-angle: drag the dim-line midpoint grip perpendicular to the measurement axis
     const dv_e = normalizePt(m.p0, m.p1);
     const perp_e = { x: -dv_e.y, y: dv_e.x };
     const mid_e = { x: (m.p0.x + m.p1.x) / 2, y: (m.p0.y + m.p1.y) / 2 };
-    // Project the pointer onto the perp axis from the midpoint
     const dot = (p.x - mid_e.x) * perp_e.x + (p.y - mid_e.y) * perp_e.y;
-    m.extOffset = Math.max(10, dot); // enforce minimum 10px
-    // Recompute text position to track the new offset
+    m.extOffset = Math.max(10, dot);
     if(!m.textIsCustom){
       m.textPos = {
         x: mid_e.x + perp_e.x * (m.extOffset + 12),
@@ -5799,18 +5966,16 @@ function applyDragHandle(drag, p){
     }
     return;
   }
-  if(m.type === 'dimension' && (drag.key === 'p0' || drag.key === 'p1')){
-    // Snap to 2° increments relative to the fixed endpoint
+  if(m.type === 'dimension' && !m.dimMode && (drag.key === 'p0' || drag.key === 'p1')){
+    // Legacy free-angle: snap to 2° increments relative to the fixed endpoint
     const fixedPt = drag.key === 'p0' ? m.p1 : m.p0;
     p = axisSnap(fixedPt, p);
-    // Move endpoint freely — updates span and angle; recomputes label if not custom
     if(drag.key === 'p0') m.p0 = p; else m.p1 = p;
     if(!m.textIsCustom){
       const newDist = Math.hypot(m.p1.x - m.p0.x, m.p1.y - m.p0.y);
       const suggestion = suggestDimensionLength(newDist);
       if(suggestion) m.text = suggestion;
     }
-    // Keep text label centered above dim line at off + 12
     const dv2 = normalizePt(m.p0, m.p1);
     const perp2 = { x: -dv2.y, y: dv2.x };
     const off2 = m.extOffset != null ? m.extOffset : 15;
@@ -5820,7 +5985,27 @@ function applyDragHandle(drag, p){
     };
     return;
   }
-  if(m.type === 'anglemeasure' && drag.key === 'move'){ m.textPos = p; return; }
+  if(m.type === 'anglemeasure'){
+    if(drag.key === 'move'){ m.textPos = p; return; }
+    if(drag.key === 'armA'){ m.armA = p; }
+    else if(drag.key === 'vertex'){ m.vertex = p; }
+    else if(drag.key === 'armB'){ m.armB = p; }
+    else return;
+    // Recompute angle and default textPos when geometry changes
+    const v = m.vertex, a = m.armA, b = m.armB;
+    const angA = Math.atan2(a.y - v.y, a.x - v.x);
+    const angB = Math.atan2(b.y - v.y, b.x - v.x);
+    let diff = angB - angA;
+    while(diff < 0) diff += Math.PI * 2;
+    if(diff > Math.PI) diff = Math.PI * 2 - diff;
+    const deg = Math.round(diff * 180 / Math.PI * 10) / 10;
+    m.angleDeg = deg;
+    m.text = deg + '°';
+    const midAng = angA + diff / 2;
+    const arcR = Math.min(Math.hypot(a.x-v.x,a.y-v.y), Math.hypot(b.x-v.x,b.y-v.y)) * 0.45;
+    m.textPos = { x: v.x + Math.cos(midAng) * (arcR + 14), y: v.y + Math.sin(midAng) * (arcR + 14) };
+    return;
+  }
   if(m.type === 'radiusdim'){
     if(drag.key === 'move'){ m.textPos = p; return; }
     if(drag.key === 'edge'){ m.edge = p; return; }
@@ -8697,51 +8882,84 @@ function lightenHexColor(hex, amount = 0.55){
 }
 function drawDimension(m){
   const ctx = mCanvas.getContext('2d');
-  const dv = normalizePt(m.p0, m.p1);
-  const perp = { x: -dv.y, y: dv.x };
-  const off = m.extOffset != null ? m.extOffset : 0;
-  // Dim line endpoints (offset from measurement points along perp)
-  const dl0 = { x: m.p0.x + perp.x * off, y: m.p0.y + perp.y * off };
-  const dl1 = { x: m.p1.x + perp.x * off, y: m.p1.y + perp.y * off };
-  // Extension line tips (10px past dim line)
-  const tip0 = { x: m.p0.x + perp.x * (off + 10), y: m.p0.y + perp.y * (off + 10) };
-  const tip1 = { x: m.p1.x + perp.x * (off + 10), y: m.p1.y + perp.y * (off + 10) };
-
   ctx.strokeStyle = m.color;
   ctx.lineWidth = m.thickness || 2;
+  ctx.lineCap = 'round';
 
-  // Extension lines: from measurement point to tip (overshoots dim line by 10px)
-  ctx.beginPath(); ctx.moveTo(m.p0.x, m.p0.y); ctx.lineTo(tip0.x, tip0.y); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(m.p1.x, m.p1.y); ctx.lineTo(tip1.x, tip1.y); ctx.stroke();
-
-  // Dimension line between the two offset endpoints
-  ctx.beginPath(); ctx.moveTo(dl0.x, dl0.y); ctx.lineTo(dl1.x, dl1.y); ctx.stroke();
-
-  // Arrowheads at dim line endpoints pointing inward
-  drawArrowHead(ctx, dl1, dl0, m.color);
-  drawArrowHead(ctx, dl0, dl1, m.color);
+  if(m.dimMode === 'h'){
+    // Horizontal dim: dim line at p1.y, extension lines vertical from p0 and p1
+    const dim_y = m.p1.y;
+    const over = 8 * (dim_y >= m.p0.y ? 1 : -1);
+    ctx.beginPath(); ctx.moveTo(m.p0.x, m.p0.y); ctx.lineTo(m.p0.x, dim_y + over); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(m.p1.x, m.p1.y); ctx.lineTo(m.p1.x, dim_y + over); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(m.p0.x, dim_y); ctx.lineTo(m.p1.x, dim_y); ctx.stroke();
+    drawArrowHead(ctx, {x:m.p1.x,y:dim_y}, {x:m.p0.x,y:dim_y}, m.color);
+    drawArrowHead(ctx, {x:m.p0.x,y:dim_y}, {x:m.p1.x,y:dim_y}, m.color);
+  } else if(m.dimMode === 'v'){
+    // Vertical dim: dim line at p1.x, extension lines horizontal from p0 and p1
+    const dim_x = m.p1.x;
+    const over = 8 * (dim_x >= m.p0.x ? 1 : -1);
+    ctx.beginPath(); ctx.moveTo(m.p0.x, m.p0.y); ctx.lineTo(dim_x + over, m.p0.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(m.p1.x, m.p1.y); ctx.lineTo(dim_x + over, m.p1.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(dim_x, m.p0.y); ctx.lineTo(dim_x, m.p1.y); ctx.stroke();
+    drawArrowHead(ctx, {x:dim_x,y:m.p1.y}, {x:dim_x,y:m.p0.y}, m.color);
+    drawArrowHead(ctx, {x:dim_x,y:m.p0.y}, {x:dim_x,y:m.p1.y}, m.color);
+  } else {
+    // Legacy free-angle dim (angulardim and old saved dims)
+    const dv = normalizePt(m.p0, m.p1);
+    const perp = { x: -dv.y, y: dv.x };
+    const off = m.extOffset != null ? m.extOffset : 0;
+    const dl0 = { x: m.p0.x + perp.x * off, y: m.p0.y + perp.y * off };
+    const dl1 = { x: m.p1.x + perp.x * off, y: m.p1.y + perp.y * off };
+    const tip0 = { x: m.p0.x + perp.x * (off + 10), y: m.p0.y + perp.y * (off + 10) };
+    const tip1 = { x: m.p1.x + perp.x * (off + 10), y: m.p1.y + perp.y * (off + 10) };
+    ctx.beginPath(); ctx.moveTo(m.p0.x, m.p0.y); ctx.lineTo(tip0.x, tip0.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(m.p1.x, m.p1.y); ctx.lineTo(tip1.x, tip1.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(dl0.x, dl0.y); ctx.lineTo(dl1.x, dl1.y); ctx.stroke();
+    drawArrowHead(ctx, dl1, dl0, m.color);
+    drawArrowHead(ctx, dl0, dl1, m.color);
+  }
 
   // Text pill — centered on textPos grip
   if(m.text) drawTextPill(ctx, m.text, m.textPos, m.textIsCustom ? lightenHexColor(m.color) : m.color, '#ffffff', true);
 }
-function drawDimensionPreview(p0, p1){
+function drawDimensionPreview(p0, p1, dimMode){
   const ctx = mCanvas.getContext('2d');
   ctx.save();
   ctx.globalAlpha = 0.6;
-  const dv = normalizePt(p0, p1);
-  const perp = { x: -dv.y, y: dv.x };
-  const off = 15;
-  const dl0 = { x: p0.x + perp.x * off, y: p0.y + perp.y * off };
-  const dl1 = { x: p1.x + perp.x * off, y: p1.y + perp.y * off };
-  const tip0 = { x: p0.x + perp.x * (off + 10), y: p0.y + perp.y * (off + 10) };
-  const tip1 = { x: p1.x + perp.x * (off + 10), y: p1.y + perp.y * (off + 10) };
   ctx.strokeStyle = DEFAULT_DIMENSION_COLOR;
   ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(tip0.x, tip0.y); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(tip1.x, tip1.y); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(dl0.x, dl0.y); ctx.lineTo(dl1.x, dl1.y); ctx.stroke();
-  drawArrowHead(ctx, dl1, dl0, DEFAULT_DIMENSION_COLOR);
-  drawArrowHead(ctx, dl0, dl1, DEFAULT_DIMENSION_COLOR);
+  ctx.lineCap = 'round';
+  if(dimMode === 'h'){
+    const dim_y = p1.y;
+    const over = 8 * (dim_y >= p0.y ? 1 : -1);
+    ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p0.x, dim_y + over); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p1.x, dim_y + over); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p0.x, dim_y); ctx.lineTo(p1.x, dim_y); ctx.stroke();
+    drawArrowHead(ctx, {x:p1.x,y:dim_y}, {x:p0.x,y:dim_y}, DEFAULT_DIMENSION_COLOR);
+    drawArrowHead(ctx, {x:p0.x,y:dim_y}, {x:p1.x,y:dim_y}, DEFAULT_DIMENSION_COLOR);
+  } else if(dimMode === 'v'){
+    const dim_x = p1.x;
+    const over = 8 * (dim_x >= p0.x ? 1 : -1);
+    ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(dim_x + over, p0.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(dim_x + over, p1.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(dim_x, p0.y); ctx.lineTo(dim_x, p1.y); ctx.stroke();
+    drawArrowHead(ctx, {x:dim_x,y:p1.y}, {x:dim_x,y:p0.y}, DEFAULT_DIMENSION_COLOR);
+    drawArrowHead(ctx, {x:dim_x,y:p0.y}, {x:dim_x,y:p1.y}, DEFAULT_DIMENSION_COLOR);
+  } else {
+    const dv = normalizePt(p0, p1);
+    const perp = { x: -dv.y, y: dv.x };
+    const off = 15;
+    const dl0 = { x: p0.x + perp.x * off, y: p0.y + perp.y * off };
+    const dl1 = { x: p1.x + perp.x * off, y: p1.y + perp.y * off };
+    const tip0 = { x: p0.x + perp.x * (off + 10), y: p0.y + perp.y * (off + 10) };
+    const tip1 = { x: p1.x + perp.x * (off + 10), y: p1.y + perp.y * (off + 10) };
+    ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(tip0.x, tip0.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(tip1.x, tip1.y); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(dl0.x, dl0.y); ctx.lineTo(dl1.x, dl1.y); ctx.stroke();
+    drawArrowHead(ctx, dl1, dl0, DEFAULT_DIMENSION_COLOR);
+    drawArrowHead(ctx, dl0, dl1, DEFAULT_DIMENSION_COLOR);
+  }
   ctx.restore();
 }
 
