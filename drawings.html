@@ -3758,6 +3758,7 @@ function onPointerMove(e){
     state.currentStroke.p1 = dimSn ? dimSn.pt : (state.shiftDown ? axisSnap(state.currentStroke.p0, dimRaw) : dimRaw);
     drawAllMarkups();
     drawDimensionPreview(state.currentStroke.p0, state.currentStroke.p1);
+    showDimLiveChip(state.currentStroke.p0, state.currentStroke.p1);
   } else if(state.tool === 'whiteoutRect' && state.drawing){
     state.currentStroke.p1 = p;
     drawAllMarkups();
@@ -3875,7 +3876,7 @@ function switchToTool(toolName){
     renderKeyNotePanel();
   }
   state.tool = toolName;
-  if(toolName !== 'dimension'){ state.ghostDimPos = null; state._lastDimRawP1 = null; } // clear ghost when leaving dim tool
+  if(toolName !== 'dimension'){ state.ghostDimPos = null; state._lastDimRawP1 = null; _hideDimLiveChip(); } // clear ghost when leaving dim tool
   if(!['label','note','elevation','equipment','keynotetag'].includes(toolName)) state.ghostLeaderPos = null;
 }
 
@@ -4049,6 +4050,7 @@ function onPointerUp(e){
     state.currentStroke = null;
     drawAllMarkups();
   } else if(state.tool === 'dimension' && state.drawing){
+    _hideDimLiveChip();
     state.drawing = false;
     const dim = state.currentStroke;
     state.currentStroke = null;
@@ -4103,6 +4105,35 @@ function _pxToFtInLabel(px, cal){
   const f = Math.floor(ft);
   const i = Math.round((ft - f) * 12);
   return i === 0 ? `${f}′` : `${f}′ ${i}″`;
+}
+function _hideDimLiveChip(){
+  const c = document.getElementById('dimLiveChip');
+  if(c) c.style.display = 'none';
+}
+function showDimLiveChip(p0, p1){
+  const sh = activeSheet();
+  const cal = sh && sh.scaleCalibration;
+  const px = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+  const label = _pxToFtInLabel(px, cal);
+  if(!label){ _hideDimLiveChip(); return; }
+
+  // Position at midpoint between p0 and p1, offset slightly above the line
+  const mid = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 };
+  const mRect = mCanvas.getBoundingClientRect();
+  const sx = mRect.left + mid.x * (mRect.width / mCanvas.width);
+  const sy = mRect.top  + mid.y * (mRect.height / mCanvas.height) - 28;
+
+  let c = document.getElementById('dimLiveChip');
+  if(!c){
+    c = document.createElement('div');
+    c.id = 'dimLiveChip';
+    c.style.cssText = 'position:fixed;background:#1B2A41;color:#CBD8EA;font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;z-index:60;pointer-events:none;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.28);display:none;transform:translateX(-50%);';
+    document.body.appendChild(c);
+  }
+  c.textContent = label;
+  c.style.left = sx + 'px';
+  c.style.top  = sy + 'px';
+  c.style.display = 'block';
 }
 function _getOrCreateChip(id, extraCss){
   let c = document.getElementById(id);
