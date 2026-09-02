@@ -3713,15 +3713,10 @@ function onPointerDown(e){
       drawAllMarkups();
     }
   } else if(state.tool === 'radiusdim' || state.tool === 'diameterdim'){
-    // Click on a circle shape OR a multiline joint/fillet to annotate it
+    // Click on: (1) circle shape, (2) arc markup (fillet tool), (3) multiline joint
     const sh = activeSheet();
-    const hit = sh.markups.find(m2 => m2.type === 'shape' && m2.shape === 'circle' && isMarkupInteractable(m2) && markupContainsPoint(m2, p));
-    if(hit){
-      const x0 = Math.min(hit.p0.x, hit.p1.x), y0 = Math.min(hit.p0.y, hit.p1.y);
-      const w = Math.abs(hit.p1.x - hit.p0.x), h = Math.abs(hit.p1.y - hit.p0.y);
-      const cx = x0 + w / 2, cy = y0 + h / 2;
-      const radiusPx = Math.min(w, h) / 2;
-      // Convert to inches using calibration
+    // Helper: build and place the annotation given a resolved center + radiusPx
+    function placeDimFromArc(acx, acy, radiusPx){
       const cal = sh.scaleCalibration;
       let label = '?';
       if(cal && cal.pixelDist && cal.realLength){
@@ -3734,73 +3729,66 @@ function onPointerDown(e){
           label = 'Ø ' + inVal + '"';
         }
       }
-      // Direction from center toward click point
-      const dx = p.x - cx, dy = p.y - cy;
-      const dist = Math.hypot(dx, dy) || radiusPx;
-      const ux = dx / dist, uy = dy / dist;
-      const edge = { x: cx + ux * radiusPx, y: cy + uy * radiusPx };
-      const textPos = { x: cx + ux * (radiusPx + 16), y: cy + uy * (radiusPx + 16) };
-      let m;
+      const ddx = p.x - acx, ddy = p.y - acy;
+      const ddist = Math.hypot(ddx, ddy) || radiusPx;
+      const ux = ddx / ddist, uy = ddy / ddist;
+      const edge = { x: acx + ux * radiusPx, y: acy + uy * radiusPx };
+      const textPos = { x: acx - ux * (radiusPx + 40), y: acy - uy * (radiusPx + 40) };
+      let mm;
       if(state.tool === 'radiusdim'){
-        m = { id: genId(), type: 'radiusdim', color: DEFAULT_DIMENSION_COLOR, thickness: 2, center: {x:cx,y:cy}, edge, text: label, textPos, note: '', createdAt: Date.now() };
+        mm = { id: genId(), type: 'radiusdim', color: DEFAULT_DIMENSION_COLOR, thickness: 2, center: {x:acx,y:acy}, edge, text: label, textPos, note: '', createdAt: Date.now() };
       } else {
-        const opp = { x: cx - ux * radiusPx, y: cy - uy * radiusPx };
-        const tPos = { x: cx, y: cy - radiusPx - 12 };
-        m = { id: genId(), type: 'diameterdim', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: opp, p1: edge, text: label, textPos: tPos, note: '', createdAt: Date.now() };
+        const opp = { x: acx - ux * radiusPx, y: acy - uy * radiusPx };
+        const tPos = { x: acx, y: acy - radiusPx - 12 };
+        mm = { id: genId(), type: 'diameterdim', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: opp, p1: edge, text: label, textPos: tPos, note: '', createdAt: Date.now() };
       }
-      sh.markups.push(m);
+      sh.markups.push(mm);
       markDirty();
-      switchToSelectAndSelect(m.id);
+      switchToSelectAndSelect(mm.id);
+    }
+
+    // 1. Circle shape hit
+    const circHit = sh.markups.find(m2 => m2.type === 'shape' && m2.shape === 'circle' && isMarkupInteractable(m2) && markupContainsPoint(m2, p));
+    if(circHit){
+      const x0 = Math.min(circHit.p0.x, circHit.p1.x), y0 = Math.min(circHit.p0.y, circHit.p1.y);
+      const w = Math.abs(circHit.p1.x - circHit.p0.x), h = Math.abs(circHit.p1.y - circHit.p0.y);
+      placeDimFromArc(x0 + w / 2, y0 + h / 2, Math.min(w, h) / 2);
     } else {
-      // Try multiline joint/fillet: find nearest joint within click tolerance
-      const mlines = sh.markups.filter(ml => ml.type === 'multiline' && isMarkupInteractable(ml) && ml.points && ml.points.length >= 3);
-      let bestJoint = null, bestDist = Infinity;
-      for(const ml of mlines){
-        const jrPx = ml.jointRadius ?? JOINT_RADIUS;
-        if(jrPx < 2) continue;
-        for(let i = 1; i < ml.points.length - 1; i++){
-          const pp0 = ml.points[i-1], pp1 = ml.points[i], pp2 = ml.points[i+1];
-          const d1 = Math.hypot(pp1.x-pp0.x, pp1.y-pp0.y);
-          const d2 = Math.hypot(pp2.x-pp1.x, pp2.y-pp1.y);
-          const effectiveR = Math.min(jrPx, d1/2, d2/2);
-          if(effectiveR < 2) continue;
-          const dist = Math.hypot(p.x - pp1.x, p.y - pp1.y);
-          if(dist < effectiveR + 20 && dist < bestDist){
-            bestDist = dist;
-            bestJoint = { center: pp1, radius: effectiveR };
+      // 2. Arc markup (fillet tool): type='arc' with cx,cy,radius
+      const arcHit = sh.markups.find(m2 => m2.type === 'arc' && isMarkupInteractable(m2) && Math.abs(Math.hypot(p.x - m2.cx, p.y - m2.cy) - m2.radius) < 20);
+      if(arcHit){
+        placeDimFromArc(arcHit.cx, arcHit.cy, arcHit.radius);
+      } else {
+        // 3. Multiline joint (rounded corner): compute true arc center via bisector
+        const mlines = sh.markups.filter(ml => ml.type === 'multiline' && isMarkupInteractable(ml) && ml.points && ml.points.length >= 3);
+        let bestJoint = null, bestDist = Infinity;
+        for(const ml of mlines){
+          const jrPx = ml.jointRadius ?? JOINT_RADIUS;
+          if(jrPx < 2) continue;
+          for(let i = 1; i < ml.points.length - 1; i++){
+            const pp0 = ml.points[i-1], pp1 = ml.points[i], pp2 = ml.points[i+1];
+            const seg1 = Math.hypot(pp1.x-pp0.x, pp1.y-pp0.y);
+            const seg2 = Math.hypot(pp2.x-pp1.x, pp2.y-pp1.y);
+            const effectiveR = Math.min(jrPx, seg1/2, seg2/2);
+            if(effectiveR < 2) continue;
+            // True arc center: bisector from corner inward at r/sin(halfAngle)
+            const d1x = (pp0.x - pp1.x) / seg1, d1y = (pp0.y - pp1.y) / seg1;
+            const d2x = (pp2.x - pp1.x) / seg2, d2y = (pp2.y - pp1.y) / seg2;
+            const bx = d1x + d2x, by = d1y + d2y;
+            const bLen = Math.hypot(bx, by) || 1;
+            const cosA = d1x * d2x + d1y * d2y;
+            const halfAngle = Math.acos(Math.max(-1, Math.min(1, cosA))) / 2;
+            const distToCenter = halfAngle > 1e-4 ? effectiveR / Math.sin(halfAngle) : effectiveR;
+            const trueCx = pp1.x + (bx / bLen) * distToCenter;
+            const trueCy = pp1.y + (by / bLen) * distToCenter;
+            const dist = Math.hypot(p.x - trueCx, p.y - trueCy);
+            if(dist < effectiveR + 24 && dist < bestDist){
+              bestDist = dist;
+              bestJoint = { cx: trueCx, cy: trueCy, radius: effectiveR };
+            }
           }
         }
-      }
-      if(bestJoint){
-        const { center, radius: radiusPx } = bestJoint;
-        const cal = sh.scaleCalibration;
-        let label = '?';
-        if(cal && cal.pixelDist && cal.realLength){
-          const pxPerIn = (cal.pixelDist / cal.realLength) / 12;
-          if(state.tool === 'radiusdim'){
-            const inVal = Math.round(radiusPx / pxPerIn * 2) / 2;
-            label = 'R ' + inVal + '"';
-          } else {
-            const inVal = Math.round(radiusPx * 2 / pxPerIn * 2) / 2;
-            label = 'Ø ' + inVal + '"';
-          }
-        }
-        const dx2 = p.x - center.x, dy2 = p.y - center.y;
-        const dist2 = Math.hypot(dx2, dy2) || radiusPx;
-        const ux = dx2 / dist2, uy = dy2 / dist2;
-        const edge = { x: center.x + ux * radiusPx, y: center.y + uy * radiusPx };
-        const textPos2 = { x: center.x + ux * (radiusPx + 16), y: center.y + uy * (radiusPx + 16) };
-        let mj;
-        if(state.tool === 'radiusdim'){
-          mj = { id: genId(), type: 'radiusdim', color: DEFAULT_DIMENSION_COLOR, thickness: 2, center, edge, text: label, textPos: textPos2, note: '', createdAt: Date.now() };
-        } else {
-          const opp2 = { x: center.x - ux * radiusPx, y: center.y - uy * radiusPx };
-          const tPos2 = { x: center.x, y: center.y - radiusPx - 12 };
-          mj = { id: genId(), type: 'diameterdim', color: DEFAULT_DIMENSION_COLOR, thickness: 2, p0: opp2, p1: edge, text: label, textPos: tPos2, note: '', createdAt: Date.now() };
-        }
-        sh.markups.push(mj);
-        markDirty();
-        switchToSelectAndSelect(mj.id);
+        if(bestJoint) placeDimFromArc(bestJoint.cx, bestJoint.cy, bestJoint.radius);
       }
     }
   } else if(state.tool === 'whiteoutRect'){
@@ -9041,21 +9029,23 @@ function drawAngleMeasure(m){
 
 // ── Radius dimension: radial line from circle center to edge ───────────────
 // Stored as {type:'radiusdim', center, edge, text, textPos}
-// Draws as a leader: line from textPos (label) to edge (arc surface), arrowhead at edge.
+// Draws a radial line from center → edge (arrowhead at edge); text floats at textPos (opposite side).
 function drawRadiusDim(m){
   const ctx = mCanvas.getContext('2d');
   const col = m.color || DEFAULT_DIMENSION_COLOR;
   ctx.strokeStyle = col;
   ctx.lineWidth = m.thickness || 2;
   ctx.lineCap = 'round';
-  const tp = m.textPos || { x: m.edge.x + 24, y: m.edge.y - 24 };
-  // Leader line from text label to arc surface
+  // Radial line: center to edge
   ctx.beginPath();
-  ctx.moveTo(tp.x, tp.y);
+  ctx.moveTo(m.center.x, m.center.y);
   ctx.lineTo(m.edge.x, m.edge.y);
   ctx.stroke();
-  // Arrowhead at the arc edge, pointing in from text
-  drawArrowHead(ctx, tp, m.edge, col);
+  // Arrowhead at arc surface, pointing outward from center
+  drawArrowHead(ctx, m.center, m.edge, col);
+  // Text label floats at textPos (opposite side of center from edge)
+  const dx = m.edge.x - m.center.x, dy = m.edge.y - m.center.y;
+  const tp = m.textPos || { x: m.center.x - dx * 1.2, y: m.center.y - dy * 1.2 };
   if(m.text) drawTextPill(ctx, m.text, tp, col, '#ffffff', true);
 }
 
