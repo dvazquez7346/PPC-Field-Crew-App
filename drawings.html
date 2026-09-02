@@ -311,8 +311,6 @@ input,textarea{font-family:inherit;}
 .modal-card select{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;font-family:inherit;background:var(--surface);color:var(--ink);cursor:pointer;}
 .modal-card textarea{min-height:70px;}
 .symbol-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
-.recent-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
-.recent-btn{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:5px 11px;font-size:12px;color:var(--ink);}
 .modal-field-label{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;margin:8px 0 3px;}
 .symbol-btn{width:32px;height:32px;border:1px solid var(--line);border-radius:7px;background:var(--surface-2);font-size:15px;color:var(--navy);}
 .symbol-btn:hover{border-color:var(--blueprint);}
@@ -1012,17 +1010,8 @@ function exportFlattenedImage(){
 /* ============================================================
    MODAL SYSTEM — replaces every native prompt()/confirm() in the app
    ============================================================ */
-const RECENT_TEXTS_KEY = 'ppc_drawing_recent_texts';
-function getRecentTexts(){
-  try{ return JSON.parse(localStorage.getItem(RECENT_TEXTS_KEY)) || []; }catch(err){ return []; }
-}
-function addRecentText(text){
-  if(!text) return;
-  let recents = getRecentTexts().filter(t => t !== text);
-  recents.unshift(text);
-  try{ localStorage.setItem(RECENT_TEXTS_KEY, JSON.stringify(recents.slice(0, 8))); }catch(err){}
-}
-function showModal({ title, sub, value = '', placeholder = '', withSymbols = false, symbols = null, withRecents = false, confirmLabel = 'Save', destructiveLabel = null, onConfirm, onDestructive, onCancel }){
+
+function showModal({ title, sub, value = '', placeholder = '', withSymbols = false, symbols = null, confirmLabel = 'Save', destructiveLabel = null, onConfirm, onDestructive, onCancel }){
   const root = $('#modalRoot');
   root.innerHTML = '';
   const backdrop = document.createElement('div');
@@ -1030,12 +1019,10 @@ function showModal({ title, sub, value = '', placeholder = '', withSymbols = fal
   const card = document.createElement('div');
   card.className = 'modal-card';
   const symbolSet = symbols || SYMBOLS;
-  const recents = withRecents ? getRecentTexts() : [];
   card.innerHTML = `
     <div class="disp">${escapeHtml(title)}</div>
     ${sub ? `<div class="modal-sub">${escapeHtml(sub)}</div>` : ''}
     <textarea id="modalInput" placeholder="${escapeHtml(placeholder)}">${escapeHtml(value)}</textarea>
-    ${recents.length ? `<div class="recent-row">${recents.map(t => `<button type="button" class="recent-btn" data-text="${escapeAttr(t)}">${escapeHtml(t.length > 20 ? t.slice(0, 20) + '\u2026' : t)}</button>`).join('')}</div>` : ''}
     ${withSymbols ? `<div class="symbol-row">${symbolSet.map(s => `<button type="button" class="symbol-btn" data-sym="${escapeAttr(s)}">${escapeHtml(s)}</button>`).join('')}</div>` : ''}
     <div class="modal-row">
       ${destructiveLabel ? `<button type="button" class="destructive">${escapeHtml(destructiveLabel)}</button>` : ''}
@@ -1048,7 +1035,7 @@ function showModal({ title, sub, value = '', placeholder = '', withSymbols = fal
   input.focus();
   input.setSelectionRange(input.value.length, input.value.length);
 
-  card.querySelectorAll('.recent-btn').forEach(btn => {
+  card.querySelectorAll('.recent-btn-REMOVED').forEach(btn => {
     btn.addEventListener('click', () => {
       input.value = btn.dataset.text;
       input.focus();
@@ -1070,7 +1057,6 @@ function showModal({ title, sub, value = '', placeholder = '', withSymbols = fal
     const val = input.value.trim();
     confirmed = true;
     close();
-    if(withRecents) addRecentText(val);
     if(onConfirm) onConfirm(val);
   });
   if(destructiveLabel){
@@ -1578,26 +1564,26 @@ function openBrowseModal(){
   backdrop.addEventListener('click', e => { if(e.target === backdrop) root.innerHTML = ''; });
 
   (async () => {
-    // Offline mode: scan localStorage for local drafts
+    // Offline mode: use local index (populated whenever a job is loaded/saved online)
     if(state.offlineMode){
-      const localJobs = [];
+      const idx = getLocalIndex(); // jobs ever opened/saved on this device
+      // Merge in any unsaved drafts not already in the index
       for(let i = 0; i < localStorage.length; i++){
         const key = localStorage.key(i);
-        const m = key && key.match(/^ppc_draft_(.+)$/);
-        if(!m) continue;
+        const dm = key && key.match(/^ppc_draft_(.+)$/);
+        if(!dm) continue;
+        if(idx.find(e => e.jobId === dm[1])) continue;
         try{
           const draft = JSON.parse(localStorage.getItem(key));
-          if(draft && draft.data){
-            localJobs.push({ jobId: m[1], jobName: draft.jobName || m[1], lastModified: new Date(draft.savedAt || 0).toISOString() });
-          }
+          if(draft && draft.data) idx.push({ jobId: dm[1], jobName: draft.jobName || dm[1], cachedAt: draft.savedAt || 0 });
         }catch(e){}
       }
-      localJobs.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
-      if(localJobs.length === 0){
-        const list = document.getElementById('browseJobList');
-        if(list) list.innerHTML = `<div style="padding:14px;color:#6B7280;font-size:13px;">No local drafts found on this device.</div>`;
+      idx.sort((a, b) => (b.cachedAt || 0) - (a.cachedAt || 0));
+      const list = document.getElementById('browseJobList');
+      if(idx.length === 0){
+        if(list) list.innerHTML = `<div style="padding:14px;color:#6B7280;font-size:13px;">No jobs cached on this device yet. Open jobs while online to make them available offline.</div>`;
       } else {
-        allJobs = localJobs;
+        allJobs = idx.map(e => ({ jobId: e.jobId, jobName: e.jobName, lastModified: new Date(e.cachedAt || 0).toISOString() }));
         renderBrowseList('');
       }
       return;
@@ -1908,15 +1894,19 @@ async function openJobById(jobId, initialJobName){
   try{
     let data, lastModified;
     if(state.offlineMode){
-      // Load from localStorage draft
+      // Prefer unsaved draft (has newer changes), fall back to last synced cache
       let draft;
       try{ draft = JSON.parse(localStorage.getItem(`ppc_draft_${jobId}`)); }catch(e){}
+      const cache = readLocalCache(jobId);
       if(draft && draft.data){
         data = draft.data;
         lastModified = null;
+      } else if(cache && cache.data){
+        data = cache.data;
+        lastModified = null;
       } else {
         setStatus('saved', '');
-        showConfirmModal({ title: 'Not available offline', sub: 'This job has no local draft saved on this device. Open it when back online.', confirmLabel: 'OK', onConfirm: () => {} });
+        showConfirmModal({ title: 'Not available offline', sub: 'This job hasn\'t been opened on this device before. Open it while online first to make it available offline.', confirmLabel: 'OK', onConfirm: () => {} });
         return;
       }
     } else {
@@ -1951,8 +1941,11 @@ async function openJobById(jobId, initialJobName){
     await renderActiveSheet();
     renderKeyNotePanel();
     setStatus('saved', state.offlineMode ? 'Job ' + jobId + ' — offline (local draft)' : 'Job ' + jobId + ' — all changes saved');
-    if(!state.offlineMode) refreshJobDropdown();
-    if(!state.offlineMode) checkForLocalDraft(jobId, state.data);
+    if(!state.offlineMode){
+      writeLocalCache(jobId, data, state.jobName); // cache for future offline access
+      refreshJobDropdown();
+      checkForLocalDraft(jobId, state.data);
+    }
     if(!state.jobName){
       showModal({
         title: 'Name this job', sub: 'Helps you find it later in the Browse list.',
@@ -4918,7 +4911,7 @@ function openTextEditForMarkup(m){
   if(m.type === 'label' || m.type === 'note'){
     showModal({
       title: m.type === 'note' ? 'Edit note' : 'Edit label',
-      value: m.text, withSymbols: true, withRecents: true, confirmLabel: 'Save',
+      value: m.text, withSymbols: true, confirmLabel: 'Save',
       onConfirm: (text) => {
         if(!text) return;
         m.text = text;
@@ -6312,7 +6305,7 @@ function showMarkupActionButtons(markupId){
       e.stopPropagation();
       showModal({
         title: m.type === 'note' ? 'Edit note' : (m.type === 'dimension' ? 'Edit dimension text' : 'Edit label'),
-        value: m.text, withSymbols: true, withRecents: m.type !== 'dimension', confirmLabel: 'Save',
+        value: m.text, withSymbols: true, confirmLabel: 'Save',
         onConfirm: (text) => {
           if(!text) return;
           m.text = text;
@@ -9683,6 +9676,29 @@ function clearLocalDraft(jobId){
   try{ localStorage.removeItem(`ppc_draft_${jobId}`); }catch(err){}
 }
 
+// Persistent local cache — written after every successful load or save.
+// This is the "last known good" copy from SharePoint, used for offline access.
+function writeLocalCache(jobId, data, jobName){
+  try{
+    localStorage.setItem(`ppc_cache_${jobId}`, JSON.stringify({ data, jobName: jobName || data.jobName || '', cachedAt: Date.now() }));
+    // Also cache the job in the local index so offline browse can list it
+    try{
+      const raw = localStorage.getItem('ppc_local_index') || '[]';
+      const idx = JSON.parse(raw);
+      const existing = idx.findIndex(e => e.jobId === jobId);
+      const entry = { jobId, jobName: jobName || data.jobName || '', cachedAt: Date.now() };
+      if(existing > -1) idx[existing] = entry; else idx.push(entry);
+      localStorage.setItem('ppc_local_index', JSON.stringify(idx));
+    }catch(e){}
+  }catch(err){}
+}
+function readLocalCache(jobId){
+  try{ return JSON.parse(localStorage.getItem(`ppc_cache_${jobId}`)); }catch(e){ return null; }
+}
+function getLocalIndex(){
+  try{ return JSON.parse(localStorage.getItem('ppc_local_index') || '[]'); }catch(e){ return []; }
+}
+
 /* ============================================================
    AIR TERMINAL TAKEOFF — shared catalog + manufacturer directory
    ============================================================ */
@@ -11629,6 +11645,7 @@ async function saveJob(){
     state.loadedTakeoffSnapshot = JSON.parse(JSON.stringify(state.data.airTerminalTakeoff || {}));
     setStatus('saved', 'All changes saved');
     upsertJobsIndex(state.jobId, state.jobName);
+    writeLocalCache(state.jobId, state.data, state.jobName);
     clearLocalDraft(state.jobId);
   }catch(e){
     if(e.isConflict){
@@ -11650,6 +11667,7 @@ async function saveJob(){
         renderKeyNotePanel(); renderTakeoffList();
         setStatus('saved', 'All changes saved (merged with other changes)');
         upsertJobsIndex(state.jobId, state.jobName);
+        writeLocalCache(state.jobId, state.data, state.jobName);
         clearLocalDraft(state.jobId);
       }catch(mergeErr){
         console.error(mergeErr);
