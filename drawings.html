@@ -422,6 +422,9 @@ input,textarea{font-family:inherit;}
   <div class="disp">PPC Inc. — Drawing Markup</div>
   <button id="signInBtn">Sign in with Microsoft</button>
   <div id="gateErr" class="err hidden"></div>
+  <div id="offlineSep" class="hidden" style="width:100%;border-top:1px solid var(--line);margin:16px 0 4px;"></div>
+  <div id="offlineHint" class="hidden" style="font-size:12px;color:var(--muted);margin-bottom:8px;">No internet — SharePoint unavailable</div>
+  <button id="offlineBtn" class="hidden" style="background:var(--surface);border:1.5px solid var(--line);color:var(--ink);font-size:14px;padding:9px 20px;border-radius:10px;cursor:pointer;width:100%;">Open Offline (Local Drafts Only)</button>
 </div>
 
 <div class="app hidden" id="app">
@@ -805,8 +808,11 @@ input,textarea{font-family:inherit;}
 <div id="knNoteFlyout" role="tooltip"></div>
 <div id="axisLockChip">⇧ Axis Lock — H / V only</div>
 <div id="scaleRuler"><canvas id="scaleRulerCanvas"></canvas></div>
+<div id="offlineBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9000;background:#B8860B;color:#fff;font-size:12px;font-weight:600;text-align:center;padding:6px 12px;letter-spacing:0.02em;">
+  ⚠ OFFLINE — Changes saved locally on this device. Sign in when back online to sync to SharePoint.
+</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2/lib/msal-browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2/lib/msal-browser.min.js" onerror="window._msalFailed=true"></script>
 <script src="shared-app-core.js?v=3"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
@@ -1298,9 +1304,41 @@ function escapeAttr(s){
 /* ============================================================
    AUTH
    ============================================================ */
-AppCore.initMsal();
+
+// Offline mode flag — set true when MSAL fails to load or user opens offline
+state.offlineMode = false;
+
+function showOfflineBanner(){
+  const b = $('#offlineBanner');
+  if(b) b.style.display = 'block';
+}
+
+function bootOffline(){
+  state.offlineMode = true;
+  $('#gate').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+  $('#accountChip').textContent = '(Offline)';
+  showOfflineBanner();
+}
+
+// If MSAL script failed to load, reveal the offline button after a short delay
+setTimeout(() => {
+  if(window._msalFailed || typeof AppCore === 'undefined'){
+    $('#offlineSep').classList.remove('hidden');
+    $('#offlineHint').classList.remove('hidden');
+    $('#offlineBtn').classList.remove('hidden');
+    // Also dim the sign-in button since it won't work
+    const sb = $('#signInBtn');
+    if(sb){ sb.disabled = true; sb.style.opacity = '0.4'; }
+  }
+}, 1800);
+
+$('#offlineBtn').addEventListener('click', bootOffline);
+
+if(typeof AppCore !== 'undefined') AppCore.initMsal();
 
 async function boot(){
+  if(typeof AppCore === 'undefined'){ bootOffline(); return; }
   await AppCore.handleRedirectPromise();
   const account = AppCore.getActiveAccount();
   if(account){
@@ -1313,6 +1351,7 @@ async function boot(){
   }
 }
 $('#signInBtn').addEventListener('click', () => {
+  if(typeof AppCore === 'undefined') return;
   AppCore.signIn(
     () => boot(),
     (msg) => { $('#gateErr').textContent = msg; $('#gateErr').classList.remove('hidden'); }
@@ -1539,6 +1578,30 @@ function openBrowseModal(){
   backdrop.addEventListener('click', e => { if(e.target === backdrop) root.innerHTML = ''; });
 
   (async () => {
+    // Offline mode: scan localStorage for local drafts
+    if(state.offlineMode){
+      const localJobs = [];
+      for(let i = 0; i < localStorage.length; i++){
+        const key = localStorage.key(i);
+        const m = key && key.match(/^ppc_draft_(.+)$/);
+        if(!m) continue;
+        try{
+          const draft = JSON.parse(localStorage.getItem(key));
+          if(draft && draft.data){
+            localJobs.push({ jobId: m[1], jobName: draft.jobName || m[1], lastModified: new Date(draft.savedAt || 0).toISOString() });
+          }
+        }catch(e){}
+      }
+      localJobs.sort((a, b) => new Date(b.lastModified) - new Date(a.lastModified));
+      if(localJobs.length === 0){
+        const list = document.getElementById('browseJobList');
+        if(list) list.innerHTML = `<div style="padding:14px;color:#6B7280;font-size:13px;">No local drafts found on this device.</div>`;
+      } else {
+        allJobs = localJobs;
+        renderBrowseList('');
+      }
+      return;
+    }
     const indexData = await loadJobsIndex();
     let jobs = (indexData && indexData.jobs) ? indexData.jobs.slice() : null;
     if(jobs === null){
@@ -1843,7 +1906,23 @@ async function openJobById(jobId, initialJobName){
   setStatus('loading', 'Loading job ' + jobId + '…');
   const fileName = `job-${jobId}-markup.json`;
   try{
-    const { data, lastModified } = await AppCore.readJsonFile(fileName, { jobId, jobName: '', sheets: [] });
+    let data, lastModified;
+    if(state.offlineMode){
+      // Load from localStorage draft
+      let draft;
+      try{ draft = JSON.parse(localStorage.getItem(`ppc_draft_${jobId}`)); }catch(e){}
+      if(draft && draft.data){
+        data = draft.data;
+        lastModified = null;
+      } else {
+        setStatus('saved', '');
+        showConfirmModal({ title: 'Not available offline', sub: 'This job has no local draft saved on this device. Open it when back online.', confirmLabel: 'OK', onConfirm: () => {} });
+        return;
+      }
+    } else {
+      const res = await AppCore.readJsonFile(fileName, { jobId, jobName: '', sheets: [] });
+      data = res.data; lastModified = res.lastModified;
+    }
     state.jobId = jobId;
     state.fileName = fileName;
     state.data = data;
@@ -1871,9 +1950,9 @@ async function openJobById(jobId, initialJobName){
     renderSheetTabs();
     await renderActiveSheet();
     renderKeyNotePanel();
-    setStatus('saved', 'Job ' + jobId + ' — all changes saved');
-    refreshJobDropdown();
-    checkForLocalDraft(jobId, state.data);
+    setStatus('saved', state.offlineMode ? 'Job ' + jobId + ' — offline (local draft)' : 'Job ' + jobId + ' — all changes saved');
+    if(!state.offlineMode) refreshJobDropdown();
+    if(!state.offlineMode) checkForLocalDraft(jobId, state.data);
     if(!state.jobName){
       showModal({
         title: 'Name this job', sub: 'Helps you find it later in the Browse list.',
@@ -11536,6 +11615,11 @@ function mergeSheetsData(localSheets, serverSheets, originalSnapshot){
 
 async function saveJob(){
   if(!state.jobId) return;
+  if(state.offlineMode){
+    scheduleDraftSave(); // ensure latest is in localStorage
+    showConfirmModal({ title: 'Saved Locally', sub: 'You\'re offline — your work is saved on this device. When you\'re back online, sign in and your changes will be flagged for sync to SharePoint.', confirmLabel: 'OK', onConfirm: () => {} });
+    return;
+  }
   setStatus('loading', 'Saving…');
   try{
     const result = await AppCore.writeJsonFile(state.fileName, state.data, state.lastModified);
