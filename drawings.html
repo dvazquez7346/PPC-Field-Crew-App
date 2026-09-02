@@ -3733,7 +3733,7 @@ function onPointerDown(e){
       const ddist = Math.hypot(ddx, ddy) || radiusPx;
       const ux = ddx / ddist, uy = ddy / ddist;
       const edge = { x: acx + ux * radiusPx, y: acy + uy * radiusPx };
-      const textPos = { x: acx - ux * (radiusPx + 40), y: acy - uy * (radiusPx + 40) };
+      const textPos = { x: acx - ux * 12, y: acy - uy * 12 };
       let mm;
       if(state.tool === 'radiusdim'){
         mm = { id: genId(), type: 'radiusdim', color: DEFAULT_DIMENSION_COLOR, thickness: 2, center: {x:acx,y:acy}, edge, text: label, textPos, note: '', createdAt: Date.now() };
@@ -9045,7 +9045,8 @@ function drawRadiusDim(m){
   drawArrowHead(ctx, m.center, m.edge, col);
   // Text label floats at textPos (opposite side of center from edge)
   const dx = m.edge.x - m.center.x, dy = m.edge.y - m.center.y;
-  const tp = m.textPos || { x: m.center.x - dx * 1.2, y: m.center.y - dy * 1.2 };
+  const _dLen = Math.hypot(dx, dy) || 1;
+  const tp = m.textPos || { x: m.center.x - (dx / _dLen) * 12, y: m.center.y - (dy / _dLen) * 12 };
   if(m.text) drawTextPill(ctx, m.text, tp, col, '#ffffff', true);
 }
 
