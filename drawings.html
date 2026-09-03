@@ -2154,10 +2154,13 @@ async function viewAttachedPhoto(photoPath){
   try{
     const token = await AppCore.getGraphToken();
     const siteId = await resolveSiteIdLocal(token);
+    const _photoAbort = new AbortController();
+    const _photoTimeout = setTimeout(() => _photoAbort.abort(), 30000);
     const res = await fetch(
       `https://graph.microsoft.com/v1.0/sites/${siteId}/drive/root:/${encodeURIComponent(photoPath)}:/content`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${token}` }, signal: _photoAbort.signal }
     );
+    clearTimeout(_photoTimeout);
     if(!res.ok) throw new Error(`Could not load photo (${res.status})`);
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
@@ -2190,9 +2193,13 @@ function showPhotoLightbox(url){
 let _cachedSiteIdLocal = null;
 async function resolveSiteIdLocal(token){
   if(_cachedSiteIdLocal) return _cachedSiteIdLocal;
+  const _siteAbort = new AbortController();
+  const _siteTimeout = setTimeout(() => _siteAbort.abort(), 30000);
   const res = await fetch('https://graph.microsoft.com/v1.0/sites/1ppc0.sharepoint.com:/sites/m365appbuilder-field-crew-directory-8280', {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}` },
+    signal: _siteAbort.signal
   });
+  clearTimeout(_siteTimeout);
   const json = await res.json();
   _cachedSiteIdLocal = json.id;
   return _cachedSiteIdLocal;
@@ -2327,10 +2334,13 @@ async function renderActiveSheet(){
   try{
     const token = await AppCore.getGraphToken();
     const resolvedSiteId = await resolveSiteIdLocal(token);
+    const _pdfAbort = new AbortController();
+    const _pdfTimeout = setTimeout(() => _pdfAbort.abort(), 30000);
     const contentRes = await fetch(
       `https://graph.microsoft.com/v1.0/sites/${resolvedSiteId}/drive/root:/${encodeURIComponent(sheet.pdfPath)}:/content`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${token}` }, signal: _pdfAbort.signal }
     );
+    clearTimeout(_pdfTimeout);
     const buf = await contentRes.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
     const page = await pdf.getPage(1);
@@ -3475,7 +3485,23 @@ $('#takeoffApplyOrderBtn').addEventListener('click', () => {
    ============================================================ */
 const mCanvas = markupCanvasEl();
 mCanvas.addEventListener('pointerdown', onPointerDown);
-mCanvas.addEventListener('pointermove', onPointerMove);
+// RAF gate: coalesce pointer-move events to one redraw per animation frame.
+// On slow iPads this prevents the JS thread from piling up draw calls faster
+// than the GPU can composite them, which caused stalls and eventual crashes.
+let _movePending = false;
+let _lastMoveEvt = null;
+function onPointerMoveRAF(e){
+  _lastMoveEvt = e;
+  if(_movePending) return;
+  _movePending = true;
+  requestAnimationFrame(() => {
+    _movePending = false;
+    const ev = _lastMoveEvt;
+    _lastMoveEvt = null;
+    if(ev) onPointerMove(ev);
+  });
+}
+mCanvas.addEventListener('pointermove', onPointerMoveRAF);
 mCanvas.addEventListener('pointerup', onPointerUp);
 mCanvas.addEventListener('dblclick', onDblClick);
 
@@ -9670,7 +9696,7 @@ function saveDraftToLocalStorage(){
     try{
       localStorage.setItem(`ppc_draft_${state.jobId}`, JSON.stringify({ data: state.data, savedAt: Date.now(), jobName: state.jobName }));
     }catch(err){ console.error('Local draft save failed', err); }
-  }, 400);
+  }, 7500); // 7.5s debounce — draft is for crash recovery only; one person per drawing at a time
 }
 function clearLocalDraft(jobId){
   try{ localStorage.removeItem(`ppc_draft_${jobId}`); }catch(err){}
@@ -11782,7 +11808,7 @@ setInterval(() => {
   if(state.jobId && state.dirty && $('#modalRoot').innerHTML.trim() === ''){
     saveJob();
   }
-}, 120000);
+}, 900000); // 15 minutes
 
 window.addEventListener('beforeunload', (e) => {
   if(state.dirty){ e.preventDefault(); e.returnValue = ''; }
